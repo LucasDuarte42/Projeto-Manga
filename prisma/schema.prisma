@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  password  String
+  name      String?
+  mangas    Manga[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+enum MangaStatus {
+  READ
+  READING
+  WANT_TO_READ
+}
+
+model Manga {
+  id        String      @id @default(uuid())
+  name      String
+  volume    Int
+  status    MangaStatus @default(WANT_TO_READ)
+  note      Int?        @map("rating")
+  genre     String?
+  userId    String
+  user      User        @relation(fields: [userId], references: [id])
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@unique([userId, name, volume])
+}
