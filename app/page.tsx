@@ -25,7 +25,7 @@ export default function HomePage() {
       {/* Hero */}
       <main className="flex-1 flex flex-col items-center justify-center text-center px-6 py-20">
         <div className="inline-block bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-medium px-4 py-2 rounded-full mb-8">
-          Inspirado na Biblioteca de Alexandria
+          Gerenciador de coleção de mangás
         </div>
 
         <h2 className="text-5xl md:text-6xl font-bold mb-6 leading-tight max-w-3xl">
@@ -87,7 +87,7 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t border-gray-800 px-6 py-6 text-center">
         <p className="text-gray-600 text-sm">
-          Pinakes Mangá — Inspirado no catálogo da Biblioteca de Alexandria
+          Pinakes Mangá — Gerenciador de coleção de mangás
         </p>
       </footer>
     </div>

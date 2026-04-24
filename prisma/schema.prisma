@@ -23,17 +23,19 @@ enum MangaStatus {
   WANT_TO_READ
 }
 
-model Manga {
-  id        String      @id @default(cuid())
-  name      String
-  volume    Int
-  status    MangaStatus @default(WANT_TO_READ)
-  note      Float?      @map("rating")
-  genre     String?
-  userId    String
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+ model Manga {
+  id            String      @id @default(cuid())
+  name          String
+  volume        Int
+  totalVolumes  Int?        
+  status        MangaStatus @default(WANT_TO_READ)
+  note          Float?      @map("rating")
+  genre         String?
+  coverUrl      String?
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
   @@unique([userId, name, volume])
 }
