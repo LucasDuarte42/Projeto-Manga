@@ -8,13 +8,13 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(uuid())
-  email     String    @unique
+  id        String   @id @default(cuid())
+  email     String   @unique
   password  String
   name      String?
   mangas    Manga[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum MangaStatus {
@@ -24,14 +24,14 @@ enum MangaStatus {
 }
 
 model Manga {
-  id        String      @id @default(uuid())
+  id        String      @id @default(cuid())
   name      String
   volume    Int
   status    MangaStatus @default(WANT_TO_READ)
-  note      Int?        @map("rating")
+  note      Float?      @map("rating")
   genre     String?
   userId    String
-  user      User        @relation(fields: [userId], references: [id])
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 
