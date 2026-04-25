@@ -6,16 +6,17 @@ import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 
 interface Manga {
-  id:           string
-  name:         string
-  volume:       number
-  totalVolumes: number | null
-  status:       'READ' | 'READING' | 'WANT_TO_READ'
-  note:         number | null
-  coverUrl:     string | null
-  genre:        string | null
-  createdAt:    string
-  updatedAt:    string
+  id:            string
+  name:          string
+  volume:        number
+  totalVolumes:  number | null
+  ownedVolumes:  number[]
+  status:        'READ' | 'READING' | 'WANT_TO_READ'
+  note:          number | null
+  coverUrl:      string | null
+  genre:         string | null
+  createdAt:     string
+  updatedAt:     string
 }
 
 const STATUS_CONFIG = {
@@ -41,6 +42,7 @@ export default function MangaDetailPage() {
   const [mangaName,    setMangaName]    = useState<string>('')
   const [volume,       setVolume]       = useState(1)
   const [totalVolumes, setTotalVolumes] = useState<string>('')
+  const [ownedVolumes, setOwnedVolumes] = useState<number[]>([])
   const [mangaStatus,  setMangaStatus]  = useState<'READ' | 'READING' | 'WANT_TO_READ'>('WANT_TO_READ')
   const [note,         setNote]         = useState<string>('')
   const [genre,        setGenre]        = useState<string>('')
@@ -64,6 +66,7 @@ export default function MangaDetailPage() {
       setMangaName(data.name)
       setVolume(data.volume)
       setTotalVolumes(data.totalVolumes?.toString() ?? '')
+      setOwnedVolumes(data.ownedVolumes ?? [])
       setMangaStatus(data.status)
       setNote(data.note?.toString() ?? '')
       setGenre(data.genre ?? '')
@@ -87,6 +90,7 @@ export default function MangaDetailPage() {
           name:         mangaName,
           volume,
           totalVolumes: totalVolumes !== '' ? parseInt(totalVolumes) : null,
+          ownedVolumes: ownedVolumes,
           status:       mangaStatus,
           note:         note !== '' ? parseFloat(note) : null,
           genre:        genre || null,
@@ -120,14 +124,27 @@ export default function MangaDetailPage() {
     }
   }
 
+  // Toggle volume na lista de volumes que tem
+  function toggleVolume(vol: number) {
+    setOwnedVolumes(prev =>
+      prev.includes(vol)
+        ? prev.filter(v => v !== vol)
+        : [...prev, vol].sort((a, b) => a - b)
+    )
+  }
+
   // Calcula volumes lidos e faltantes
-  const volumesLidos   = volume
-  const volumesFaltam  = totalVolumes !== '' && parseInt(totalVolumes) > volume
-    ? parseInt(totalVolumes) - volume
+  const volumesLidos   = ownedVolumes.length
+  const volumesFaltam  = totalVolumes !== '' && parseInt(totalVolumes) > 0
+    ? parseInt(totalVolumes) - volumesLidos
     : null
   const progresso      = totalVolumes !== '' && parseInt(totalVolumes) > 0
-    ? Math.round((volume / parseInt(totalVolumes)) * 100)
+    ? Math.round((volumesLidos / parseInt(totalVolumes)) * 100)
     : null
+
+  // Gera array de volumes para exibir
+  const totalVolsNum = totalVolumes !== '' ? parseInt(totalVolumes) : 0
+  const volumeArray = Array.from({ length: totalVolsNum }, (_, i) => i + 1)
 
   if (status === 'loading' || loading) {
     return (
@@ -171,7 +188,7 @@ export default function MangaDetailPage() {
         </button>
       </nav>
 
-      <main className="max-w-3xl mx-auto px-6 py-10 flex flex-col gap-8">
+      <main className="max-w-4xl mx-auto px-6 py-10 flex flex-col gap-8">
 
         {/* Cabeçalho do mangá */}
         <div className="flex gap-6">
@@ -264,7 +281,7 @@ export default function MangaDetailPage() {
           <div className="grid grid-cols-3 gap-4">
             <div className="bg-gray-800 rounded-lg p-4 text-center">
               <p className="text-2xl font-bold text-white">{volumesLidos}</p>
-              <p className="text-gray-400 text-xs mt-1">Volumes lidos</p>
+              <p className="text-gray-400 text-xs mt-1">Volumes que tem</p>
             </div>
             <div className="bg-gray-800 rounded-lg p-4 text-center">
               <p className="text-2xl font-bold text-white">
@@ -280,49 +297,53 @@ export default function MangaDetailPage() {
             </div>
           </div>
 
-          {/* Controle de volume atual */}
-          <div className="flex flex-col gap-2">
-            <label className="text-sm text-gray-400">Volume atual lido</label>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setVolume(v => Math.max(1, v - 1))}
-                className="w-10 h-10 rounded-lg bg-gray-800 hover:bg-gray-700 text-white font-bold text-lg transition flex items-center justify-center"
-              >
-                −
-              </button>
-              <input
-                type="number"
-                min={1}
-                max={totalVolumes !== '' ? parseInt(totalVolumes) : undefined}
-                value={volume}
-                onChange={(e) => setVolume(Math.max(1, parseInt(e.target.value) || 1))}
-                className="w-20 text-center bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 outline-none focus:border-purple-500 transition"
-              />
-              <button
-                onClick={() => setVolume(v => totalVolumes !== '' ? Math.min(parseInt(totalVolumes), v + 1) : v + 1)}
-                className="w-10 h-10 rounded-lg bg-gray-800 hover:bg-gray-700 text-white font-bold text-lg transition flex items-center justify-center"
-              >
-                +
-              </button>
-              <span className="text-gray-500 text-sm">
-                {totalVolumes !== '' ? `de ${totalVolumes}` : 'volumes'}
-              </span>
-            </div>
-          </div>
-
           {/* Total de volumes */}
           <div className="flex flex-col gap-2">
             <label className="text-sm text-gray-400">Total de volumes da obra</label>
             <input
               type="number"
-              min={volume}
+              min={1}
               placeholder="Ex: 42"
               value={totalVolumes}
-              onChange={(e) => setTotalVolumes(e.target.value)}
+              onChange={(e) => {
+                setTotalVolumes(e.target.value)
+                // Remove volumes que não existem mais
+                if (e.target.value !== '') {
+                  const newTotal = parseInt(e.target.value)
+                  setOwnedVolumes(prev => prev.filter(v => v <= newTotal))
+                }
+              }}
               className="w-40 bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 outline-none focus:border-purple-500 transition"
             />
             <p className="text-gray-600 text-xs">Deixe em branco se não souber</p>
           </div>
+
+          {/* Seletor visual de volumes */}
+          {totalVolsNum > 0 && (
+            <div className="flex flex-col gap-3">
+              <label className="text-sm text-gray-400">Selecione os volumes que você tem:</label>
+              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+                {volumeArray.map((vol) => (
+                  <button
+                    key={vol}
+                    onClick={() => toggleVolume(vol)}
+                    className={`p-2 rounded-lg font-medium text-sm transition ${
+                      ownedVolumes.includes(vol)
+                        ? 'bg-purple-600 text-white border border-purple-500'
+                        : 'bg-gray-800 text-gray-400 border border-gray-700 hover:border-purple-500'
+                    }`}
+                  >
+                    {vol}
+                  </button>
+                ))}
+              </div>
+              {ownedVolumes.length > 0 && (
+                <p className="text-sm text-gray-400">
+                  Volumes selecionados: <span className="text-purple-400 font-medium">{ownedVolumes.join(', ')}</span>
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Card de status e nota */}

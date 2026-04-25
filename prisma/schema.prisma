@@ -23,11 +23,12 @@ enum MangaStatus {
   WANT_TO_READ
 }
 
- model Manga {
+model Manga {
   id            String      @id @default(cuid())
   name          String
   volume        Int
   totalVolumes  Int?        
+  ownedVolumes  Int[]       @default([])
   status        MangaStatus @default(WANT_TO_READ)
   note          Float?      @map("rating")
   genre         String?
