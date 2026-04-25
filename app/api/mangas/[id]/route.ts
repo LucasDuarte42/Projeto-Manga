@@ -7,12 +7,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
-    }
-
-    const userId = (session.user as any).id
-    if (!userId) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
 
@@ -22,7 +17,7 @@ export async function GET(req: NextRequest) {
 
     const mangas = await prisma.manga.findMany({
       where: {
-        userId: userId,
+        userId: session.user.id,
         ...(status && { status: status as any }),
         ...(search && { name: { contains: search, mode: 'insensitive' } }),
       },
@@ -40,12 +35,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
-    }
-
-    const userId = (session.user as any).id
-    if (!userId) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
 
@@ -58,7 +48,7 @@ export async function POST(req: NextRequest) {
 
     // Evita duplicata (mesmo userId + name + volume)
     const existing = await prisma.manga.findUnique({
-      where: { userId_name_volume: { userId: userId, name, volume: volume ?? 1 } },
+      where: { userId_name_volume: { userId: session.user.id, name, volume: volume ?? 1 } },
     })
 
     if (existing) {
@@ -75,7 +65,7 @@ export async function POST(req: NextRequest) {
         status:       status ?? 'WANT_TO_READ',
         note:         note ?? null,
         genre:        genre ?? null,
-        userId:       userId,
+        userId:       session.user.id,
       },
     })
 
