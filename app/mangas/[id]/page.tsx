@@ -25,6 +25,9 @@ const STATUS_CONFIG = {
   WANT_TO_READ: { label: 'Quero Ler', color: 'bg-blue-900 text-blue-200',    btn: 'bg-blue-700 hover:bg-blue-600'    },
 }
 
+// Fallback para status inválido
+const DEFAULT_BADGE = { label: 'Desconhecido', color: 'bg-gray-900 text-gray-200' }
+
 export default function MangaDetailPage() {
   const { data: session, status } = useSession()
   const router  = useRouter()
@@ -170,7 +173,10 @@ export default function MangaDetailPage() {
 
   if (!manga) return null
 
-  const badge = STATUS_CONFIG[manga.status]
+  // CORREÇÃO: Usar fallback se o status for inválido
+  const badge = manga.status && manga.status in STATUS_CONFIG 
+    ? STATUS_CONFIG[manga.status as keyof typeof STATUS_CONFIG]
+    : DEFAULT_BADGE
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">

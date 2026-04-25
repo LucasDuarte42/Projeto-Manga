@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions)
     
@@ -11,27 +11,30 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
 
-    const { searchParams } = new URL(req.url)
-    const status = searchParams.get('status')
-    const search = searchParams.get('search')
+    const { id } = params
 
-    const mangas = await prisma.manga.findMany({
-      where: {
-        userId: session.user.id,
-        ...(status && { status: status as any }),
-        ...(search && { name: { contains: search, mode: 'insensitive' } }),
-      },
-      orderBy: { createdAt: 'desc' },
+    // Busca o mangá pelo ID
+    const manga = await prisma.manga.findUnique({
+      where: { id },
     })
 
-    return NextResponse.json(mangas)
+    if (!manga) {
+      return NextResponse.json({ error: 'Mangá não encontrado' }, { status: 404 })
+    }
+
+    // Verifica se o mangá pertence ao usuário autenticado
+    if (manga.userId !== session.user.id) {
+      return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
+    }
+
+    return NextResponse.json(manga)
   } catch (error) {
-    console.error('Erro ao buscar mangás:', error)
-    return NextResponse.json({ error: 'Erro ao buscar mangás' }, { status: 500 })
+    console.error('Erro ao buscar mangá:', error)
+    return NextResponse.json({ error: 'Erro ao buscar mangá' }, { status: 500 })
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions)
     
@@ -39,39 +42,76 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
 
+    const { id } = params
     const body = await req.json()
-    const { name, coverUrl, volume, totalVolumes, status, note, genre } = body
+    const { name, coverUrl, volume, totalVolumes, ownedVolumes, status, note, genre } = body
 
-    if (!name) {
-      return NextResponse.json({ error: 'Nome obrigatório' }, { status: 400 })
-    }
-
-    // Evita duplicata (mesmo userId + name + volume)
-    const existing = await prisma.manga.findUnique({
-      where: { userId_name_volume: { userId: session.user.id, name, volume: volume ?? 1 } },
+    // Verifica se o mangá existe e pertence ao usuário
+    const manga = await prisma.manga.findUnique({
+      where: { id },
     })
 
-    if (existing) {
-      return NextResponse.json({ error: 'Manga já está na coleção' }, { status: 409 })
+    if (!manga) {
+      return NextResponse.json({ error: 'Mangá não encontrado' }, { status: 404 })
     }
 
-    const manga = await prisma.manga.create({
+    if (manga.userId !== session.user.id) {
+      return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
+    }
+
+    // Atualiza o mangá
+    const updatedManga = await prisma.manga.update({
+      where: { id },
       data: {
-        name,
-        coverUrl:     coverUrl ?? null,
-        volume:       volume ?? 1,
-        totalVolumes: totalVolumes ?? null,
-        ownedVolumes: [],
-        status:       status ?? 'WANT_TO_READ',
-        note:         note ?? null,
-        genre:        genre ?? null,
-        userId:       session.user.id,
+        ...(name !== undefined && { name }),
+        ...(coverUrl !== undefined && { coverUrl }),
+        ...(volume !== undefined && { volume }),
+        ...(totalVolumes !== undefined && { totalVolumes }),
+        ...(ownedVolumes !== undefined && { ownedVolumes }),
+        ...(status !== undefined && { status }),
+        ...(note !== undefined && { note }),
+        ...(genre !== undefined && { genre }),
       },
     })
 
-    return NextResponse.json(manga, { status: 201 })
+    return NextResponse.json(updatedManga)
   } catch (error) {
-    console.error('Erro ao criar mangá:', error)
-    return NextResponse.json({ error: 'Erro ao criar mangá' }, { status: 500 })
+    console.error('Erro ao atualizar mangá:', error)
+    return NextResponse.json({ error: 'Erro ao atualizar mangá' }, { status: 500 })
+  }
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+    }
+
+    const { id } = params
+
+    // Verifica se o mangá existe e pertence ao usuário
+    const manga = await prisma.manga.findUnique({
+      where: { id },
+    })
+
+    if (!manga) {
+      return NextResponse.json({ error: 'Mangá não encontrado' }, { status: 404 })
+    }
+
+    if (manga.userId !== session.user.id) {
+      return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
+    }
+
+    // Deleta o mangá
+    await prisma.manga.delete({
+      where: { id },
+    })
+
+    return NextResponse.json({ message: 'Mangá removido com sucesso' }, { status: 200 })
+  } catch (error) {
+    console.error('Erro ao deletar mangá:', error)
+    return NextResponse.json({ error: 'Erro ao deletar mangá' }, { status: 500 })
   }
 }
