@@ -3,14 +3,14 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-// DELETE - Deletar mangá
-export async function DELETE(
+// GET - Buscar mangá por ID
+export async function GET(
   req: Request,
   { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
@@ -20,7 +20,6 @@ export async function DELETE(
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
 
-    // Verificar se o mangá existe e pertence ao usuário
     const manga = await prisma.manga.findUnique({
       where: { id: params.id },
     })
@@ -33,7 +32,42 @@ export async function DELETE(
       return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
     }
 
-    // Deletar o mangá
+    return NextResponse.json(manga)
+  } catch (error) {
+    console.error('Erro ao buscar mangá:', error)
+    return NextResponse.json({ error: 'Erro ao buscar mangá' }, { status: 500 })
+  }
+}
+
+// DELETE - Deletar mangá
+export async function DELETE(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+    }
+
+    const userId = (session.user as any).id
+    if (!userId) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+    }
+
+    const manga = await prisma.manga.findUnique({
+      where: { id: params.id },
+    })
+
+    if (!manga) {
+      return NextResponse.json({ error: 'Mangá não encontrado' }, { status: 404 })
+    }
+
+    if (manga.userId !== userId) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
+    }
+
     await prisma.manga.delete({
       where: { id: params.id },
     })
@@ -52,7 +86,7 @@ export async function PUT(
 ) {
   try {
     const session = await getServerSession(authOptions)
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
@@ -64,7 +98,6 @@ export async function PUT(
 
     const body = await req.json()
 
-    // Verificar se o mangá existe e pertence ao usuário
     const manga = await prisma.manga.findUnique({
       where: { id: params.id },
     })
@@ -77,7 +110,6 @@ export async function PUT(
       return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
     }
 
-    // Validação dos campos obrigatórios
     if (!body.name || typeof body.name !== 'string' || !body.name.trim()) {
       return NextResponse.json({ error: 'Título é obrigatório' }, { status: 400 })
     }
@@ -86,13 +118,11 @@ export async function PUT(
       return NextResponse.json({ error: 'Volume deve ser um número maior que 0' }, { status: 400 })
     }
 
-    // Validação do status
     const statusValido = ['READ', 'READING', 'WANT_TO_READ'].includes(body.status)
     if (!statusValido) {
       return NextResponse.json({ error: 'Status inválido' }, { status: 400 })
     }
 
-    // Validação opcional da nota
     let note = null
     if (body.note !== undefined && body.note !== null && body.note !== '') {
       const noteNum = parseFloat(body.note)
@@ -102,7 +132,6 @@ export async function PUT(
       note = noteNum
     }
 
-    // Validação opcional de totalVolumes
     let totalVolumes = null
     if (body.totalVolumes !== undefined && body.totalVolumes !== null && body.totalVolumes !== '') {
       const total = parseInt(body.totalVolumes)
@@ -112,17 +141,16 @@ export async function PUT(
       totalVolumes = total
     }
 
-    // Atualizar o mangá
     const updated = await prisma.manga.update({
       where: { id: params.id },
       data: {
-        name: body.name.trim(),
-        volume: body.volume,
+        name:         body.name.trim(),
+        volume:       body.volume,
         totalVolumes: totalVolumes,
-        status: body.status,
-        note: note,
-        genre: body.genre ? body.genre.trim() : null,
-        coverUrl: body.coverUrl ? body.coverUrl.trim() : null,
+        status:       body.status,
+        note:         note,
+        genre:        body.genre    ? body.genre.trim()    : null,
+        coverUrl:     body.coverUrl ? body.coverUrl.trim() : null,
       },
     })
 

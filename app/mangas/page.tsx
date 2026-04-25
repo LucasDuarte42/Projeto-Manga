@@ -4,39 +4,46 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import AddMangaModal from '@/components/AddMangaModal'
 
+// Campos alinhados com o schema Prisma
 interface Manga {
-  id: string
-  title: string
-  author?: string | null
-  volume: number
+  id:           string
+  name:         string
+  volume:       number
   totalVolumes?: number | null
-  status: 'READ' | 'READING' | 'WANT_TO_READ'
-  note?: number | null
-  coverImage?: string | null
-  createdAt: string
+  status:       'READ' | 'READING' | 'WANT_TO_READ'
+  note?:        number | null
+  coverUrl?:    string | null
+  genre?:       string | null
+  createdAt:    string
+}
+
+interface MangaResult {
+  mal_id:  number
+  title:   string
+  image:   string | null
+  volumes: number | null
+  status:  string
+  score:   number | null
+  genre:   string | null
 }
 
 export default function MangasPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
-  const [mangas, setMangas] = useState<Manga[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [mangas,       setMangas]       = useState<Manga[]>([])
+  const [loading,      setLoading]      = useState(true)
+  const [error,        setError]        = useState<string | null>(null)
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'READ' | 'READING' | 'WANT_TO_READ'>('ALL')
+  const [showModal,    setShowModal]    = useState(false)
 
-  // Redirecionar se não autenticado
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login')
-    }
+    if (status === 'unauthenticated') router.push('/login')
   }, [status, router])
 
-  // Buscar mangas
   useEffect(() => {
-    if (status === 'authenticated') {
-      fetchMangas()
-    }
+    if (status === 'authenticated') fetchMangas()
   }, [status])
 
   const fetchMangas = async () => {
@@ -44,43 +51,61 @@ export default function MangasPage() {
       setLoading(true)
       setError(null)
       const response = await fetch('/api/mangas')
-      
-      if (!response.ok) {
-        throw new Error(`Erro ao buscar mangas: ${response.status}`)
-      }
-      
+
+      console.log('Status:', response.status)
+
+      if (!response.ok) throw new Error(`Erro ${response.status}`)
+
       const data = await response.json()
+
+      console.log('Dados:', data)
+
       setMangas(data)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido'
-      setError(errorMessage)
+      setError(err instanceof Error ? err.message : 'Erro desconhecido')
       console.error('Erro ao buscar mangas:', err)
     } finally {
       setLoading(false)
     }
   }
 
-  const filteredMangas = filterStatus === 'ALL' 
-    ? mangas 
+  async function handleAdd(manga: MangaResult) {
+    const res = await fetch('/api/mangas', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name:         manga.title,
+        coverUrl:     manga.image,
+        totalVolumes: manga.volumes,
+        volume:       1,
+        status:       'WANT_TO_READ',
+        genre:        manga.genre,
+      }),
+    })
+
+    if (res.status === 409) {
+      // Manga já existe — não fecha o modal, deixa o usuário ver o feedback no botão
+      return
+    }
+
+    if (!res.ok) {
+      throw new Error('Erro ao adicionar')
+    }
+
+    fetchMangas() // atualiza a lista em background
+  }
+
+  const filteredMangas = filterStatus === 'ALL'
+    ? mangas
     : mangas.filter(m => m.status === filterStatus)
 
   const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      'READ': { label: 'Lido', color: 'bg-green-900 text-green-200' },
-      'READING': { label: 'Lendo', color: 'bg-yellow-900 text-yellow-200' },
+    const map: Record<string, { label: string; color: string }> = {
+      'READ':         { label: 'Lido',      color: 'bg-green-900 text-green-200' },
+      'READING':      { label: 'Lendo',     color: 'bg-yellow-900 text-yellow-200' },
       'WANT_TO_READ': { label: 'Quero Ler', color: 'bg-blue-900 text-blue-200' },
     }
-    const config = statusConfig[status as keyof typeof statusConfig]
-    return config ? { ...config } : { label: status, color: 'bg-gray-900 text-gray-200' }
-  }
-
-  const getStatusColor = (status: string) => {
-    const colors = {
-      'READ': 'text-green-400',
-      'READING': 'text-yellow-400',
-      'WANT_TO_READ': 'text-blue-400',
-    }
-    return colors[status as keyof typeof colors] || 'text-gray-400'
+    return map[status] ?? { label: status, color: 'bg-gray-900 text-gray-200' }
   }
 
   if (status === 'loading' || loading) {
@@ -99,65 +124,44 @@ export default function MangasPage() {
       {/* Navbar */}
       <nav className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/" className="text-gray-400 hover:text-white transition">
-            ← Voltar
-          </Link>
+          <Link href="/" className="text-gray-400 hover:text-white transition">← Voltar</Link>
           <h1 className="text-xl font-bold text-purple-400">Minha Coleção</h1>
         </div>
         <div className="flex items-center gap-4">
           <span className="text-gray-400 text-sm">{session?.user?.name || session?.user?.email}</span>
-          <Link href="/mangas/novo" className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-medium transition">
+          <button
+            onClick={() => setShowModal(true)}
+            className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-medium transition"
+          >
             + Adicionar Manga
-          </Link>
+          </button>
         </div>
       </nav>
 
       <main className="max-w-7xl mx-auto px-6 py-10">
         {/* Filtros */}
         <div className="mb-8 flex gap-2 flex-wrap">
-          <button
-            onClick={() => setFilterStatus('ALL')}
-            className={`px-4 py-2 rounded-lg font-medium transition ${
-              filterStatus === 'ALL'
-                ? 'bg-purple-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-            }`}
-          >
-            Todos ({mangas.length})
-          </button>
-          <button
-            onClick={() => setFilterStatus('READ')}
-            className={`px-4 py-2 rounded-lg font-medium transition ${
-              filterStatus === 'READ'
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-            }`}
-          >
-            Lidos ({mangas.filter(m => m.status === 'READ').length})
-          </button>
-          <button
-            onClick={() => setFilterStatus('READING')}
-            className={`px-4 py-2 rounded-lg font-medium transition ${
-              filterStatus === 'READING'
-                ? 'bg-yellow-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-            }`}
-          >
-            Lendo ({mangas.filter(m => m.status === 'READING').length})
-          </button>
-          <button
-            onClick={() => setFilterStatus('WANT_TO_READ')}
-            className={`px-4 py-2 rounded-lg font-medium transition ${
-              filterStatus === 'WANT_TO_READ'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-            }`}
-          >
-            Quero Ler ({mangas.filter(m => m.status === 'WANT_TO_READ').length})
-          </button>
+          {[
+            { key: 'ALL',          label: 'Todos',     count: mangas.length,                                          color: 'bg-purple-600' },
+            { key: 'READ',         label: 'Lidos',     count: mangas.filter(m => m.status === 'READ').length,         color: 'bg-green-600'  },
+            { key: 'READING',      label: 'Lendo',     count: mangas.filter(m => m.status === 'READING').length,      color: 'bg-yellow-600' },
+            { key: 'WANT_TO_READ', label: 'Quero Ler', count: mangas.filter(m => m.status === 'WANT_TO_READ').length, color: 'bg-blue-600'   },
+          ].map(({ key, label, count, color }) => (
+            <button
+              key={key}
+              onClick={() => setFilterStatus(key as any)}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                filterStatus === key
+                  ? `${color} text-white`
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              }`}
+            >
+              {label} ({count})
+            </button>
+          ))}
         </div>
 
-        {/* Mensagem de erro */}
+        {/* Erro */}
         {error && (
           <div className="mb-6 p-4 bg-red-900 border border-red-700 rounded-lg text-red-200">
             <p className="font-medium">Erro ao carregar coleção</p>
@@ -171,15 +175,18 @@ export default function MangasPage() {
           </div>
         )}
 
-        {/* Lista de mangas */}
+        {/* Lista */}
         {filteredMangas.length === 0 ? (
           <div className="text-center py-16 border border-dashed border-gray-700 rounded-xl">
             <p className="text-gray-400 text-lg mb-4">
               {mangas.length === 0 ? 'Sua coleção está vazia' : 'Nenhum manga nesta categoria'}
             </p>
-            <Link href="/mangas/novo" className="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-lg font-medium transition inline-block">
+            <button
+              onClick={() => setShowModal(true)}
+              className="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-lg font-medium transition"
+            >
               Adicionar Primeiro Manga
-            </Link>
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -191,53 +198,48 @@ export default function MangasPage() {
                   href={`/mangas/${manga.id}`}
                   className="group bg-gray-900 border border-gray-800 rounded-xl overflow-hidden hover:border-purple-600 transition"
                 >
-                  {/* Cover Image Placeholder */}
-                  <div className="w-full h-48 bg-gradient-to-br from-purple-900 to-gray-900 flex items-center justify-center group-hover:from-purple-800 transition">
-                    {manga.coverImage ? (
+                  {/* Capa */}
+                  <div className="w-full h-48 bg-gradient-to-br from-purple-900 to-gray-900 flex items-center justify-center group-hover:from-purple-800 transition overflow-hidden">
+                    {manga.coverUrl ? (
                       <img
-                        src={manga.coverImage}
-                        alt={manga.title}
+                        src={manga.coverUrl}
+                        alt={manga.name}
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="text-center px-4">
-                        <p className="text-gray-400 text-sm">Sem capa</p>
-                      </div>
+                      <p className="text-gray-400 text-sm">Sem capa</p>
                     )}
                   </div>
 
-                  {/* Content */}
+                  {/* Conteúdo */}
                   <div className="p-4">
                     <h3 className="font-bold text-lg mb-2 group-hover:text-purple-400 transition line-clamp-2">
-                      {manga.title}
+                      {manga.name}
                     </h3>
 
-                    {manga.author && (
-                      <p className="text-gray-400 text-sm mb-3">Por {manga.author}</p>
+                    {manga.genre && (
+                      <p className="text-purple-400 text-xs mb-2">{manga.genre}</p>
                     )}
 
-                    {/* Status Badge */}
                     <div className="mb-3">
                       <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${badge.color}`}>
                         {badge.label}
                       </span>
                     </div>
 
-                    {/* Volume Info */}
                     <div className="mb-3 text-sm text-gray-400">
-                      <p>Volume: <span className="text-white font-medium">{manga.volume}</span>
-                        {manga.totalVolumes && ` / ${manga.totalVolumes}`}
+                      <p>
+                        Volume: <span className="text-white font-medium">{manga.volume}</span>
+                        {manga.totalVolumes ? ` / ${manga.totalVolumes}` : ''}
                       </p>
                     </div>
 
-                    {/* Rating */}
                     {manga.note && (
-                      <div className="text-sm">
-                        <p className="text-gray-400">Nota: <span className="text-yellow-400 font-medium">{manga.note}/10</span></p>
-                      </div>
+                      <p className="text-sm text-gray-400">
+                        Nota: <span className="text-yellow-400 font-medium">{manga.note}/10</span>
+                      </p>
                     )}
 
-                    {/* Created Date */}
                     <p className="text-xs text-gray-500 mt-3">
                       Adicionado em {new Date(manga.createdAt).toLocaleDateString('pt-BR')}
                     </p>
@@ -248,6 +250,14 @@ export default function MangasPage() {
           </div>
         )}
       </main>
+
+      {/* Modal */}
+      {showModal && (
+        <AddMangaModal
+          onClose={() => setShowModal(false)}
+          onAdd={handleAdd}
+        />
+      )}
     </div>
   )
 }
