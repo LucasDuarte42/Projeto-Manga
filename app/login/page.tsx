@@ -1,20 +1,14 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { signIn } from 'next-auth/react'
+import { signIn, useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { useSession } from 'next-auth/react'
-
-const { data: session, status } = useSession()
-
-
-
-
 
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { status } = useSession()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -22,11 +16,9 @@ function LoginForm() {
   const [loading, setLoading] = useState(false)
   const [attempts, setAttempts] = useState(0)
 
-  const { data: session, status } = useSession()
-
-useEffect(() => {
-  if (status === 'authenticated') router.push('/dashboard')
-}, [status, router])
+  useEffect(() => {
+    if (status === 'authenticated') router.push('/dashboard')
+  }, [status, router])
 
   useEffect(() => {
     if (searchParams.get('registered')) {
@@ -64,6 +56,14 @@ useEffect(() => {
     }
 
     router.push('/dashboard')
+  }
+
+  if (status === 'loading') {
+    return (
+      <div className="bg-gray-900 p-8 rounded-2xl w-full max-w-md border border-gray-800 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400"></div>
+      </div>
+    )
   }
 
   return (
@@ -132,7 +132,11 @@ useEffect(() => {
 export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-950 px-4">
-      <Suspense fallback={<div className="text-white">Carregando...</div>}>
+      <Suspense fallback={
+        <div className="bg-gray-900 p-8 rounded-2xl w-full max-w-md border border-gray-800 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400"></div>
+        </div>
+      }>
         <LoginForm />
       </Suspense>
     </div>
