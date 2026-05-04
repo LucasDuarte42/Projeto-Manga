@@ -170,7 +170,7 @@ export default function MangaDetailPage() {
 
   if (!manga) return null
 
-  const badge = STATUS_CONFIG[manga.status]
+  const badge = STATUS_CONFIG[manga.status] ?? STATUS_CONFIG['WANT_TO_READ']
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
