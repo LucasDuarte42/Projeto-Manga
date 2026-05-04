@@ -4,6 +4,13 @@ import { useState, useEffect, Suspense } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { useSession } from 'next-auth/react'
+
+const { data: session, status } = useSession()
+
+
+
+
 
 function LoginForm() {
   const router = useRouter()
@@ -14,6 +21,12 @@ function LoginForm() {
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
   const [attempts, setAttempts] = useState(0)
+
+  const { data: session, status } = useSession()
+
+useEffect(() => {
+  if (status === 'authenticated') router.push('/dashboard')
+}, [status, router])
 
   useEffect(() => {
     if (searchParams.get('registered')) {
