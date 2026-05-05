@@ -55,7 +55,7 @@ function LoginForm() {
       return
     }
 
-    router.push('/dashboard')
+    window.location.href = '/dashboard'
   }
 
   if (status === 'loading') {
