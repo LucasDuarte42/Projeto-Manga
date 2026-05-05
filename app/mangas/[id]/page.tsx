@@ -31,12 +31,10 @@ const STATUS_CONFIG = {
 }
 
 const NOTE_CONFIG = [
-  { max: 10,  label: 'Incrível',  color: 'bg-green-600'  },
-  { max: 8,   label: 'Ótimo',     color: 'bg-green-500'  },
-  { max: 6,   label: 'Bom',       color: 'bg-yellow-500' },
-  { max: 4,   label: 'Regular',   color: 'bg-orange-500' },
-  { max: 2,   label: 'Ruim',      color: 'bg-red-500'    },
-  { max: 0,   label: 'Péssimo',   color: 'bg-purple-700' },
+  { max: 10, label: 'Ótimo',    color: 'bg-green-500'  },
+  { max: 7,  label: 'Bom',      color: 'bg-yellow-500' },
+  { max: 4,  label: 'Regular',  color: 'bg-orange-500' },
+  { max: 1,  label: 'Ruim',     color: 'bg-red-500'    },
 ]
 
 function getNoteConfig(note: number) {
