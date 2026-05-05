@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     status:  m.status,
     score:   m.score ?? null,
     genre:   m.genres?.[0]?.name ?? null,
-    author: m.authors?.map((a: any) => a.name).join(', ') ?? null,
+    author:  m.authors?.[0]?.name ?? null,
 }))
 
     return NextResponse.json({ mangas })

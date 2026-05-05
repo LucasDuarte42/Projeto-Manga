@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
       note:         note ?? null,
       genre:        genre ?? null,
       userId:       session.user.id,
+      authors:      body.author ?? null,
     },
   })
 
