@@ -342,44 +342,42 @@ export default function MangaDetailPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
-              {ownedVolumes.map(vol => {
-                const rating = pendingRatings[vol]
-                const cfg = rating !== undefined ? getNoteConfig(rating) : null
-                return (
-                  <div key={vol} className="flex flex-col items-center gap-1">
-                    <span className="text-xs text-gray-500">Vol.{vol}</span>
-                    <div
-                      className={`w-full aspect-square rounded-lg flex items-center justify-center font-bold text-sm cursor-pointer border-2 transition ${
-                        cfg
-                          ? `${cfg.color} text-white border-transparent`
-                          : 'bg-gray-800 text-gray-500 border-gray-700 hover:border-purple-500'
-                      }`}
-                      onClick={() => {
-                        const current = pendingRatings[vol]
-                        // Cicla entre notas: sem nota → 10 → 8 → 6 → 4 → 2 → sem nota
-                        const cycle = [10, 8, 6, 4, 2]
-                        if (current === undefined) {
-                          setPendingRatings(p => ({ ...p, [vol]: 10 }))
-                        } else {
-                          const idx = cycle.indexOf(current)
-                          if (idx === cycle.length - 1) {
-                            const next = { ...pendingRatings }
-                            delete next[vol]
-                            setPendingRatings(next)
-                          } else {
-                            setPendingRatings(p => ({ ...p, [vol]: cycle[idx + 1] }))
-                          }
-                        }
-                      }}
-                    >
-                      {rating !== undefined ? rating : '?'}
-                    </div>
-                    {cfg && <span className="text-xs text-gray-500">{cfg.label}</span>}
-                  </div>
-                )
-              })}
-            </div>
+            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
+  {ownedVolumes.map(vol => {
+    const rating = pendingRatings[vol]
+    const cfg = rating !== undefined ? getNoteConfig(rating) : null
+    return (
+      <div key={vol} className="flex flex-col items-center gap-1">
+        <span className="text-xs text-gray-500">Vol.{vol}</span>
+        <div className={`w-full rounded-lg p-2 border-2 transition ${
+          cfg ? `${cfg.color} border-transparent` : 'bg-gray-800 border-gray-700'
+        }`}>
+          <input
+            type="number"
+            min={0}
+            max={10}
+            step={0.5}
+            placeholder="?"
+            value={rating ?? ''}
+            onChange={e => {
+              const val = e.target.value
+              if (val === '') {
+                const next = { ...pendingRatings }
+                delete next[vol]
+                setPendingRatings(next)
+              } else {
+                const num = Math.min(10, Math.max(0, parseFloat(val)))
+                setPendingRatings(p => ({ ...p, [vol]: num }))
+              }
+            }}
+            className="w-full bg-transparent text-white font-bold text-center text-sm outline-none"
+          />
+        </div>
+        {cfg && <span className="text-xs text-gray-500">{cfg.label}</span>}
+      </div>
+    )
+  })}
+</div>
 
             <p className="text-xs text-gray-500">
               Clique em um volume para dar nota. Clique novamente para mudar. As notas são salvas ao clicar em "Salvar alterações".

@@ -10,6 +10,7 @@ interface MangaResult {
   status:  string
   score:   number | null
   genre:   string | null
+  author:  string | null
 }
 
 interface Props {
@@ -57,13 +58,11 @@ export default function AddMangaModal({ onClose, onAdd }: Props) {
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
       <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl flex flex-col gap-4 p-6 max-h-[90vh]">
 
-        {/* Header */}
         <div className="flex justify-between items-center">
           <h2 className="text-white text-xl font-bold">Adicionar Mangá</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white text-xl transition">✕</button>
         </div>
 
-        {/* Busca */}
         <div className="flex gap-2">
           <input
             type="text"
@@ -84,7 +83,6 @@ export default function AddMangaModal({ onClose, onAdd }: Props) {
 
         {error && <p className="text-red-400 text-sm">{error}</p>}
 
-        {/* Resultados */}
         <div className="flex flex-col gap-3 overflow-y-auto pr-1">
           {results.length === 0 && !loading && (
             <p className="text-gray-500 text-sm text-center py-8">
@@ -93,15 +91,11 @@ export default function AddMangaModal({ onClose, onAdd }: Props) {
           )}
 
           {results.map((manga) => {
-            const isAdded   = added.includes(manga.mal_id)
-            const isAdding  = adding === manga.mal_id
+            const isAdded  = added.includes(manga.mal_id)
+            const isAdding = adding === manga.mal_id
 
             return (
-              <div
-                key={manga.mal_id}
-                className="flex gap-3 bg-gray-800 rounded-lg p-3 border border-gray-700"
-              >
-                {/* Capa */}
+              <div key={manga.mal_id} className="flex gap-3 bg-gray-800 rounded-lg p-3 border border-gray-700">
                 <div className="flex-shrink-0">
                   {manga.image ? (
                     <img src={manga.image} alt={manga.title} className="w-12 h-16 object-cover rounded" />
@@ -112,20 +106,20 @@ export default function AddMangaModal({ onClose, onAdd }: Props) {
                   )}
                 </div>
 
-                {/* Info */}
                 <div className="flex-1 min-w-0">
                   <p className="text-white font-semibold text-sm truncate">{manga.title}</p>
+                  {manga.author && (
+                    <p className="text-gray-400 text-xs">{manga.author}</p>
+                  )}
                   {manga.genre && (
                     <p className="text-purple-400 text-xs">{manga.genre}</p>
                   )}
                   <p className="text-gray-500 text-xs mt-1">
                     {manga.volumes ? `${manga.volumes} volumes` : 'Volumes desconhecidos'}
                     {manga.score ? ` · ⭐ ${manga.score}` : ''}
-                    {` · ${manga.status}`}
                   </p>
                 </div>
 
-                {/* Botão */}
                 <button
                   onClick={() => !isAdded && handleAdd(manga)}
                   disabled={isAdding || isAdded}

@@ -27,6 +27,7 @@ interface MangaResult {
   status:  string
   score:   number | null
   genre:   string | null
+  author:  string | null
 }
 
 export default function MangasPage() {
@@ -70,30 +71,25 @@ export default function MangasPage() {
   }
 
   async function handleAdd(manga: MangaResult) {
-    const res = await fetch('/api/mangas', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name:         manga.title,
-        coverUrl:     manga.image,
-        totalVolumes: manga.volumes,
-        volume:       1,
-        status:       'WANT_TO_READ',
-        genre:        manga.genre,
-      }),
-    })
+  const res = await fetch('/api/mangas', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name:         manga.title,
+      author:       manga.author,  // ← adiciona
+      coverUrl:     manga.image,
+      totalVolumes: manga.volumes,
+      volume:       1,
+      status:       'WANT_TO_READ',
+      genre:        manga.genre,
+    }),
+  })
 
-    if (res.status === 409) {
-      // Manga já existe — não fecha o modal, deixa o usuário ver o feedback no botão
-      return
-    }
+  if (res.status === 409) return
+  if (!res.ok) throw new Error('Erro ao adicionar')
 
-    if (!res.ok) {
-      throw new Error('Erro ao adicionar')
-    }
-
-    fetchMangas() // atualiza a lista em background
-  }
+  fetchMangas()
+}
 
   const filteredMangas = filterStatus === 'ALL'
     ? mangas
