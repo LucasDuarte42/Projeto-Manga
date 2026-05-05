@@ -2,11 +2,10 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { signIn, useSession } from 'next-auth/react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
 function LoginForm() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const { status } = useSession()
   const [email, setEmail] = useState('')
@@ -17,8 +16,10 @@ function LoginForm() {
   const [attempts, setAttempts] = useState(0)
 
   useEffect(() => {
-    if (status === 'authenticated') router.push('/dashboard')
-  }, [status, router])
+    if (status === 'authenticated') {
+      window.location.href = '/dashboard'
+    }
+  }, [status])
 
   useEffect(() => {
     if (searchParams.get('registered')) {
@@ -44,26 +45,26 @@ function LoginForm() {
       redirect: false,
     })
 
+    console.log('SignIn result:', JSON.stringify(result))
+
     if (result?.error) {
       setAttempts(a => a + 1)
       setError(
         attempts >= 4
-          ? 'Conta bloqueada temporariamente por excesso de tentativas.'
+          ? 'Conta bloqueada temporariamente.'
           : 'Email ou senha incorretos'
       )
       setLoading(false)
       return
     }
 
-    window.location.href = '/dashboard'
-  }
+    if (result?.ok) {
+      window.location.href = '/dashboard'
+      return
+    }
 
-  if (status === 'loading') {
-    return (
-      <div className="bg-gray-900 p-8 rounded-2xl w-full max-w-md border border-gray-800 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400"></div>
-      </div>
-    )
+    setError('Erro inesperado. Tente novamente.')
+    setLoading(false)
   }
 
   return (
@@ -133,9 +134,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-950 px-4">
       <Suspense fallback={
-        <div className="bg-gray-900 p-8 rounded-2xl w-full max-w-md border border-gray-800 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400"></div>
-        </div>
+        <div className="text-white">Carregando...</div>
       }>
         <LoginForm />
       </Suspense>
