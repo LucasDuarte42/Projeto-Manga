@@ -36,14 +36,14 @@ export async function GET(req: NextRequest) {
     }
 
     const mangas = data.data.map((m: any) => ({
-  mal_id:  m.mal_id,
-  title:   m.title,
-  image:   m.images?.jpg?.image_url ?? null,
-  volumes: m.volumes ?? null,
-  status:  m.status,
-  score:   m.score ?? null,
-  genre:   m.genres?.[0]?.name ?? null,
-  author:  m.authors?.[0]?.name ?? null,
+    mal_id:  m.mal_id,
+    title:   m.title,
+    image:   m.images?.jpg?.image_url ?? null,
+    volumes: m.volumes ?? null,
+    status:  m.status,
+    score:   m.score ?? null,
+    genre:   m.genres?.[0]?.name ?? null,
+    author: m.authors?.map((a: any) => a.name).join(', ') ?? null,
 }))
 
     return NextResponse.json({ mangas })
