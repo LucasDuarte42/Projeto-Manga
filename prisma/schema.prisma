@@ -26,6 +26,7 @@ enum MangaStatus {
 model Manga {
   id            String      @id @default(cuid())
   name          String
+  author        String?     // ← adiciona essa linha
   volume        Int
   totalVolumes  Int?        
   ownedVolumes  Int[]       @default([])
@@ -34,9 +35,19 @@ model Manga {
   genre         String?
   coverUrl      String?
   userId        String
+  volumeRatings VolumeRating[]
   user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
   @@unique([userId, name, volume])
+}
+model VolumeRating {
+  id        String   @id @default(cuid())
+  mangaId   String
+  volume    Int
+  note      Float
+  manga     Manga    @relation(fields: [mangaId], references: [id], onDelete: Cascade)
+  
+  @@unique([mangaId, volume])
 }

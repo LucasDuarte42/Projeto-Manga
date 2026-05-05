@@ -34,19 +34,20 @@ export async function PUT(
 
   const body = await req.json()
 
-  const updated = await prisma.manga.update({
-    where: { id: params.id },
-    data: {
-      name:         body.name,
-      volume:       parseInt(body.volume),
-      totalVolumes: body.totalVolumes ?? null,
-      ownedVolumes: body.ownedVolumes ?? [],
-      status:       body.status,
-      note:         body.note ?? null,
-      genre:        body.genre ?? null,
-      coverUrl:     body.coverUrl ?? null,
-    },
-  })
+const updated = await prisma.manga.update({
+  where: { id: params.id },
+  data: {
+    name:         body.name,
+    author:       body.author ?? null,
+    volume:       parseInt(body.volume),
+    totalVolumes: body.totalVolumes ?? null,
+    ownedVolumes: body.ownedVolumes ?? [],
+    status:       body.status,
+    note:         body.note ?? null,
+    genre:        body.genre ?? null,
+    coverUrl:     body.coverUrl ?? null,
+  },
+})
 
   return NextResponse.json(updated)
 }
