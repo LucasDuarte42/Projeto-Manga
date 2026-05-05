@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { name, coverUrl, volume, totalVolumes, status, note, genre } = body
+  const { name, author, coverUrl, volume, totalVolumes, status, note, genre } = body
 
   if (!name) {
     return NextResponse.json({ error: 'Nome obrigatório' }, { status: 400 })
@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
   const manga = await prisma.manga.create({
     data: {
       name,
+      author:       author ?? null,
       coverUrl:     coverUrl ?? null,
       volume:       volume ?? 1,
       totalVolumes: totalVolumes ?? null,
@@ -49,7 +50,6 @@ export async function POST(req: NextRequest) {
       note:         note ?? null,
       genre:        genre ?? null,
       userId:       session.user.id,
-      authors:      body.author ?? null,
     },
   })
 
