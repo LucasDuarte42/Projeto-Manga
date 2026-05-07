@@ -186,7 +186,7 @@ async function handleAddManual(form: any) {
         <div className="mb-6">
           <input
             type="text"
-            placeholder="Pesquisar mangá..."
+            placeholder="Pesquisar "
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-purple-600 transition"
