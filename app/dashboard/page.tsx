@@ -36,7 +36,7 @@ export default async function DashboardPage() {
     ? (notas.reduce((a, b) => a + b, 0) / notas.length).toFixed(1)
     : '—'
 
-  const totalVolumesUsuario = mangas.reduce((acc, m) => acc + m.volume, 0)
+  const totalVolumesUsuario = mangas.reduce((acc, m) => acc + (m.ownedVolumes?.length || 0), 0)
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
