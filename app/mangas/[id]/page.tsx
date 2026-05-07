@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface Manga {
   id:           string
@@ -188,8 +189,18 @@ export default function MangaDetailPage() {
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       <nav className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
-        <Link href="/mangas" className="text-gray-400 hover:text-white transition">
-          ← Voltar para coleção
+        <Link href="/mangas" className="group relative inline-flex items-center justify-center p-3 rounded-full overflow-hidden">
+          <span className="absolute inset-0 bg-purple-600 scale-0 group-hover:scale-75 transition-transform duration-300 rounded-full"></span>
+
+          <span className="relative z-10">
+            <Image
+              src="/icons/voltar.svg"
+              alt="Voltar"
+              width={24}
+              height={24}
+              className="invert group-hover:scale-110 transition-transform duration-200"
+            />
+          </span>
         </Link>
         <button
           onClick={handleDelete}
