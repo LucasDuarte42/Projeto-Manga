@@ -34,20 +34,23 @@ export async function PUT(
 
   const body = await req.json()
 
-const updated = await prisma.manga.update({
-  where: { id: params.id },
-  data: {
-    name:         body.name,
-    author:       body.author ?? null,
-    volume:       parseInt(body.volume),
-    totalVolumes: body.totalVolumes ?? null,
-    ownedVolumes: body.ownedVolumes ?? [],
-    status:       body.status,
-    note:         body.note ?? null,
-    genre:        body.genre ?? null,
-    coverUrl:     body.coverUrl ?? null,
-  },
-})
+  // Lógica: Se uma nota for fornecida e não for nula, assume-se que a obra foi concluída (READ)
+  const newStatus = (body.note !== undefined && body.note !== null) ? 'READ' : body.status
+
+  const updated = await prisma.manga.update({
+    where: { id: params.id },
+    data: {
+      name:         body.name,
+      author:       body.author ?? null,
+      volume:       parseInt(body.volume),
+      totalVolumes: body.totalVolumes ?? null,
+      ownedVolumes: body.ownedVolumes ?? [],
+      status:       newStatus,
+      note:         body.note ?? null,
+      genre:        body.genre ?? null,
+      coverUrl:     body.coverUrl ?? null,
+    },
+  })
 
   return NextResponse.json(updated)
 }
