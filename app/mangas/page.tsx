@@ -19,6 +19,7 @@ interface Manga {
   author?:        string | null
   volume:         number
   totalVolumes?:  number | null
+  ownedVolumes:   number[]
   status:         'READ' | 'READING' | 'WANT_TO_READ'
   note?:          number | null
   coverUrl?:      string | null
