@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import AddMangaModal from '@/components/AddMangaModal'
+import Image from 'next/image'
 
 // Campos alinhados com o schema Prisma
 interface Manga {
@@ -142,7 +143,24 @@ async function handleAddManual(form: any) {
       {/* Navbar */}
       <nav className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/" className="text-gray-400 hover:text-white transition">← Voltar</Link>
+
+
+        <Link
+          href="/"
+          className="group relative inline-flex items-center justify-center p-3 rounded-full overflow-hidden"
+        >
+          <span className="absolute inset-0 bg-purple-600 scale-0 group-hover:scale-75 transition-transform duration-300 rounded-full"></span>
+
+          <span className="relative z-10">
+            <Image
+              src="/icons/voltar.svg"
+              alt="Voltar"
+              width={24}
+              height={24}
+              className="invert group-hover:scale-110 transition-transform duration-200"
+            />
+          </span>
+        </Link>
           <h1 className="text-xl font-bold text-purple-400">Minha Coleção</h1>
         </div>
         <div className="flex items-center gap-4">
