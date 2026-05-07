@@ -60,13 +60,20 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
     if (!query.trim()) return
     setLoading(true)
     setError(null)
+    
+    // Define qual API usar com base no tipo
+    const isManga = type === 'MANGA' || type === 'MANHWA' || type === 'MANHUA'
+    const endpoint = isManga ? '/api/manga/search' : '/api/comic/search'
+    
     try {
-      const res  = await fetch(`/api/manga/search?q=${encodeURIComponent(query)}`)
+      const res  = await fetch(`${endpoint}?q=${encodeURIComponent(query)}`)
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      setResults(data.mangas)
-    } catch {
-      setError('Erro ao buscar. Tente novamente.')
+      
+      // Padroniza os resultados (mangas ou comics)
+      setResults(isManga ? data.mangas : data.comics)
+    } catch (err: any) {
+      setError(err.message || 'Erro ao buscar. Tente novamente.')
     } finally {
       setLoading(false)
     }
