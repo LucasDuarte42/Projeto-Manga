@@ -13,6 +13,7 @@ type CollectionType = 'MANGA' | 'HQ'
 interface Manga {
   id:             string
   name:           string
+  author?:        string | null
   volume:         number
   totalVolumes?:  number | null
   status:         'READ' | 'READING' | 'WANT_TO_READ'
@@ -269,12 +270,12 @@ async function handleAddManual(form: any) {
 
                   {/* Conteúdo */}
                   <div className="p-4">
-                    <h3 className="font-bold text-lg mb-2 group-hover:text-purple-400 transition line-clamp-2">
+                    <h3 className="font-bold text-lg mb-1 group-hover:text-purple-400 transition line-clamp-2">
                       {manga.name}
                     </h3>
 
-                    {manga.genre && (
-                      <p className="text-purple-400 text-xs mb-2">{manga.genre}</p>
+                    {manga.author && (
+                      <p className="text-gray-400 text-xs mb-2">{manga.author}</p>
                     )}
 
                     <div className="mb-3">
