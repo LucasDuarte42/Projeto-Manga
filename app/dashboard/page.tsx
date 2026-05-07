@@ -13,7 +13,7 @@ export default async function DashboardPage() {
   })
 
   const total = mangas.length
-  const lidos = mangas.filter(m => m.status === 'READ').length
+  const lidos = mangas.filter(m => m.status === 'READ').reduce((acc, m) => acc + m.volume, 0)
   const lendo = mangas.filter(m => m.status === 'READING').length
   const querLer = mangas.filter(m => m.status === 'WANT_TO_READ').length
   const completos = mangas.filter(m => m.totalVolumes && m.volume >= m.totalVolumes).length
