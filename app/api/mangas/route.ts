@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { name, author, coverUrl, volume, totalVolumes, status, note, genre } = body
+  const { name, author, coverUrl, volume, totalVolumes, status, note, genre, collectionType } = body
 
   if (!name) {
     return NextResponse.json({ error: 'Nome obrigatório' }, { status: 400 })
@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
       status:       status ?? 'WANT_TO_READ',
       note:         note ?? null,
       genre:        genre ?? null,
+      collectionType: collectionType ?? 'MANGA',
       userId:       session.user.id,
     },
   })

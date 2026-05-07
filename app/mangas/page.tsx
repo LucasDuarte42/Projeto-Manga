@@ -4,20 +4,23 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import AddMangaModal from '@/components/AddMangaModal'
+import AddItemModal from '@/components/AddItemModal'
 import Image from 'next/image'
 
 // Campos alinhados com o schema Prisma
+type CollectionType = 'MANGA' | 'COMIC' | 'HQ' | 'MANHWA' | 'MANHUA'
+
 interface Manga {
-  id:           string
-  name:         string
-  volume:       number
-  totalVolumes?: number | null
-  status:       'READ' | 'READING' | 'WANT_TO_READ'
-  note?:        number | null
-  coverUrl?:    string | null
-  genre?:       string | null
-  createdAt:    string
+  id:             string
+  name:           string
+  volume:         number
+  totalVolumes?:  number | null
+  status:         'READ' | 'READING' | 'WANT_TO_READ'
+  note?:          number | null
+  coverUrl?:      string | null
+  genre?:         string | null
+  collectionType: CollectionType
+  createdAt:      string
 }
 
 interface MangaResult {
@@ -72,22 +75,21 @@ export default function MangasPage() {
     }
   }
 
-  async function handleAdd(manga: MangaResult) {
+  async function handleAdd(manga: MangaResult, collectionType: CollectionType) {
   const res = await fetch('/api/mangas', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      name:         manga.title,
-      author:       manga.author,  // ← adiciona
-      coverUrl:     manga.image,
-      totalVolumes: manga.volumes,
-      volume:       1,
-      status:       'WANT_TO_READ',
-      genre:        manga.genre,
+      name:           manga.title,
+      author:         manga.author,
+      coverUrl:       manga.image,
+      totalVolumes:   manga.volumes,
+      volume:         1,
+      status:         'WANT_TO_READ',
+      genre:          manga.genre,
+      collectionType: collectionType,
     }),
   })
-  
-  
 
   if (res.status === 409) return
   if (!res.ok) throw new Error('Erro ao adicionar')
@@ -99,13 +101,14 @@ async function handleAddManual(form: any) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      name:         form.title,
-      author:       form.author || null,
-      coverUrl:     form.image || null,
-      totalVolumes: form.volumes ? parseInt(form.volumes) : null,
-      volume:       1,
-      status:       'WANT_TO_READ',
-      genre:        form.genre || null,
+      name:           form.title,
+      author:         form.author || null,
+      coverUrl:       form.image || null,
+      totalVolumes:   form.volumes ? parseInt(form.volumes) : null,
+      volume:         1,
+      status:         'WANT_TO_READ',
+      genre:          form.genre || null,
+      collectionType: form.type,
     }),
   })
 
@@ -306,7 +309,7 @@ async function handleAddManual(form: any) {
 
       {/* Modal */}
 {showModal && (
-  <AddMangaModal
+  <AddItemModal
     onClose={() => setShowModal(false)}
     onAdd={handleAdd}
     onAddManual={handleAddManual}
