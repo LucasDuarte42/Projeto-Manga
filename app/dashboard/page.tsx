@@ -13,17 +13,26 @@ export default async function DashboardPage() {
   })
 
   const total = mangas.length
-  const lidos = mangas.filter(m => m.status === 'READ').reduce((acc, m) => acc + m.volume, 0)
+  // Volumes lidos: Soma de volumes de quem está LIDO ou LENDO
+  const volumesLidosTotal = mangas
+    .filter(m => m.status === 'READ' || m.status === 'READING')
+    .reduce((acc, m) => acc + m.volume, 0)
+  
   const lendo = mangas.filter(m => m.status === 'READING').length
   const querLer = mangas.filter(m => m.status === 'WANT_TO_READ').length
-  const completos = mangas.filter(m => m.totalVolumes && m.volume >= m.totalVolumes).length
+  
+  // Coleção Lida: Obras onde o volume atual é igual ou maior que o total de volumes
+  const colecaoLida = mangas.filter(m => m.totalVolumes && m.volume >= m.totalVolumes).length
+  
   const notas = mangas.filter(m => m.note !== null).map(m => m.note as number)
   const media = notas.length > 0
     ? (notas.reduce((a, b) => a + b, 0) / notas.length).toFixed(1)
     : '—'
 
   const totalVolumesUsuario = mangas.reduce((acc, m) => acc + m.volume, 0)
-  const totalVolumesFaltando = mangas.reduce((acc, m) => {
+  
+  // Coleção em Andamento: Soma dos volumes que faltam para completar as obras
+  const colecaoEmAndamento = mangas.reduce((acc, m) => {
     if (m.totalVolumes && m.volume < m.totalVolumes) {
       return acc + (m.totalVolumes - m.volume)
     }
@@ -48,12 +57,12 @@ export default async function DashboardPage() {
         {/* Stats principais */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-            <p className="text-gray-400 text-sm mb-1">Total</p>
+            <p className="text-gray-400 text-sm mb-1">Total de Obras</p>
             <p className="text-3xl font-bold">{total}</p>
           </div>
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-            <p className="text-gray-400 text-sm mb-1">Lidos</p>
-            <p className="text-3xl font-bold text-green-400">{lidos}</p>
+            <p className="text-gray-400 text-sm mb-1">Volumes Lidos</p>
+            <p className="text-3xl font-bold text-green-400">{volumesLidosTotal}</p>
           </div>
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
             <p className="text-gray-400 text-sm mb-1">Lendo</p>
@@ -72,12 +81,12 @@ export default async function DashboardPage() {
             <p className="text-3xl font-bold text-purple-400">{totalVolumesUsuario}</p>
           </div>
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-            <p className="text-gray-400 text-sm mb-1">Volumes faltando</p>
-            <p className="text-3xl font-bold text-red-400">{totalVolumesFaltando}</p>
+            <p className="text-gray-400 text-sm mb-1">Coleção em Andamento</p>
+            <p className="text-3xl font-bold text-red-400">{colecaoEmAndamento}</p>
           </div>
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-            <p className="text-gray-400 text-sm mb-1">Colecoes completas</p>
-            <p className="text-3xl font-bold text-green-400">{completos}</p>
+            <p className="text-gray-400 text-sm mb-1">Coleção Lida</p>
+            <p className="text-3xl font-bold text-green-400">{colecaoLida}</p>
           </div>
         </div>
 
