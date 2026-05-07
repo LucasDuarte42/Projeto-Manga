@@ -33,6 +33,7 @@ interface MangaResult {
 
 export default function MangasPage() {
   const { data: session, status } = useSession()
+  const [search, setSearch] = useState('')
   const router = useRouter()
   const [mangas,       setMangas]       = useState<Manga[]>([])
   const [loading,      setLoading]      = useState(true)
@@ -114,9 +115,16 @@ async function handleAddManual(form: any) {
   fetchMangas()
 }
 
-  const filteredMangas = filterStatus === 'ALL'
-    ? mangas
-    : mangas.filter(m => m.status === filterStatus)
+      const filteredMangas = mangas.filter((manga) => {
+        const matchesStatus =
+          filterStatus === 'ALL' || manga.status === filterStatus
+
+        const matchesSearch =
+          manga.name.toLowerCase().includes(search.toLowerCase()) ||
+          manga.genre?.toLowerCase().includes(search.toLowerCase())
+
+        return matchesStatus && matchesSearch
+      })
 
   const getStatusBadge = (status: string) => {
     const map: Record<string, { label: string; color: string }> = {
@@ -175,6 +183,15 @@ async function handleAddManual(form: any) {
       </nav>
 
       <main className="max-w-7xl mx-auto px-6 py-10">
+        <div className="mb-6">
+          <input
+            type="text"
+            placeholder="Pesquisar mangá..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-purple-600 transition"
+          />
+        </div>
         {/* Filtros */}
         <div className="mb-8 flex gap-2 flex-wrap">
           {[
@@ -235,7 +252,7 @@ async function handleAddManual(form: any) {
                   className="group bg-gray-900 border border-gray-800 rounded-xl overflow-hidden hover:border-purple-600 transition"
                 >
                   {/* Capa */}
-                  <div className="w-full h-70 bg-gradient-to-br from-purple-900 to-gray-900 flex items-center justify-center group-hover:from-purple-800 transition overflow-hidden">
+                  <div className="w-full h-72 bg-gradient-to-br from-purple-900 to-gray-900 flex items-center justify-center group-hover:from-purple-800 transition overflow-hidden">
                     {manga.coverUrl ? (
                       <img
                         src={manga.coverUrl}
