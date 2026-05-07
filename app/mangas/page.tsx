@@ -84,6 +84,28 @@ export default function MangasPage() {
       genre:        manga.genre,
     }),
   })
+  
+  
+
+  if (res.status === 409) return
+  if (!res.ok) throw new Error('Erro ao adicionar')
+
+  fetchMangas()
+}
+async function handleAddManual(form: any) {
+  const res = await fetch('/api/mangas', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name:         form.title,
+      author:       form.author || null,
+      coverUrl:     form.image || null,
+      totalVolumes: form.volumes ? parseInt(form.volumes) : null,
+      volume:       1,
+      status:       'WANT_TO_READ',
+      genre:        form.genre || null,
+    }),
+  })
 
   if (res.status === 409) return
   if (!res.ok) throw new Error('Erro ao adicionar')
@@ -248,12 +270,13 @@ export default function MangasPage() {
       </main>
 
       {/* Modal */}
-      {showModal && (
-        <AddMangaModal
-          onClose={() => setShowModal(false)}
-          onAdd={handleAdd}
-        />
-      )}
+{showModal && (
+  <AddMangaModal
+    onClose={() => setShowModal(false)}
+    onAdd={handleAdd}
+    onAddManual={handleAddManual}
+  />
+)}
     </div>
   )
 }
