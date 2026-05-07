@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import AddItemModal from '@/components/AddItemModal'
 import Image from 'next/image'
+import { Plus } from 'lucide-react'
 
 // Campos alinhados com o schema Prisma
 type CollectionType = 'MANGA' | 'HQ'
@@ -38,6 +39,7 @@ export default function MangasPage() {
   const { data: session, status } = useSession()
   const [search, setSearch] = useState('')
   const router = useRouter()
+  const [sortOrder, setSortOrder] = useState<'RECENT' | 'AZ' | 'ZA'>('RECENT')
   const [mangas,       setMangas]       = useState<Manga[]>([])
   const [loading,      setLoading]      = useState(true)
   const [error,        setError]        = useState<string | null>(null)
@@ -118,16 +120,31 @@ async function handleAddManual(form: any) {
   fetchMangas()
 }
 
-      const filteredMangas = mangas.filter((manga) => {
-        const matchesStatus =
-          filterStatus === 'ALL' || manga.status === filterStatus
+      const filteredMangas = mangas
+  .filter((manga) => {
+    const matchesStatus =
+      filterStatus === 'ALL' || manga.status === filterStatus
 
-        const matchesSearch =
-          manga.name.toLowerCase().includes(search.toLowerCase()) ||
-          manga.genre?.toLowerCase().includes(search.toLowerCase())
+    const matchesSearch =
+      manga.name.toLowerCase().includes(search.toLowerCase()) ||
+      manga.genre?.toLowerCase().includes(search.toLowerCase())
 
-        return matchesStatus && matchesSearch
-      })
+    return matchesStatus && matchesSearch
+  })
+  .sort((a, b) => {
+    if (sortOrder === 'AZ') {
+      return a.name.localeCompare(b.name)
+    }
+
+    if (sortOrder === 'ZA') {
+      return b.name.localeCompare(a.name)
+    }
+
+    return (
+      new Date(b.createdAt).getTime() -
+      new Date(a.createdAt).getTime()
+    )
+  })
 
   const getStatusBadge = (status: string) => {
     const map: Record<string, { label: string; color: string }> = {
@@ -177,11 +194,12 @@ async function handleAddManual(form: any) {
         <div className="flex items-center gap-4">
           <span className="text-gray-400 text-sm">{session?.user?.name || session?.user?.email}</span>
           <button
-            onClick={() => setShowModal(true)}
-            className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-medium transition"
-          >
-            + Adicionar Manga
-          </button>
+          onClick={() => setShowModal(true)}
+          className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2"
+        >
+          <Plus size={18} />
+          Adicionar
+        </button>
         </div>
       </nav>
 
@@ -196,26 +214,42 @@ async function handleAddManual(form: any) {
           />
         </div>
         {/* Filtros */}
-        <div className="mb-8 flex gap-2 flex-wrap">
-          {[
-            { key: 'ALL',          label: 'Todos',     count: mangas.length,                                          color: 'bg-purple-600' },
-            { key: 'READ',         label: 'Lidos',     count: mangas.filter(m => m.status === 'READ').length,         color: 'bg-green-600'  },
-            { key: 'READING',      label: 'Lendo',     count: mangas.filter(m => m.status === 'READING').length,      color: 'bg-yellow-600' },
-            { key: 'WANT_TO_READ', label: 'Quero Ler', count: mangas.filter(m => m.status === 'WANT_TO_READ').length, color: 'bg-blue-600'   },
-          ].map(({ key, label, count, color }) => (
-            <button
-              key={key}
-              onClick={() => setFilterStatus(key as any)}
-              className={`px-4 py-2 rounded-lg font-medium transition ${
-                filterStatus === key
-                  ? `${color} text-white`
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-              }`}
-            >
-              {label} ({count})
-            </button>
-          ))}
-        </div>
+<div className="mb-8 flex items-center justify-between flex-wrap gap-4">
+
+  <div className="flex gap-2 flex-wrap">
+    {[
+      { key: 'ALL', label: 'Todos', count: mangas.length, color: 'bg-purple-600' },
+      { key: 'READ', label: 'Lidos', count: mangas.filter(m => m.status === 'READ').length, color: 'bg-green-600' },
+      { key: 'READING', label: 'Lendo', count: mangas.filter(m => m.status === 'READING').length, color: 'bg-yellow-600' },
+      { key: 'WANT_TO_READ', label: 'Quero Ler', count: mangas.filter(m => m.status === 'WANT_TO_READ').length, color: 'bg-blue-600' },
+    ].map(({ key, label, count, color }) => (
+      <button
+        key={key}
+        onClick={() => setFilterStatus(key as any)}
+        className={`px-4 py-2 rounded-lg font-medium transition ${
+          filterStatus === key
+            ? `${color} text-white`
+            : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+        }`}
+      >
+        {label} ({count})
+      </button>
+    ))}
+  </div>
+
+  <select
+    value={sortOrder}
+    onChange={(e) =>
+      setSortOrder(e.target.value as 'RECENT' | 'AZ' | 'ZA')
+    }
+    className="bg-gray-900 border border-gray-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-600 transition"
+  >
+    <option value="RECENT">Recentes</option>
+    <option value="AZ">A-Z</option>
+    <option value="ZA">Z-A</option>
+  </select>
+
+</div>
 
         {/* Erro */}
         {error && (
@@ -241,7 +275,7 @@ async function handleAddManual(form: any) {
               onClick={() => setShowModal(true)}
               className="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-lg font-medium transition"
             >
-              Adicionar Primeiro Manga
+              Adicionar 
             </button>
           </div>
         ) : (
