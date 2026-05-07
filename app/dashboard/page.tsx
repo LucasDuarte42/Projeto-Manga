@@ -10,19 +10,26 @@ export default async function DashboardPage() {
 
   const mangas = await prisma.manga.findMany({
     where: { userId: session.user.id },
+    include: {
+      _count: {
+        select: { volumeRatings: true }
+      }
+    }
   })
 
   const total = mangas.length
-  // Volumes lidos: Soma de volumes de quem está LIDO ou LENDO
-  const volumesLidosTotal = mangas
-    .filter(m => m.status === 'READ' || m.status === 'READING')
-    .reduce((acc, m) => acc + m.volume, 0)
+  
+  // Volumes Lidos: Total de avaliações individuais de volumes (VolumeRating)
+  const volumesLidosTotal = mangas.reduce((acc, m) => acc + m._count.volumeRatings, 0)
   
   const lendo = mangas.filter(m => m.status === 'READING').length
   const querLer = mangas.filter(m => m.status === 'WANT_TO_READ').length
   
-  // Coleção Lida: Obras onde o volume atual é igual ou maior que o total de volumes
+  // Coleção Lida: Quantidade de obras completas (Volume Atual >= Total de Volumes)
   const colecaoLida = mangas.filter(m => m.totalVolumes && m.volume >= m.totalVolumes).length
+  
+  // Coleção em Andamento: Quantidade de obras NÃO completas
+  const colecaoEmAndamento = mangas.filter(m => !m.totalVolumes || m.volume < m.totalVolumes).length
   
   const notas = mangas.filter(m => m.note !== null).map(m => m.note as number)
   const media = notas.length > 0
@@ -30,14 +37,6 @@ export default async function DashboardPage() {
     : '—'
 
   const totalVolumesUsuario = mangas.reduce((acc, m) => acc + m.volume, 0)
-  
-  // Coleção em Andamento: Soma dos volumes que faltam para completar as obras
-  const colecaoEmAndamento = mangas.reduce((acc, m) => {
-    if (m.totalVolumes && m.volume < m.totalVolumes) {
-      return acc + (m.totalVolumes - m.volume)
-    }
-    return acc
-  }, 0)
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
