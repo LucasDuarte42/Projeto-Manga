@@ -235,7 +235,7 @@ async function handleAddManual(form: any) {
                   className="group bg-gray-900 border border-gray-800 rounded-xl overflow-hidden hover:border-purple-600 transition"
                 >
                   {/* Capa */}
-                  <div className="w-full h-48 bg-gradient-to-br from-purple-900 to-gray-900 flex items-center justify-center group-hover:from-purple-800 transition overflow-hidden">
+                  <div className="w-full h-70 bg-gradient-to-br from-purple-900 to-gray-900 flex items-center justify-center group-hover:from-purple-800 transition overflow-hidden">
                     {manga.coverUrl ? (
                       <img
                         src={manga.coverUrl}
