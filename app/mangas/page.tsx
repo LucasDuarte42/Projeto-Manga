@@ -309,7 +309,7 @@ async function handleAddManual(form: any) {
                     </h3>
 
                     {manga.author && (
-                      <p className="text-gray-400 text-xs mb-2">{manga.author}</p>
+                      <p className="text-green-400 text-xs mb-2">{manga.author}</p>
                     )}
 
                     <div className="mb-3">
