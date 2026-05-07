@@ -106,7 +106,7 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl flex flex-col gap-4 p-6 max-h-[90vh]">
+      <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl flex flex-col gap-4 p-4 sm:p-6 max-h-[95vh] overflow-hidden">
 
         {/* Header */}
         <div className="flex justify-between items-center">
@@ -115,7 +115,7 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
         </div>
 
         {/* Type Selector */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 overflow-x-auto pb-2 scrollbar-hide">
           {COLLECTION_TYPES.map(t => (
             <button
               key={t.value}
