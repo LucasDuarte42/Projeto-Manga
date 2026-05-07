@@ -3,20 +3,16 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const query = searchParams.get('q')
-  const apiKey = process.env.COMIC_VINE_API_KEY
 
   if (!query) {
     return NextResponse.json({ error: 'Query obrigatória' }, { status: 400 })
   }
 
-  if (!apiKey) {
-    return NextResponse.json({ error: 'Chave da API Comic Vine não configurada no .env' }, { status: 500 })
-  }
-
   try {
-    // Comic Vine API URL para busca de volumes (séries)
-    // resources=volume foca em séries/volumes em vez de edições individuais
-    const url = `https://comicvine.gamespot.com/api/search/?api_key=${apiKey}&format=json&query=${encodeURIComponent(query)}&resources=volume&limit=10`
+    // Busca na Open Library (não precisa de chave)
+    // q=query: busca geral
+    // limit=10: limita resultados
+    const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=10`
 
     const res = await fetch(url, {
       headers: {
@@ -27,31 +23,31 @@ export async function GET(req: NextRequest) {
 
     if (!res.ok) {
       return NextResponse.json(
-        { error: `Comic Vine retornou ${res.status}` },
+        { error: `Open Library retornou ${res.status}` },
         { status: 500 }
       )
     }
 
     const data = await res.json()
 
-    if (!data.results) {
+    if (!data.docs) {
       return NextResponse.json({ comics: [] })
     }
 
-    const comics = data.results.map((c: any) => ({
-      mal_id:  c.id, // Usando o id da Comic Vine como mal_id para manter compatibilidade na UI
-      title:   c.name,
-      image:   c.image?.medium_url ?? c.image?.original_url ?? null,
-      volumes: c.count_of_issues ?? null,
-      status:  'Publishing', // Comic Vine não tem um status direto como o Jikan
+    const comics = data.docs.map((doc: any, index: number) => ({
+      mal_id:  doc.cover_i || index, // Usa cover_i como ID único ou o index
+      title:   doc.title,
+      image:   doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : null,
+      volumes: doc.edition_count ?? null,
+      status:  'Published',
       score:   null,
-      genre:   c.publisher?.name ?? null, // Usando a editora como "gênero" para contexto
-      author:  null, // Comic Vine busca volumes, autores costumam estar nas edições
+      genre:   doc.subject ? doc.subject[0] : null,
+      author:  doc.author_name ? doc.author_name[0] : null,
     }))
 
     return NextResponse.json({ comics })
   } catch (err) {
     console.error('Fetch error:', err)
-    return NextResponse.json({ error: 'Erro ao conectar com a API Comic Vine' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao conectar com a Open Library' }, { status: 500 })
   }
 }
