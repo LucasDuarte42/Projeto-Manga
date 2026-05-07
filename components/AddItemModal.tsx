@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-type CollectionType = 'MANGA' | 'COMIC' | 'HQ' | 'MANHWA' | 'MANHUA'
+type CollectionType = 'MANGA' | 'HQ'
 
 interface ItemResult {
   mal_id:  number
@@ -32,10 +32,7 @@ interface Props {
 
 const COLLECTION_TYPES: { value: CollectionType; label: string; emoji: string }[] = [
   { value: 'MANGA', label: 'Mangá', emoji: '📚' },
-  { value: 'COMIC', label: 'Comic', emoji: '🇺🇸' },
   { value: 'HQ', label: 'HQ', emoji: '💥' },
-  { value: 'MANHWA', label: 'Manhwa', emoji: '🇰🇷' },
-  { value: 'MANHUA', label: 'Manhua', emoji: '🇨🇳' },
 ]
 
 export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
@@ -62,7 +59,7 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
     setError(null)
     
     // Define qual API usar com base no tipo
-    const isManga = type === 'MANGA' || type === 'MANHWA' || type === 'MANHUA'
+    const isManga = type === 'MANGA'
     const endpoint = isManga ? '/api/manga/search' : '/api/comic/search'
     
     try {

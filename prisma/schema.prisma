@@ -19,10 +19,7 @@ model User {
 
 enum CollectionType {
   MANGA
-  COMIC
   HQ
-  MANHWA
-  MANHUA
 }
 
 enum MangaStatus {

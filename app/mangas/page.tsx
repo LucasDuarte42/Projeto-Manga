@@ -8,7 +8,7 @@ import AddItemModal from '@/components/AddItemModal'
 import Image from 'next/image'
 
 // Campos alinhados com o schema Prisma
-type CollectionType = 'MANGA' | 'COMIC' | 'HQ' | 'MANHWA' | 'MANHUA'
+type CollectionType = 'MANGA' | 'HQ'
 
 interface Manga {
   id:             string
