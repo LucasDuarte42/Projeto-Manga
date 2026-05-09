@@ -306,7 +306,7 @@ export default function MangasPage() {
             {filteredMangas.map((manga) => {
               const badge = getStatusBadge(manga.status)
               return (
-                <div
+                 <div
                   key={manga.id}
                   className="group bg-gray-900 border border-gray-800 rounded-xl overflow-hidden hover:border-purple-600 transition relative"
                 >
@@ -335,6 +335,7 @@ export default function MangasPage() {
                         <p className="text-gray-400 text-sm">Sem capa</p>
                       )}
                     </div>
+                   
 
                     {/* Conteúdo */}
                     <div className="p-4">
