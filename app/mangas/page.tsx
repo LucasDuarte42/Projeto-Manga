@@ -310,7 +310,6 @@ export default function MangasPage() {
                   key={manga.id}
                   className="group bg-gray-900 border border-gray-800 rounded-xl overflow-hidden hover:border-purple-600 transition relative"
                 >
-<<<<<<< HEAD
                   {/* Capa */}
                   <div className="w-full h-75 bg-gradient-to-br from-purple-900 to-gray-900 flex items-center justify-center group-hover:from-purple-800 transition overflow-hidden">
                     {manga.coverUrl ? (
@@ -323,19 +322,6 @@ export default function MangasPage() {
                       <p className="text-gray-400 text-sm">Sem capa</p>
                     )}
                   </div>
-=======
-                  {/* Botão Edição Rápida */}
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault()
-                      setEditingManga(manga)
-                    }}
-                    className="absolute top-3 right-3 z-10 p-2 bg-black/60 hover:bg-purple-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition duration-200"
-                    title="Edição Rápida"
-                  >
-                    <Edit2 size={16} />
-                  </button>
->>>>>>> feat/suporte-comics
 
                   <Link href={`/mangas/${manga.id}`}>
                     {/* Capa */}
