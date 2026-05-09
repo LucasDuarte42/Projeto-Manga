@@ -324,18 +324,7 @@ export default function MangasPage() {
                   </div>
 
                   <Link href={`/mangas/${manga.id}`}>
-                    {/* Capa */}
-                    <div className="w-full h-72 bg-gradient-to-br from-purple-900 to-gray-900 flex items-center justify-center group-hover:from-purple-800 transition overflow-hidden">
-                      {manga.coverUrl ? (
-                        <img
-                          src={manga.coverUrl}
-                          alt={manga.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <p className="text-gray-400 text-sm">Sem capa</p>
-                      )}
-                    </div>
+                   
 
                     {/* Conteúdo */}
                     <div className="p-4">
