@@ -6,7 +6,9 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import AddItemModal from '@/components/AddItemModal'
 import Image from 'next/image'
-import { Plus } from 'lucide-react'
+import { Plus, Edit2 } from 'lucide-react'
+import MangaSkeleton from '@/components/MangaSkeleton'
+import QuickEditModal from '@/components/QuickEditModal'
 
 // Campos alinhados com o schema Prisma
 type CollectionType = 'MANGA' | 'HQ'
@@ -17,6 +19,7 @@ interface Manga {
   author?:        string | null
   volume:         number
   totalVolumes?:  number | null
+  ownedVolumes:   number[]
   status:         'READ' | 'READING' | 'WANT_TO_READ'
   note?:          number | null
   coverUrl?:      string | null
@@ -46,6 +49,7 @@ export default function MangasPage() {
   const [error,        setError]        = useState<string | null>(null)
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'READ' | 'READING' | 'WANT_TO_READ'>('ALL')
   const [showModal,    setShowModal]    = useState(false)
+  const [editingManga, setEditingManga] = useState<Manga | null>(null)
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login')
@@ -99,27 +103,42 @@ export default function MangasPage() {
 
   fetchMangas()
 }
-async function handleAddManual(form: any) {
-  const res = await fetch('/api/mangas', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      name:           form.title,
-      author:         form.author || null,
-      coverUrl:       form.image || null,
-      totalVolumes:   form.volumes ? parseInt(form.volumes) : null,
-      volume:         1,
-      status:         'WANT_TO_READ',
-      genre:          form.genre || null,
-      collectionType: form.type,
-    }),
-  })
+  async function handleAddManual(form: any) {
+    const res = await fetch('/api/mangas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name:           form.title,
+        author:         form.author || null,
+        coverUrl:       form.image || null,
+        totalVolumes:   form.volumes ? parseInt(form.volumes) : null,
+        volume:         1,
+        status:         'WANT_TO_READ',
+        genre:          form.genre || null,
+        collectionType: form.type,
+      }),
+    })
 
-  if (res.status === 409) return
-  if (!res.ok) throw new Error('Erro ao adicionar')
+    if (res.status === 409) return
+    if (!res.ok) throw new Error('Erro ao adicionar')
 
-  fetchMangas()
-}
+    fetchMangas()
+  }
+
+  async function handleQuickUpdate(updatedData: Partial<Manga>) {
+    if (!editingManga) return
+    const res = await fetch(`/api/mangas/${editingManga.id}`, {
+      method:  'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...editingManga,
+        ...updatedData
+      }),
+    })
+
+    if (!res.ok) throw new Error('Erro ao atualizar')
+    fetchMangas()
+  }
 
       const filteredMangas = mangas
   .filter((manga) => {
@@ -156,13 +175,10 @@ async function handleAddManual(form: any) {
     return map[status] ?? { label: status, color: 'bg-gray-900 text-gray-200' }
   }
 
-  if (status === 'loading' || loading) {
+  if (status === 'loading') {
     return (
       <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mx-auto mb-4"></div>
-          <p className="text-gray-400">Carregando sua coleção...</p>
-        </div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400"></div>
       </div>
     )
   }
@@ -170,8 +186,8 @@ async function handleAddManual(form: any) {
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       {/* Navbar */}
-      <nav className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <nav className="border-b border-gray-800 px-4 sm:px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-2 sm:gap-4">
 
 
         <Link
@@ -192,19 +208,21 @@ async function handleAddManual(form: any) {
         </Link>
           <h1 className="text-xl font-bold text-purple-400">Minha Coleção</h1>
         </div>
-        <div className="flex items-center gap-4">
-          <span className="text-gray-400 text-sm">{session?.user?.name || session?.user?.email}</span>
+        <div className="flex items-center gap-2 sm:gap-4">
+          <span className="text-gray-400 text-xs sm:text-sm hidden xs:block truncate max-w-[100px] sm:max-w-none">
+            {session?.user?.name || session?.user?.email}
+          </span>
           <button
-          onClick={() => setShowModal(true)}
-          className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2"
-        >
-          <Plus size={18} />
-          Adicionar
-        </button>
+            onClick={() => setShowModal(true)}
+            className="bg-purple-600 hover:bg-purple-700 p-2 sm:px-4 sm:py-2 rounded-lg text-sm font-medium transition flex items-center gap-2"
+          >
+            <Plus size={18} />
+            <span className="hidden sm:inline">Adicionar</span>
+          </button>
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-6 py-10">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         <div className="mb-6">
           <input
             type="text"
@@ -267,7 +285,11 @@ async function handleAddManual(form: any) {
         )}
 
         {/* Lista */}
-        {filteredMangas.length === 0 ? (
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => <MangaSkeleton key={i} />)}
+          </div>
+        ) : filteredMangas.length === 0 ? (
           <div className="text-center py-16 border border-dashed border-gray-700 rounded-xl">
             <p className="text-gray-400 text-lg mb-4">
               {mangas.length === 0 ? 'Sua coleção está vazia' : 'Nenhum manga nesta categoria'}
@@ -280,15 +302,15 @@ async function handleAddManual(form: any) {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
             {filteredMangas.map((manga) => {
               const badge = getStatusBadge(manga.status)
               return (
-                <Link
+                <div
                   key={manga.id}
-                  href={`/mangas/${manga.id}`}
-                  className="group bg-gray-900 border border-gray-800 rounded-xl overflow-hidden hover:border-purple-600 transition"
+                  className="group bg-gray-900 border border-gray-800 rounded-xl overflow-hidden hover:border-purple-600 transition relative"
                 >
+<<<<<<< HEAD
                   {/* Capa */}
                   <div className="w-full h-75 bg-gradient-to-br from-purple-900 to-gray-900 flex items-center justify-center group-hover:from-purple-800 transition overflow-hidden">
                     {manga.coverUrl ? (
@@ -301,9 +323,36 @@ async function handleAddManual(form: any) {
                       <p className="text-gray-400 text-sm">Sem capa</p>
                     )}
                   </div>
+=======
+                  {/* Botão Edição Rápida */}
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault()
+                      setEditingManga(manga)
+                    }}
+                    className="absolute top-3 right-3 z-10 p-2 bg-black/60 hover:bg-purple-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition duration-200"
+                    title="Edição Rápida"
+                  >
+                    <Edit2 size={16} />
+                  </button>
+>>>>>>> feat/suporte-comics
 
-                  {/* Conteúdo */}
-                  <div className="p-4">
+                  <Link href={`/mangas/${manga.id}`}>
+                    {/* Capa */}
+                    <div className="w-full h-72 bg-gradient-to-br from-purple-900 to-gray-900 flex items-center justify-center group-hover:from-purple-800 transition overflow-hidden">
+                      {manga.coverUrl ? (
+                        <img
+                          src={manga.coverUrl}
+                          alt={manga.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <p className="text-gray-400 text-sm">Sem capa</p>
+                      )}
+                    </div>
+
+                    {/* Conteúdo */}
+                    <div className="p-4">
                     <h3 className="font-bold text-lg mb-1 group-hover:text-purple-400 transition line-clamp-2">
                       {manga.name}
                     </h3>
@@ -334,20 +383,29 @@ async function handleAddManual(form: any) {
                     <p className="text-xs text-gray-500 mt-3">
                       Adicionado em {new Date(manga.createdAt).toLocaleDateString('pt-BR')}
                     </p>
-                  </div>
-                </Link>
+                    </div>
+                  </Link>
+                </div>
               )
             })}
           </div>
         )}
       </main>
 
-      {/* Modal */}
+      {/* Modais */}
 {showModal && (
   <AddItemModal
     onClose={() => setShowModal(false)}
     onAdd={handleAdd}
     onAddManual={handleAddManual}
+  />
+)}
+
+{editingManga && (
+  <QuickEditModal
+    manga={editingManga}
+    onClose={() => setEditingManga(null)}
+    onSave={handleQuickUpdate}
   />
 )}
     </div>

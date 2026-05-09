@@ -110,6 +110,9 @@ export default function MangaDetailPage() {
     setError(null)
     setSuccess(null)
     try {
+      // Lógica: Se houver uma nota, o status passa a ser READ automaticamente
+      const finalStatus = (note !== '' && note !== null) ? 'READ' : mangaStatus;
+
       // Salva informações do mangá
       const res = await fetch(`/api/mangas/${id}`, {
         method:  'PUT',
@@ -120,7 +123,7 @@ export default function MangaDetailPage() {
           volume:       ownedVolumes.length > 0 ? Math.max(...ownedVolumes) : manga.volume,
           totalVolumes: totalVolumes !== '' ? parseInt(totalVolumes) : null,
           ownedVolumes,
-          status:       mangaStatus,
+          status:       finalStatus,
           note:         note !== '' ? parseFloat(note) : null,
           genre:        manga.genre,
           coverUrl:     manga.coverUrl,
