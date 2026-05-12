@@ -168,9 +168,14 @@ export default function QuickEditModal({ manga, onClose, onSave }: Props) {
                 Volumes na coleção: <span className="text-gray-300">{owned.join(', ') || 'Nenhum'}</span>
               </p>
               {missing.length > 0 && (
-                <p className="text-[10px] text-red-400 font-bold">
-                  Faltam para completar: <span className="text-red-300">{missing.join(', ')}</span>
-                </p>
+                <div className="bg-red-950/30 border border-red-900/50 rounded-lg p-3 mt-1">
+                  <p className="text-xs text-red-400 font-bold mb-1 uppercase tracking-wider">
+                    Faltam para completar:
+                  </p>
+                  <p className="text-lg text-red-200 font-bold leading-tight break-words">
+                    {missing.join(', ')}
+                  </p>
+                </div>
               )}
             </div>
           </div>
