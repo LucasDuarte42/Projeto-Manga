@@ -63,6 +63,19 @@ export default function QuickEditModal({ manga, onClose, onSave }: Props) {
     }
   }
 
+  function getMissingVolumes() {
+    if (!manga.totalVolumes) return []
+    const missing = []
+    for (let i = 1; i <= manga.totalVolumes; i++) {
+      if (!owned.includes(i)) {
+        missing.push(i)
+      }
+    }
+    return missing
+  }
+
+  const missing = getMissingVolumes()
+
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4">
       <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-md p-6 flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
@@ -150,9 +163,16 @@ export default function QuickEditModal({ manga, onClose, onSave }: Props) {
                 + Adicionar
               </button>
             </div>
-            <p className="text-[10px] text-gray-500 mt-2">
-              Volumes na coleção: {owned.join(', ') || 'Nenhum'}
-            </p>
+            <div className="flex flex-col gap-2 mt-2">
+              <p className="text-[10px] text-gray-500">
+                Volumes na coleção: <span className="text-gray-300">{owned.join(', ') || 'Nenhum'}</span>
+              </p>
+              {missing.length > 0 && (
+                <p className="text-[10px] text-red-400 font-bold">
+                  Faltam para completar: <span className="text-red-300">{missing.join(', ')}</span>
+                </p>
+              )}
+            </div>
           </div>
 
           <button
