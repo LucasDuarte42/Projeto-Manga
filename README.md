@@ -190,9 +190,7 @@ yarn dev
 
 O aplicativo estará disponível em `http://localhost:3000`.
 
-## 🤝 Contribuição
 
-Sinta-se à vontade para abrir issues para sugestões, bugs ou melhorias. Pull requests são sempre bem-vindos!
 
 ## 📄 Licença
 
@@ -200,4 +198,4 @@ Este projeto está licenciado sob a licença MIT. Veja o arquivo `LICENSE` para 
 
 ---
 
-Desenvolvido com 💜 por Manus AI para LucasDuarte42
+
