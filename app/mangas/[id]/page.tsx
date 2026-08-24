@@ -1,20 +1,9 @@
 'use client'
 
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
-
+import { useEffect, useMemo, useState } from 'react'
 import { useSession } from 'next-auth/react'
-import {
-  useParams,
-  useRouter,
-} from 'next/navigation'
-
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-
 import {
   ArrowLeft,
   BookOpen,
@@ -24,7 +13,6 @@ import {
   Clock3,
   Library,
   Minus,
-  MoreHorizontal,
   Pencil,
   Plus,
   Save,
@@ -32,11 +20,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-
-import {
-  Baloo_2,
-  Inter,
-} from 'next/font/google'
+import { Baloo_2, Inter } from 'next/font/google'
 
 const display = Baloo_2({
   subsets: ['latin'],
@@ -49,6 +33,8 @@ const body = Inter({
   variable: '--font-body',
 })
 
+type MangaStatus = 'READ' | 'READING' | 'WANT_TO_READ'
+
 interface Manga {
   id: string
   name: string
@@ -56,10 +42,7 @@ interface Manga {
   volume: number
   totalVolumes: number | null
   ownedVolumes: number[]
-  status:
-    | 'READ'
-    | 'READING'
-    | 'WANT_TO_READ'
+  status: MangaStatus
   note: number | null
   coverUrl: string | null
   genre: string | null
@@ -71,118 +54,102 @@ interface VolumeRating {
   note: number
 }
 
-const STATUS_CONFIG = {
+const STATUS_CONFIG: Record<
+  MangaStatus,
+  {
+    label: string
+    icon: typeof Check
+    badge: string
+    button: string
+  }
+> = {
   READ: {
     label: 'Lido',
     icon: Check,
-    className:
-      'bg-emerald-500/15 text-emerald-300 border-emerald-500/20',
+    badge:
+      'border-emerald-500/20 bg-emerald-500/10 text-emerald-300',
+    button:
+      'border-emerald-500/40 bg-emerald-500/15 text-emerald-300',
   },
 
   READING: {
     label: 'Lendo',
     icon: BookOpen,
-    className:
-      'bg-amber-500/15 text-amber-300 border-amber-500/20',
+    badge:
+      'border-amber-500/20 bg-amber-500/10 text-amber-300',
+    button:
+      'border-amber-500/40 bg-amber-500/15 text-amber-300',
   },
 
   WANT_TO_READ: {
     label: 'Quero ler',
     icon: Clock3,
-    className:
-      'bg-sky-500/15 text-sky-300 border-sky-500/20',
+    badge:
+      'border-purple-500/20 bg-purple-500/10 text-purple-300',
+    button:
+      'border-purple-500/40 bg-purple-500/15 text-purple-300',
   },
-} as const
-
-type MangaStatus =
-  keyof typeof STATUS_CONFIG
-
-function getRatingLabel(
-  rating: number
-) {
-  if (rating >= 8) return 'Ótimo'
-  if (rating >= 6) return 'Bom'
-  if (rating >= 4) return 'Regular'
-
-  return 'Ruim'
 }
 
-function getRatingColor(
-  rating: number
-) {
+function getRatingConfig(rating: number) {
   if (rating >= 8) {
-    return 'bg-emerald-500'
+    return {
+      label: 'Ótimo',
+      color: 'bg-emerald-500',
+    }
   }
 
   if (rating >= 6) {
-    return 'bg-amber-500'
+    return {
+      label: 'Bom',
+      color: 'bg-amber-500',
+    }
   }
 
   if (rating >= 4) {
-    return 'bg-orange-500'
+    return {
+      label: 'Regular',
+      color: 'bg-orange-500',
+    }
   }
 
-  return 'bg-red-500'
+  return {
+    label: 'Ruim',
+    color: 'bg-rose-500',
+  }
 }
 
 export default function MangaDetailPage() {
-  const { status } = useSession()
+  const { data: session, status } = useSession()
 
   const router = useRouter()
   const params = useParams()
 
   const id = params.id as string
 
-  const informationRef =
-    useRef<HTMLDivElement>(null)
+  const [manga, setManga] = useState<Manga | null>(null)
 
-  const [manga, setManga] =
-    useState<Manga | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
-  const [loading, setLoading] =
-    useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
-  const [saving, setSaving] =
-    useState(false)
+  const [showDelete, setShowDelete] = useState(false)
 
-  const [deleting, setDeleting] =
-    useState(false)
-
-  const [error, setError] =
-    useState<string | null>(null)
-
-  const [success, setSuccess] =
-    useState<string | null>(null)
-
-  const [showDelete, setShowDelete] =
-    useState(false)
-
-  const [mangaName, setMangaName] =
-    useState('')
-
-  const [author, setAuthor] =
-    useState('')
-
-  const [totalVolumes, setTotalVolumes] =
-    useState('')
-
-  const [ownedVolumes, setOwnedVolumes] =
-    useState<number[]>([])
+  const [mangaName, setMangaName] = useState('')
+  const [author, setAuthor] = useState('')
+  const [totalVolumes, setTotalVolumes] = useState('')
+  const [ownedVolumes, setOwnedVolumes] = useState<number[]>([])
 
   const [mangaStatus, setMangaStatus] =
-    useState<MangaStatus>(
-      'WANT_TO_READ'
-    )
+    useState<MangaStatus>('WANT_TO_READ')
 
-  const [note, setNote] =
-    useState('')
+  const [note, setNote] = useState('')
 
-  const [
-    pendingRatings,
-    setPendingRatings,
-  ] = useState<
-    Record<number, number>
-  >({})
+  const [pendingRatings, setPendingRatings] =
+    useState<Record<number, number>>({})
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -191,10 +158,7 @@ export default function MangaDetailPage() {
   }, [status, router])
 
   useEffect(() => {
-    if (
-      status === 'authenticated' &&
-      id
-    ) {
+    if (status === 'authenticated' && id) {
       fetchAll()
     }
   }, [status, id])
@@ -204,69 +168,50 @@ export default function MangaDetailPage() {
       setLoading(true)
       setError(null)
 
-      const [
-        mangaResponse,
-        ratingsResponse,
-      ] = await Promise.all([
+      const [mangaRes, ratingsRes] = await Promise.all([
         fetch(`/api/mangas/${id}`),
         fetch(`/api/mangas/${id}/volumes`),
       ])
 
-      if (!mangaResponse.ok) {
-        throw new Error(
-          'Mangá não encontrado'
-        )
+      if (!mangaRes.ok) {
+        throw new Error('Mangá não encontrado')
       }
 
-      if (!ratingsResponse.ok) {
-        throw new Error(
-          'Erro ao carregar avaliações'
-        )
+      const mangaData: Manga = await mangaRes.json()
+
+      let ratingsData: VolumeRating[] = []
+
+      if (ratingsRes.ok) {
+        ratingsData = await ratingsRes.json()
       }
-
-      const mangaData: Manga =
-        await mangaResponse.json()
-
-      const ratingsData: VolumeRating[] =
-        await ratingsResponse.json()
 
       setManga(mangaData)
 
       setMangaName(mangaData.name)
 
-      setAuthor(
-        mangaData.author ?? ''
-      )
+      setAuthor(mangaData.author ?? '')
 
       setTotalVolumes(
-        mangaData.totalVolumes?.toString() ??
-          ''
+        mangaData.totalVolumes?.toString() ?? ''
       )
 
-      setOwnedVolumes(
-        mangaData.ownedVolumes ?? []
-      )
+      setOwnedVolumes(mangaData.ownedVolumes ?? [])
 
-      setMangaStatus(
-        mangaData.status
-      )
+      setMangaStatus(mangaData.status)
 
       setNote(
-        mangaData.note?.toString() ??
-          ''
+        mangaData.note !== null
+          ? mangaData.note.toString()
+          : ''
       )
 
-      const ratings: Record<
-        number,
-        number
-      > = {}
+      const ratingsMap: Record<number, number> = {}
 
       ratingsData.forEach((rating) => {
-        ratings[rating.volume] =
-          rating.note
+        ratingsMap[rating.volume] = rating.note
       })
 
-      setPendingRatings(ratings)
+      setPendingRatings(ratingsMap)
     } catch (err) {
       setError(
         err instanceof Error
@@ -278,127 +223,8 @@ export default function MangaDetailPage() {
     }
   }
 
-  function toggleVolume(volume: number) {
-    const isOwned =
-      ownedVolumes.includes(volume)
-
-    setOwnedVolumes((current) =>
-      current.includes(volume)
-        ? current.filter(
-            (item) =>
-              item !== volume
-          )
-        : [
-            ...current,
-            volume,
-          ].sort((a, b) => a - b)
-    )
-
-    if (isOwned) {
-      setPendingRatings(
-        (current) => {
-          const next = {
-            ...current,
-          }
-
-          delete next[volume]
-
-          return next
-        }
-      )
-    }
-  }
-
-  function updateTotalVolumes(
-    value: string
-  ) {
-    setTotalVolumes(value)
-
-    if (value === '') {
-      return
-    }
-
-    const newTotal = Math.max(
-      1,
-      Number(value)
-    )
-
-    if (Number.isNaN(newTotal)) {
-      return
-    }
-
-    setOwnedVolumes((current) =>
-      current.filter(
-        (volume) =>
-          volume <= newTotal
-      )
-    )
-
-    setPendingRatings((current) => {
-      const next = {
-        ...current,
-      }
-
-      Object.keys(next).forEach(
-        (volume) => {
-          if (
-            Number(volume) >
-            newTotal
-          ) {
-            delete next[
-              Number(volume)
-            ]
-          }
-        }
-      )
-
-      return next
-    })
-  }
-
-  function updateRating(
-    volume: number,
-    value: string
-  ) {
-    if (value === '') {
-      setPendingRatings(
-        (current) => {
-          const next = {
-            ...current,
-          }
-
-          delete next[volume]
-
-          return next
-        }
-      )
-
-      return
-    }
-
-    const parsed = Number(value)
-
-    if (Number.isNaN(parsed)) {
-      return
-    }
-
-    const rating = Math.min(
-      10,
-      Math.max(0, parsed)
-    )
-
-    setPendingRatings(
-      (current) => ({
-        ...current,
-        [volume]: rating,
-      })
-    )
-  }
-
   async function handleSave() {
-    if (!manga) {
-      return
-    }
+    if (!manga) return
 
     setSaving(true)
     setError(null)
@@ -410,124 +236,79 @@ export default function MangaDetailPage() {
           ? 'READ'
           : mangaStatus
 
-      /*
-       * Primeiro salva o mangá.
-       * Isso garante que ownedVolumes esteja
-       * atualizado antes das avaliações.
-       */
-      const mangaResponse = await fetch(
-        `/api/mangas/${id}`,
-        {
-          method: 'PUT',
+      const total =
+        totalVolumes !== ''
+          ? Number(totalVolumes)
+          : null
 
-          headers: {
-            'Content-Type':
-              'application/json',
-          },
+      const response = await fetch(`/api/mangas/${id}`, {
+        method: 'PUT',
 
-          body: JSON.stringify({
-            name: mangaName.trim(),
+        headers: {
+          'Content-Type': 'application/json',
+        },
 
-            author:
-              author.trim() || null,
+        body: JSON.stringify({
+          name: mangaName.trim(),
 
-            volume:
-              ownedVolumes.length > 0
-                ? Math.max(
-                    ...ownedVolumes
-                  )
-                : manga.volume,
+          author:
+            author.trim() !== ''
+              ? author.trim()
+              : null,
 
-            totalVolumes:
-              totalVolumes !== ''
-                ? Number(
-                    totalVolumes
-                  )
-                : null,
+          volume:
+            ownedVolumes.length > 0
+              ? Math.max(...ownedVolumes)
+              : manga.volume,
 
-            ownedVolumes,
+          totalVolumes: total,
 
-            status: finalStatus,
+          ownedVolumes,
 
-            note:
-              note !== ''
-                ? Number(note)
-                : null,
+          status: finalStatus,
 
-            genre: manga.genre,
+          note:
+            note !== ''
+              ? Number(note)
+              : null,
 
-            coverUrl: manga.coverUrl,
-          }),
-        }
-      )
+          genre: manga.genre,
 
-      if (!mangaResponse.ok) {
-        const data =
-          await mangaResponse
-            .json()
-            .catch(() => null)
+          coverUrl: manga.coverUrl,
+        }),
+      })
 
-        throw new Error(
-          data?.error ||
-            'Erro ao salvar o mangá'
-        )
-      }
-
-      /*
-       * Agora sincroniza todas as notas.
-       * Notas removidas também serão
-       * removidas do banco.
-       */
-      const ratingsResponse =
-        await fetch(
-          `/api/mangas/${id}/volumes`,
-          {
-            method: 'PUT',
-
-            headers: {
-              'Content-Type':
-                'application/json',
-            },
-
-            body: JSON.stringify({
-              ratings: Object.entries(
-                pendingRatings
-              ).map(
-                ([volume, rating]) => ({
-                  volume:
-                    Number(volume),
-
-                  note: rating,
-                })
-              ),
-            }),
-          }
-        )
-
-      if (!ratingsResponse.ok) {
-        const data =
-          await ratingsResponse
-            .json()
-            .catch(() => null)
-
-        throw new Error(
-          data?.error ||
-            'Erro ao salvar avaliações'
-        )
+      if (!response.ok) {
+        throw new Error('Erro ao salvar as alterações')
       }
 
       const updatedManga: Manga =
-        await mangaResponse.json()
+        await response.json()
+
+      const ratingRequests = Object.entries(
+        pendingRatings
+      ).map(([volume, rating]) => {
+        return fetch(`/api/mangas/${id}/volumes`, {
+          method: 'POST',
+
+          headers: {
+            'Content-Type': 'application/json',
+          },
+
+          body: JSON.stringify({
+            volume: Number(volume),
+            note: rating,
+          }),
+        })
+      })
+
+      await Promise.all(ratingRequests)
 
       setManga(updatedManga)
 
-      setMangaStatus(
-        updatedManga.status
-      )
+      setMangaStatus(updatedManga.status)
 
-      setSuccess(
-        'Alterações salvas com sucesso.'
-      )
+      setSuccess('Alterações salvas com sucesso!')
 
       window.setTimeout(() => {
         setSuccess(null)
@@ -536,7 +317,7 @@ export default function MangaDetailPage() {
       setError(
         err instanceof Error
           ? err.message
-          : 'Erro ao salvar alterações'
+          : 'Erro ao salvar'
       )
     } finally {
       setSaving(false)
@@ -556,23 +337,16 @@ export default function MangaDetailPage() {
       )
 
       if (!response.ok) {
-        const data =
-          await response
-            .json()
-            .catch(() => null)
-
-        throw new Error(
-          data?.error ||
-            'Erro ao remover o mangá'
-        )
+        throw new Error('Erro ao remover o mangá')
       }
 
       router.push('/mangas')
+      router.refresh()
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : 'Erro ao remover o mangá'
+          : 'Erro ao remover'
       )
 
       setDeleting(false)
@@ -580,42 +354,79 @@ export default function MangaDetailPage() {
     }
   }
 
-  function focusInformation() {
-    informationRef.current?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'center',
+  function toggleVolume(volume: number) {
+    setOwnedVolumes((current) => {
+      if (current.includes(volume)) {
+        return current.filter(
+          (item) => item !== volume
+        )
+      }
+
+      return [...current, volume].sort(
+        (a, b) => a - b
+      )
+    })
+  }
+
+  function increaseTotal() {
+    const current =
+      totalVolumes !== ''
+        ? Number(totalVolumes)
+        : 0
+
+    setTotalVolumes(
+      String(Math.max(1, current + 1))
+    )
+  }
+
+  function decreaseTotal() {
+    const current =
+      totalVolumes !== ''
+        ? Number(totalVolumes)
+        : 1
+
+    const newTotal = Math.max(1, current - 1)
+
+    setTotalVolumes(String(newTotal))
+
+    setOwnedVolumes((currentVolumes) =>
+      currentVolumes.filter(
+        (volume) => volume <= newTotal
+      )
+    )
+
+    setPendingRatings((currentRatings) => {
+      const nextRatings: Record<number, number> = {}
+
+      Object.entries(currentRatings).forEach(
+        ([volume, rating]) => {
+          if (Number(volume) <= newTotal) {
+            nextRatings[Number(volume)] = rating
+          }
+        }
+      )
+
+      return nextRatings
     })
   }
 
   const totalVolsNum =
     totalVolumes !== ''
-      ? Math.max(
-          0,
-          Number(totalVolumes)
-        )
+      ? Math.max(0, Number(totalVolumes))
       : 0
 
-  const volumeArray =
-    Array.from(
-      {
-        length: Number.isNaN(
-          totalVolsNum
-        )
-          ? 0
-          : totalVolsNum,
-      },
-      (_, index) => index + 1
-    )
+  const volumeArray = Array.from(
+    { length: totalVolsNum },
+    (_, index) => index + 1
+  )
 
-  const volumesOwned =
-    ownedVolumes.length
+  const volumesOwned = ownedVolumes.length
 
   const volumesMissing =
     totalVolsNum > 0
       ? Math.max(
           0,
-          totalVolsNum -
-            volumesOwned
+          totalVolsNum - volumesOwned
         )
       : null
 
@@ -624,422 +435,398 @@ export default function MangaDetailPage() {
       ? Math.min(
           100,
           Math.round(
-            (volumesOwned /
-              totalVolsNum) *
-              100
+            (volumesOwned / totalVolsNum) * 100
           )
         )
       : 0
 
-  const averageRating =
-    useMemo(() => {
-      const values =
-        Object.values(
-          pendingRatings
-        )
+  const average = useMemo(() => {
+    const ratings = Object.values(pendingRatings)
 
-      if (!values.length) {
-        return '—'
-      }
+    if (ratings.length === 0) {
+      return '—'
+    }
 
-      const average =
-        values.reduce(
-          (sum, value) =>
-            sum + value,
-          0
-        ) / values.length
+    const total = ratings.reduce(
+      (sum, rating) => sum + rating,
+      0
+    )
 
-      return average.toFixed(1)
-    }, [pendingRatings])
-
-  const currentBadge =
-    STATUS_CONFIG[mangaStatus]
-
-  const BadgeIcon =
-    currentBadge.icon
+    return (
+      total / ratings.length
+    ).toFixed(1)
+  }, [pendingRatings])
 
   if (
     status === 'loading' ||
     loading
   ) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
-        <div className="size-12 animate-spin rounded-full border-2 border-muted border-t-primary" />
+      <div className="flex min-h-screen items-center justify-center bg-gray-950">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
       </div>
     )
   }
 
   if (!manga) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-5 text-foreground">
-        <div className="max-w-md text-center">
-          <h1 className="text-2xl font-semibold">
-            Mangá não encontrado
-          </h1>
-
-          <Link
-            href="/mangas"
-            className="mt-4 inline-flex items-center gap-2 text-primary"
-          >
-            <ArrowLeft className="size-4" />
-            Voltar para a coleção
-          </Link>
-        </div>
+      <div className="flex min-h-screen items-center justify-center bg-gray-950 px-4 text-center text-gray-400">
+        {error ?? 'Mangá não encontrado'}
       </div>
     )
   }
 
+  const currentStatus =
+    STATUS_CONFIG[mangaStatus]
+
+  const StatusIcon = currentStatus.icon
+
   return (
     <div
-      className={`${display.variable} ${body.variable} min-h-screen bg-background text-foreground [font-family:var(--font-body)]`}
+      className={`${display.variable} ${body.variable} min-h-screen overflow-x-hidden bg-gray-950 text-white [font-family:var(--font-body)]`}
     >
-      <header className="sticky top-0 z-20 border-b border-border/70 bg-background/90 backdrop-blur-xl">
-        <nav
-          className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8"
-          aria-label="Navegação principal"
-        >
-          <Link
-            href="/mangas"
-            className="group flex items-center gap-3 text-sm text-muted-foreground transition hover:text-foreground"
-          >
-            <span className="flex size-9 items-center justify-center rounded-full border border-border bg-card transition group-hover:border-primary/60 group-hover:bg-primary/10">
-              <ArrowLeft className="size-4" />
-            </span>
+      {/* Background */}
+      <div className="pointer-events-none fixed -left-48 -top-48 h-[500px] w-[500px] rounded-full bg-purple-600/[0.08] blur-[140px]" />
 
-            <span className="hidden sm:inline">
-              Minha coleção
-            </span>
-          </Link>
+      <div className="pointer-events-none fixed -right-48 top-40 h-[500px] w-[500px] rounded-full bg-fuchsia-600/[0.06] blur-[140px]" />
 
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Library className="size-4 text-primary" />
+      {/* Header */}
+      <header className="sticky top-0 z-20 border-b border-white/[0.06] bg-gray-950/80 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/mangas"
+              className="group flex h-10 w-10 items-center justify-center rounded-xl border border-gray-800 bg-gray-900 transition hover:border-purple-500/50 hover:bg-purple-500/10"
+            >
+              <ArrowLeft
+                size={18}
+                className="text-gray-400 transition group-hover:-translate-x-0.5 group-hover:text-purple-400"
+              />
+            </Link>
 
-            <span className="hidden sm:inline">
-              Biblioteca pessoal
-            </span>
+            <div>
+              <h1 className="text-base font-bold text-white sm:text-lg">
+                Minha coleção
+              </h1>
 
-            <MoreHorizontal className="ml-1 size-4" />
+              <p className="text-xs text-gray-500">
+                Detalhes do mangá
+              </p>
+            </div>
           </div>
-        </nav>
+
+          <button
+            onClick={() => setShowDelete(true)}
+            disabled={deleting}
+            className="flex items-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/[0.06] px-3 py-2 text-sm font-medium text-rose-400 transition hover:border-rose-500/40 hover:bg-rose-500/10 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4"
+          >
+            <Trash2 size={17} />
+
+            <span className="hidden sm:inline">
+              Remover
+            </span>
+          </button>
+        </div>
       </header>
 
-      <main className="mx-auto flex max-w-6xl flex-col gap-8 px-5 py-8 sm:px-8 lg:py-12">
-        {/* Cabeçalho */}
-        <section className="grid gap-7 lg:grid-cols-[240px_1fr] lg:items-end">
-          <div className="relative aspect-[3/4] overflow-hidden rounded-2xl border border-border bg-card shadow-2xl shadow-primary/10">
+      <main className="relative mx-auto flex max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:py-12">
+        {/* Hero */}
+        <section className="grid gap-8 lg:grid-cols-[260px_1fr] lg:items-end">
+          <div className="relative aspect-[3/4] overflow-hidden rounded-3xl border border-white/10 bg-gray-900 shadow-2xl shadow-black/40">
             {manga.coverUrl ? (
               <img
                 src={manga.coverUrl}
                 alt={mangaName}
-                className="absolute inset-0 size-full object-cover"
+                className="h-full w-full object-cover"
               />
             ) : (
-              <>
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/70 via-primary/20 to-card" />
+              <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-purple-900/50 to-gray-900">
+                <BookOpen
+                  size={48}
+                  className="text-purple-400/40"
+                />
 
-                <div className="relative flex h-full flex-col justify-between p-5">
-                  <div className="flex justify-between text-[10px] font-bold uppercase tracking-[0.25em] text-primary-foreground/80">
-                    <span>
-                      Biblioteca
-                    </span>
-
-                    <span>
-                      01
-                    </span>
-                  </div>
-
-                  <div>
-                    <p className="text-5xl font-bold tracking-tight text-primary-foreground [font-family:var(--font-display)]">
-                      {mangaName
-                        .charAt(0)
-                        .toUpperCase()}
-                    </p>
-
-                    <p className="mt-1 text-xs uppercase tracking-[0.35em] text-primary-foreground/70">
-                      {mangaName}
-                    </p>
-                  </div>
-                </div>
-              </>
+                <span className="mt-4 text-sm text-gray-500">
+                  Sem capa
+                </span>
+              </div>
             )}
+
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
           </div>
 
           <div className="flex flex-col gap-5">
             <div className="flex flex-wrap items-center gap-3">
               <span
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${currentBadge.className}`}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${currentStatus.badge}`}
               >
-                <BadgeIcon className="size-3.5" />
+                <StatusIcon size={14} />
 
-                {currentBadge.label}
+                {currentStatus.label}
               </span>
 
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-gray-500">
                 Adicionado em{' '}
                 {new Date(
                   manga.createdAt
-                ).toLocaleDateString(
-                  'pt-BR'
-                )}
+                ).toLocaleDateString('pt-BR')}
               </span>
             </div>
 
             <div>
-              <h1 className="max-w-3xl text-balance text-5xl font-semibold tracking-[-0.04em] sm:text-6xl [font-family:var(--font-display)]">
-                {mangaName ||
-                  manga.name}
+              <h1 className="max-w-3xl text-balance text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl [font-family:var(--font-display)]">
+                {mangaName || 'Sem título'}
               </h1>
 
               {author && (
-                <p className="mt-3 text-lg text-primary">
+                <p className="mt-3 text-lg text-purple-300">
                   {author}
                 </p>
               )}
 
-              <p className="mt-5 max-w-2xl text-pretty leading-7 text-muted-foreground">
-                Acompanhe sua coleção,
-                registre cada volume e
-                mantenha sua experiência de
+              <p className="mt-5 max-w-2xl leading-7 text-gray-400">
+                Acompanhe sua coleção, registre cada
+                volume e mantenha sua experiência de
                 leitura organizada.
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={
-                  focusInformation
-                }
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
-              >
-                <Pencil className="size-4" />
-
-                Editar informações
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setShowDelete(true)
-                }
-                className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-muted-foreground transition hover:border-red-500/40 hover:text-red-400"
-              >
-                <Trash2 className="size-4" />
-
-                Remover
-              </button>
-            </div>
+           
           </div>
         </section>
 
+        {/* Feedback */}
         {success && (
-          <div className="flex items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-300">
-            <Check className="size-5" />
+          <div className="flex items-center gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.08] p-4 text-sm text-emerald-300">
+            <Check size={18} />
+
             {success}
           </div>
         )}
 
         {error && (
-          <div className="flex items-center gap-3 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
-            <CircleAlert className="size-5" />
+          <div className="flex items-center gap-3 rounded-2xl border border-rose-500/20 bg-rose-500/[0.08] p-4 text-sm text-rose-300">
+            <CircleAlert size={18} />
+
             {error}
           </div>
         )}
 
-        {/* Estatísticas */}
+        {/* Statistics */}
         <section className="grid gap-4 sm:grid-cols-3">
-          <div className="rounded-xl border border-border bg-card p-5">
-            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500">
               Na coleção
             </p>
 
-            <p className="mt-3 text-3xl font-semibold tracking-tight text-primary">
+            <p className="mt-3 text-3xl font-bold text-purple-300">
               {volumesOwned}{' '}
-              volumes
+              <span className="text-xl text-gray-500">
+                volumes
+              </span>
             </p>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-5">
-            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500">
               Progresso
             </p>
 
-            <p className="mt-3 text-3xl font-semibold tracking-tight">
-              {totalVolsNum > 0
-                ? `${progress}%`
-                : '—'}
+            <p className="mt-3 text-3xl font-bold text-white">
+              {progress}%
             </p>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-5">
-            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500">
               Faltam
             </p>
 
-            <p className="mt-3 text-3xl font-semibold tracking-tight text-muted-foreground">
-              {volumesMissing !== null
-                ? `${volumesMissing} volumes`
-                : '—'}
+            <p className="mt-3 text-3xl font-bold text-gray-300">
+              {volumesMissing ?? '?'}{' '}
+              <span className="text-xl text-gray-500">
+                volumes
+              </span>
             </p>
           </div>
         </section>
 
-        {/* Coleção e informações */}
-        <section className="grid gap-6 lg:grid-cols-[1.35fr_.65fr]">
-          <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
+        {/* Collection + Info */}
+        <section className="grid gap-6 lg:grid-cols-[1.4fr_.6fr]">
+          {/* Volumes */}
+          <div className="rounded-3xl border border-white/10 bg-white/[0.025] p-6 sm:p-8">
             <div className="mb-7 flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">
                   Coleção
                 </p>
 
-                <h2 className="mt-2 text-2xl font-semibold">
+                <h2 className="mt-2 text-2xl font-bold text-white [font-family:var(--font-display)]">
                   Volumes que você tem
                 </h2>
               </div>
 
-              <span className="rounded-md bg-muted px-2 py-1 font-mono text-xs text-muted-foreground">
-                {volumesOwned} /{' '}
-                {totalVolsNum || '?'}
+              <span className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 font-mono text-xs text-gray-400">
+                {volumesOwned} / {totalVolsNum}
               </span>
             </div>
 
-            {totalVolsNum > 0 && (
-              <div className="mb-7 flex items-center gap-4">
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all"
-                    style={{
-                      width: `${progress}%`,
-                    }}
-                  />
-                </div>
-
-                <span className="font-mono text-sm text-primary">
-                  {progress}%
-                </span>
+            <div className="mb-7 flex items-center gap-4">
+              <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-purple-500 to-fuchsia-500 transition-all duration-500"
+                  style={{
+                    width: `${progress}%`,
+                  }}
+                />
               </div>
-            )}
 
-            <div className="mb-6 flex flex-wrap items-center gap-3">
-              <label
-                htmlFor="total-volumes"
-                className="text-sm text-muted-foreground"
-              >
+              <span className="font-mono text-sm text-purple-300">
+                {progress}%
+              </span>
+            </div>
+
+            {/* Total selector */}
+            <div className="mb-7 flex flex-wrap items-center gap-4">
+              <span className="text-sm text-gray-400">
                 Total de volumes
-              </label>
+              </span>
 
-              <div className="flex items-center rounded-lg border border-border bg-muted">
+              <div className="flex items-center rounded-xl border border-white/10 bg-white/[0.04]">
                 <button
                   type="button"
+                  onClick={decreaseTotal}
+                  className="p-2.5 text-gray-400 transition hover:text-white"
                   aria-label="Diminuir total"
-                  onClick={() => {
-                    const current =
-                      totalVolsNum || 1
-
-                    updateTotalVolumes(
-                      String(
-                        Math.max(
-                          1,
-                          current - 1
-                        )
-                      )
-                    )
-                  }}
-                  className="p-2 text-muted-foreground transition hover:text-foreground"
                 >
-                  <Minus className="size-4" />
+                  <Minus size={16} />
                 </button>
 
                 <input
-                  id="total-volumes"
                   type="number"
                   min="1"
                   value={totalVolumes}
-                  onChange={(event) =>
-                    updateTotalVolumes(
+                  onChange={(event) => {
+                    const value =
                       event.target.value
-                    )
-                  }
-                  className="w-14 bg-transparent text-center text-sm outline-none"
+
+                    setTotalVolumes(value)
+
+                    if (value !== '') {
+                      const newTotal =
+                        Math.max(
+                          1,
+                          Number(value)
+                        )
+
+                      setOwnedVolumes(
+                        (current) =>
+                          current.filter(
+                            (volume) =>
+                              volume <= newTotal
+                          )
+                      )
+
+                      setPendingRatings(
+                        (current) => {
+                          const next: Record<
+                            number,
+                            number
+                          > = {}
+
+                          Object.entries(
+                            current
+                          ).forEach(
+                            ([
+                              volume,
+                              rating,
+                            ]) => {
+                              if (
+                                Number(volume) <=
+                                newTotal
+                              ) {
+                                next[
+                                  Number(volume)
+                                ] = rating
+                              }
+                            }
+                          )
+
+                          return next
+                        }
+                      )
+                    }
+                  }}
+                  className="w-14 bg-transparent text-center text-sm font-medium text-white outline-none"
                 />
 
                 <button
                   type="button"
+                  onClick={increaseTotal}
+                  className="p-2.5 text-gray-400 transition hover:text-white"
                   aria-label="Aumentar total"
-                  onClick={() =>
-                    updateTotalVolumes(
-                      String(
-                        (totalVolsNum ||
-                          0) + 1
-                      )
-                    )
-                  }
-                  className="p-2 text-muted-foreground transition hover:text-foreground"
                 >
-                  <Plus className="size-4" />
+                  <Plus size={16} />
                 </button>
               </div>
             </div>
 
-            {totalVolsNum > 0 ? (
-              <div className="grid grid-cols-6 gap-2 sm:grid-cols-8 md:grid-cols-10">
-                {volumeArray.map(
-                  (volume) => {
-                    const isOwned =
-                      ownedVolumes.includes(
-                        volume
-                      )
-
-                    return (
-                      <button
-                        key={volume}
-                        type="button"
-                        onClick={() =>
-                          toggleVolume(
-                            volume
-                          )
-                        }
-                        aria-pressed={
-                          isOwned
-                        }
-                        className={`aspect-square rounded-lg border text-sm font-medium transition ${
-                          isOwned
-                            ? 'border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20'
-                            : 'border-border bg-muted text-muted-foreground hover:border-primary/60 hover:text-foreground'
-                        }`}
-                      >
-                        {volume}
-                      </button>
+            {/* Volume buttons */}
+            {totalVolsNum > 0 && (
+              <div className="grid grid-cols-5 gap-2 sm:grid-cols-8 md:grid-cols-10">
+                {volumeArray.map((volume) => {
+                  const isOwned =
+                    ownedVolumes.includes(
+                      volume
                     )
-                  }
-                )}
+
+                  return (
+                    <button
+                      key={volume}
+                      type="button"
+                      onClick={() =>
+                        toggleVolume(volume)
+                      }
+                      aria-pressed={isOwned}
+                      className={`aspect-square rounded-xl border text-sm font-semibold transition ${
+                        isOwned
+                          ? 'border-purple-400/30 bg-gradient-to-br from-purple-500 to-fuchsia-500 text-white shadow-lg shadow-purple-900/30'
+                          : 'border-white/10 bg-white/[0.025] text-gray-500 hover:border-purple-500/40 hover:bg-purple-500/[0.06] hover:text-gray-200'
+                      }`}
+                    >
+                      {volume}
+                    </button>
+                  )
+                })}
               </div>
-            ) : (
-              <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-                Informe o total de volumes
-                para começar a organizar
-                sua coleção.
+            )}
+
+            {totalVolsNum === 0 && (
+              <div className="rounded-2xl border border-dashed border-white/10 py-10 text-center text-sm text-gray-500">
+                Defina o total de volumes para
+                começar sua coleção.
               </div>
             )}
           </div>
 
-          {/* Informações */}
+          {/* Information */}
           <div
-            ref={informationRef}
-            className="rounded-2xl border border-border bg-card p-6 sm:p-8"
+            id="informacoes"
+            className="rounded-3xl border border-white/10 bg-white/[0.025] p-6 sm:p-8"
           >
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">
               Informações
             </p>
 
-            <h2 className="mt-2 text-2xl font-semibold">
+            <h2 className="mt-2 text-2xl font-bold text-white [font-family:var(--font-display)]">
               Sobre a obra
             </h2>
 
             <div className="mt-7 flex flex-col gap-5">
-              <label className="flex flex-col gap-2 text-sm text-muted-foreground">
-                Título
+              <label className="flex flex-col gap-2">
+                <span className="text-sm text-gray-400">
+                  Título
+                </span>
 
                 <input
                   value={mangaName}
@@ -1048,12 +835,14 @@ export default function MangaDetailPage() {
                       event.target.value
                     )
                   }
-                  className="rounded-lg border border-border bg-muted px-3 py-2.5 text-foreground outline-none transition focus:border-primary"
+                  className="rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-purple-500/60 focus:bg-white/[0.06]"
                 />
               </label>
 
-              <label className="flex flex-col gap-2 text-sm text-muted-foreground">
-                Autor
+              <label className="flex flex-col gap-2">
+                <span className="text-sm text-gray-400">
+                  Autor
+                </span>
 
                 <input
                   value={author}
@@ -1063,12 +852,12 @@ export default function MangaDetailPage() {
                     )
                   }
                   placeholder="Ex: Kentaro Miura"
-                  className="rounded-lg border border-border bg-muted px-3 py-2.5 text-foreground outline-none transition placeholder:text-muted-foreground/60 focus:border-primary"
+                  className="rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-purple-500/60 focus:bg-white/[0.06]"
                 />
               </label>
 
               <div>
-                <p className="mb-2 text-sm text-muted-foreground">
+                <p className="mb-3 text-sm text-gray-400">
                   Status de leitura
                 </p>
 
@@ -1077,8 +866,11 @@ export default function MangaDetailPage() {
                     Object.keys(
                       STATUS_CONFIG
                     ) as MangaStatus[]
-                  ).map(
-                    (statusKey) => (
+                  ).map((statusKey) => {
+                    const config =
+                      STATUS_CONFIG[statusKey]
+
+                    return (
                       <button
                         key={statusKey}
                         type="button"
@@ -1087,87 +879,85 @@ export default function MangaDetailPage() {
                             statusKey
                           )
                         }
-                        className={`rounded-lg border px-3 py-2 text-xs font-medium transition ${
+                        className={`rounded-xl border px-3 py-2 text-xs font-medium transition ${
                           mangaStatus ===
                           statusKey
-                            ? STATUS_CONFIG[
-                                statusKey
-                              ].className
-                            : 'border-border bg-muted text-muted-foreground hover:text-foreground'
+                            ? config.button
+                            : 'border-white/10 bg-white/[0.025] text-gray-500 hover:border-white/20 hover:text-gray-300'
                         }`}
                       >
-                        {
-                          STATUS_CONFIG[
-                            statusKey
-                          ].label
-                        }
+                        {config.label}
                       </button>
                     )
-                  )}
+                  })}
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Avaliação por volume */}
+        {/* Volume ratings */}
         {ownedVolumes.length > 0 && (
-          <section className="rounded-2xl border border-border bg-card p-6 sm:p-8">
+          <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-6 sm:p-8">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">
                   Avaliações
                 </p>
 
-                <h2 className="mt-2 text-2xl font-semibold">
+                <h2 className="mt-2 text-2xl font-bold text-white [font-family:var(--font-display)]">
                   Nota por volume
                 </h2>
               </div>
 
-              <div className="flex items-center gap-3 rounded-lg bg-muted px-4 py-3">
-                <Star className="size-5 fill-primary text-primary" />
+              <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3">
+                <Star
+                  size={20}
+                  className="fill-purple-400 text-purple-400"
+                />
 
                 <div>
-                  <p className="font-mono text-xl font-semibold">
-                    {averageRating}
+                  <p className="font-mono text-xl font-bold text-white">
+                    {average}
                   </p>
 
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    média
+                  <p className="text-[10px] uppercase tracking-wider text-gray-500">
+                    Média
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="mt-7 grid grid-cols-3 gap-3 sm:grid-cols-6 md:grid-cols-8">
+            <div className="mt-8 grid grid-cols-3 gap-3 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
               {ownedVolumes.map(
                 (volume) => {
                   const rating =
-                    pendingRatings[
-                      volume
-                    ]
+                    pendingRatings[volume]
+
+                  const config =
+                    rating !== undefined
+                      ? getRatingConfig(
+                          rating
+                        )
+                      : null
 
                   return (
                     <label
                       key={volume}
                       className="flex flex-col gap-2"
                     >
-                      <span className="font-mono text-xs text-muted-foreground">
+                      <span className="font-mono text-xs text-gray-500">
                         Vol. {volume}
                       </span>
 
                       <div
-                        className={`rounded-lg border-2 p-2 ${
-                          rating !==
-                          undefined
-                            ? `${getRatingColor(
-                                rating
-                              )} border-transparent`
-                            : 'border-border bg-muted'
+                        className={`rounded-xl border p-2 transition ${
+                          config
+                            ? `${config.color} border-transparent`
+                            : 'border-white/10 bg-white/[0.04]'
                         }`}
                       >
                         <input
-                          aria-label={`Nota do volume ${volume}`}
                           type="number"
                           min="0"
                           max="10"
@@ -1178,28 +968,65 @@ export default function MangaDetailPage() {
                           }
                           onChange={(
                             event
-                          ) =>
-                            updateRating(
-                              volume,
-                              event.target
-                                .value
+                          ) => {
+                            const value =
+                              event.target.value
+
+                            if (
+                              value === ''
+                            ) {
+                              setPendingRatings(
+                                (current) => {
+                                  const next = {
+                                    ...current,
+                                  }
+
+                                  delete next[
+                                    volume
+                                  ]
+
+                                  return next
+                                }
+                              )
+
+                              return
+                            }
+
+                            const parsed =
+                              Number(value)
+
+                            if (
+                              Number.isNaN(
+                                parsed
+                              )
+                            ) {
+                              return
+                            }
+
+                            const limited =
+                              Math.min(
+                                10,
+                                Math.max(
+                                  0,
+                                  parsed
+                                )
+                              )
+
+                            setPendingRatings(
+                              (current) => ({
+                                ...current,
+                                [volume]:
+                                  limited,
+                              })
                             )
-                          }
-                          className={`w-full bg-transparent text-center text-sm font-bold outline-none placeholder:text-muted-foreground ${
-                            rating !==
-                            undefined
-                              ? 'text-white'
-                              : 'text-foreground'
-                          }`}
+                          }}
+                          className="w-full bg-transparent text-center text-sm font-bold text-white outline-none placeholder:text-white/40"
                         />
                       </div>
 
-                      {rating !==
-                        undefined && (
-                        <span className="text-center text-[10px] text-muted-foreground">
-                          {getRatingLabel(
-                            rating
-                          )}
+                      {config && (
+                        <span className="text-center text-[10px] text-gray-500">
+                          {config.label}
                         </span>
                       )}
                     </label>
@@ -1207,25 +1034,34 @@ export default function MangaDetailPage() {
                 }
               )}
             </div>
+
+            <p className="mt-6 text-xs text-gray-500">
+              As avaliações individuais serão salvas
+              junto com as alterações da obra.
+            </p>
           </section>
         )}
 
-        {/* Nota geral */}
-        <section className="rounded-2xl border border-border bg-card p-6 sm:p-8">
+        {/* General rating */}
+        <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-6 sm:p-8">
           <div className="flex flex-wrap items-end justify-between gap-5">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">
                 Sua avaliação
               </p>
 
-              <h2 className="mt-2 text-2xl font-semibold">
+              <h2 className="mt-2 text-2xl font-bold text-white [font-family:var(--font-display)]">
                 Como foi a experiência?
               </h2>
+
+              <p className="mt-2 text-sm text-gray-500">
+                Ao adicionar uma nota geral, a obra será
+                marcada automaticamente como lida.
+              </p>
             </div>
 
             <div className="flex items-center gap-3">
               <input
-                aria-label="Nota geral"
                 type="number"
                 min="0"
                 max="10"
@@ -1240,141 +1076,135 @@ export default function MangaDetailPage() {
                     return
                   }
 
-                  const number =
-                    Math.min(
-                      10,
-                      Math.max(
-                        0,
-                        Number(value)
+                  const parsed =
+                    Number(value)
+
+                  if (
+                    !Number.isNaN(parsed)
+                  ) {
+                    setNote(
+                      String(
+                        Math.min(
+                          10,
+                          Math.max(
+                            0,
+                            parsed
+                          )
+                        )
                       )
                     )
-
-                  setNote(
-                    String(number)
-                  )
+                  }
                 }}
-                placeholder="—"
-                className="w-20 rounded-lg border border-border bg-muted px-3 py-3 text-center font-mono text-lg outline-none focus:border-primary"
+                placeholder="0"
+                className="w-24 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-center font-mono text-lg font-bold text-white outline-none transition focus:border-purple-500/60"
               />
 
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm text-gray-500">
                 / 10
               </span>
 
               {note !== '' && (
-                <Star className="size-5 fill-primary text-primary" />
+                <Star
+                  size={22}
+                  className="fill-amber-400 text-amber-400"
+                />
               )}
             </div>
           </div>
-
-          <p className="mt-5 text-sm leading-6 text-muted-foreground">
-            Ao adicionar uma nota geral,
-            o status da obra será marcado
-            automaticamente como{' '}
-            <strong className="text-foreground">
-              Lido
-            </strong>{' '}
-            ao salvar.
-          </p>
         </section>
 
-        {/* Salvar */}
+        {/* Save */}
         <button
-          type="button"
           onClick={handleSave}
           disabled={saving}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-4 text-base font-semibold text-primary-foreground shadow-lg shadow-primary/15 transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 to-fuchsia-600 py-4 text-base font-bold text-white shadow-lg shadow-purple-900/30 transition hover:from-purple-500 hover:to-fuchsia-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saving ? (
             <>
-              <div className="size-5 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
 
               Salvando...
             </>
           ) : (
             <>
-              <Save className="size-5" />
+              <Save size={19} />
 
               Salvar alterações
 
-              <ChevronRight className="size-5" />
+              <ChevronRight size={18} />
             </>
           )}
         </button>
       </main>
 
-      {/* Modal de exclusão */}
+      {/* Delete modal */}
       {showDelete && (
-        <div className="fixed inset-0 z-30 flex items-center justify-center bg-background/80 p-5 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
           <div
             role="dialog"
             aria-modal="true"
-            aria-labelledby="delete-title"
-            className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl"
+            className="w-full max-w-md rounded-3xl border border-white/10 bg-gray-950 p-6 shadow-2xl shadow-black/60"
           >
-            <div className="flex items-start justify-between">
-              <div className="flex size-10 items-center justify-center rounded-full bg-red-500/15 text-red-400">
-                <CircleAlert className="size-5" />
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-rose-500/20 bg-rose-500/10">
+                <CircleAlert
+                  size={22}
+                  className="text-rose-400"
+                />
               </div>
 
               <button
-                type="button"
-                aria-label="Fechar"
                 onClick={() =>
-                  !deleting &&
                   setShowDelete(false)
                 }
                 disabled={deleting}
-                className="text-muted-foreground transition hover:text-foreground disabled:opacity-50"
+                aria-label="Fechar"
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-gray-500 transition hover:bg-white/5 hover:text-white disabled:opacity-50"
               >
-                <X className="size-5" />
+                <X size={19} />
               </button>
             </div>
 
-            <h2
-              id="delete-title"
-              className="mt-5 text-xl font-semibold"
-            >
+            <h2 className="mt-5 text-xl font-bold text-white [font-family:var(--font-display)]">
               Remover da coleção?
             </h2>
 
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Esta ação removerá{' '}
-              <strong className="text-foreground">
+            <p className="mt-2 text-sm leading-6 text-gray-400">
+              Tem certeza que deseja remover{' '}
+              <strong className="text-gray-200">
                 {mangaName}
               </strong>{' '}
-              da sua biblioteca.
+              da sua coleção? Esta ação não pode ser
+              desfeita.
             </p>
 
-            <div className="mt-6 flex gap-3">
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button
-                type="button"
                 onClick={() =>
                   setShowDelete(false)
                 }
                 disabled={deleting}
-                className="flex-1 rounded-lg border border-border py-2.5 text-sm font-medium transition hover:bg-muted disabled:opacity-50"
+                className="rounded-xl border border-white/10 bg-white/[0.03] px-5 py-2.5 text-sm font-medium text-gray-300 transition hover:bg-white/[0.06] hover:text-white disabled:opacity-50"
               >
                 Cancelar
               </button>
 
               <button
-                type="button"
                 onClick={handleDelete}
                 disabled={deleting}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-500/15 py-2.5 text-sm font-semibold text-red-400 transition hover:bg-red-500/25 disabled:opacity-50"
+                className="flex items-center justify-center gap-2 rounded-xl bg-rose-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-400 disabled:opacity-50"
               >
                 {deleting ? (
                   <>
-                    <div className="size-4 animate-spin rounded-full border-2 border-red-400/30 border-t-red-400" />
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
 
                     Removendo...
                   </>
                 ) : (
                   <>
-                    <Trash2 className="size-4" />
+                    <Trash2 size={16} />
 
-                    Remover
+                    Sim, remover
                   </>
                 )}
               </button>
