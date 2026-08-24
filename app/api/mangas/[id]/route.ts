@@ -42,8 +42,7 @@ function parseOwnedVolumes(value: unknown): number[] {
     .map((item) => Math.floor(item))
     .filter((item) => item > 0)
 
-  return [...new Set(volumes)].sort((a, b) => a - b)
-}
+return Array.from(new Set(volumes)).sort((a, b) => a - b)}
 
 function parseStatus(value: unknown): MangaStatus {
   if (
