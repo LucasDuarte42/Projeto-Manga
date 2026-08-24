@@ -8,13 +8,28 @@ datasource db {
 }
 
 model User {
+  id                  String               @id @default(cuid())
+  email               String               @unique
+  password            String
+  name                String?
+
+  mangas              Manga[]
+  passwordResetTokens PasswordResetToken[]
+
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+}
+
+model PasswordResetToken {
   id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String?
-  mangas    Manga[]
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 enum CollectionType {
@@ -29,31 +44,36 @@ enum MangaStatus {
 }
 
 model Manga {
-  id            String      @id @default(cuid())
-  name          String
-  author        String?     // ← adiciona essa linha
-  volume        Int
-  totalVolumes  Int?        
-  ownedVolumes  Int[]       @default([])
-  status        MangaStatus @default(WANT_TO_READ)
+  id             String         @id @default(cuid())
+  name           String
+  author         String?
+  volume         Int
+  totalVolumes   Int?
+  ownedVolumes   Int[]          @default([])
+  status         MangaStatus    @default(WANT_TO_READ)
   collectionType CollectionType @default(MANGA)
-  note          Float?      @map("rating")
-  genre         String?
-  coverUrl      String?
-  userId        String
-  volumeRatings VolumeRating[]
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  note           Float?         @map("rating")
+  genre          String?
+  coverUrl       String?
+
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  volumeRatings  VolumeRating[]
+
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   @@unique([userId, name, volume])
 }
+
 model VolumeRating {
   id        String   @id @default(cuid())
   mangaId   String
   volume    Int
   note      Float
+
   manga     Manga    @relation(fields: [mangaId], references: [id], onDelete: Cascade)
-  
+
   @@unique([mangaId, volume])
 }

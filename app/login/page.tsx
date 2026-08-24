@@ -1,13 +1,23 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
-import { signIn, useSession } from 'next-auth/react'
+import {
+  useState,
+  useEffect,
+  Suspense,
+} from 'react'
+
+import {
+  signIn,
+  useSession,
+} from 'next-auth/react'
+
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
 function LoginForm() {
   const searchParams = useSearchParams()
   const { status } = useSession()
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -23,54 +33,83 @@ function LoginForm() {
 
   useEffect(() => {
     if (searchParams.get('registered')) {
-      setSuccess('Conta criada com sucesso! Faça login.')
+      setSuccess(
+        'Conta criada com sucesso! Faça login.'
+      )
     }
   }, [searchParams])
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(
+    e: React.FormEvent<HTMLFormElement>
+  ) {
     e.preventDefault()
+
     setLoading(true)
     setError('')
     setSuccess('')
 
     if (attempts >= 5) {
-      setError('Muitas tentativas. Aguarde alguns minutos.')
-      setLoading(false)
-      return
-    }
-
-    const result = await signIn('credentials', {
-      email,
-      password,
-      redirect: false,
-    })
-
-    console.log('SignIn result:', JSON.stringify(result))
-
-    if (result?.error) {
-      setAttempts(a => a + 1)
       setError(
-        attempts >= 4
-          ? 'Conta bloqueada temporariamente.'
-          : 'Email ou senha incorretos'
+        'Muitas tentativas. Aguarde alguns minutos.'
       )
+
       setLoading(false)
       return
     }
 
-    if (result?.ok) {
-      window.location.href = '/dashboard'
-      return
-    }
+    try {
+      const result = await signIn(
+        'credentials',
+        {
+          email,
+          password,
+          redirect: false,
+        }
+      )
 
-    setError('Erro inesperado. Tente novamente.')
-    setLoading(false)
+      console.log(
+        'SignIn result:',
+        JSON.stringify(result)
+      )
+
+      if (result?.error) {
+        setAttempts((current) => current + 1)
+
+        setError(
+          attempts >= 4
+            ? 'Conta bloqueada temporariamente.'
+            : 'Email ou senha incorretos'
+        )
+
+        return
+      }
+
+      if (result?.ok) {
+        window.location.href = '/dashboard'
+        return
+      }
+
+      setError(
+        'Erro inesperado. Tente novamente.'
+      )
+    } catch {
+      setError(
+        'Não foi possível realizar o login.'
+      )
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <div className="bg-gray-900 p-8 rounded-2xl w-full max-w-md border border-gray-800">
-      <h1 className="text-2xl font-bold text-white mb-1">Bem-vindo de volta</h1>
-      <p className="text-gray-400 text-sm mb-8">Entre na sua coleção de mangás</p>
+      <h1 className="text-2xl font-bold text-white mb-1">
+        Bem-vindo de volta
+      </h1>
+
+      <p className="text-gray-400 text-sm mb-8">
+        Entre na sua coleção de mangás
+      </p>
 
       {success && (
         <div className="bg-green-500/10 border border-green-500/20 text-green-400 text-sm px-4 py-3 rounded-lg mb-4">
@@ -78,13 +117,21 @@ function LoginForm() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col gap-4"
+      >
         <div>
-          <label className="text-sm text-gray-400 mb-1 block">Email</label>
+          <label className="text-sm text-gray-400 mb-1 block">
+            Email
+          </label>
+
           <input
             type="email"
             value={email}
-            onChange={e => setEmail(e.target.value)}
+            onChange={(e) =>
+              setEmail(e.target.value)
+            }
             className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 border border-gray-700 focus:outline-none focus:border-purple-500"
             placeholder="seu@email.com"
             required
@@ -92,37 +139,63 @@ function LoginForm() {
         </div>
 
         <div>
-          <label className="text-sm text-gray-400 mb-1 block">Senha</label>
+          <label className="text-sm text-gray-400 mb-1 block">
+            Senha
+          </label>
+
           <input
             type="password"
             value={password}
-            onChange={e => setPassword(e.target.value)}
+            onChange={(e) =>
+              setPassword(e.target.value)
+            }
             className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 border border-gray-700 focus:outline-none focus:border-purple-500"
             placeholder="••••••••"
             required
           />
         </div>
 
+        <div className="flex justify-end">
+          <Link
+            href="/forgot-password"
+            className="text-sm text-purple-400 hover:text-purple-300 hover:underline"
+          >
+            Esqueci minha senha
+          </Link>
+        </div>
+
         {attempts > 0 && attempts < 5 && (
           <p className="text-yellow-400 text-xs">
-            {5 - attempts} tentativa{5 - attempts !== 1 ? 's' : ''} restante{5 - attempts !== 1 ? 's' : ''}
+            {5 - attempts} tentativa
+            {5 - attempts !== 1 ? 's' : ''} restante
+            {5 - attempts !== 1 ? 's' : ''}
           </p>
         )}
 
-        {error && <p className="text-red-400 text-sm">{error}</p>}
+        {error && (
+          <p className="text-red-400 text-sm">
+            {error}
+          </p>
+        )}
 
         <button
           type="submit"
           disabled={loading || attempts >= 5}
           className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? 'Entrando...' : 'Entrar'}
+          {loading
+            ? 'Entrando...'
+            : 'Entrar'}
         </button>
       </form>
 
       <p className="text-gray-400 text-sm text-center mt-6">
         Não tem conta?{' '}
-        <Link href="/register" className="text-purple-400 hover:underline">
+
+        <Link
+          href="/register"
+          className="text-purple-400 hover:underline"
+        >
           Criar conta
         </Link>
       </p>
@@ -133,9 +206,13 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-950 px-4">
-      <Suspense fallback={
-        <div className="text-white">Carregando...</div>
-      }>
+      <Suspense
+        fallback={
+          <div className="text-white">
+            Carregando...
+          </div>
+        }
+      >
         <LoginForm />
       </Suspense>
     </div>
