@@ -3,8 +3,6 @@ import { prisma } from '@/lib/prisma'
 import crypto from 'crypto'
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 interface ForgotPasswordBody {
   email?: unknown
 }
@@ -26,6 +24,26 @@ export async function POST(req: NextRequest) {
     if (!email) {
       return NextResponse.json(response)
     }
+
+    const resendApiKey = process.env.RESEND_API_KEY
+
+    if (!resendApiKey) {
+      console.error(
+        'RESEND_API_KEY não está configurada; recuperação de senha indisponível.'
+      )
+
+      return NextResponse.json(
+        {
+          error:
+            'O serviço de recuperação de senha está temporariamente indisponível.',
+        },
+        {
+          status: 503,
+        }
+      )
+    }
+
+    const resend = new Resend(resendApiKey)
 
     const user = await prisma.user.findUnique({
       where: {
