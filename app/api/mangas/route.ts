@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { requireUserSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { mangaCreateSchema } from '@/lib/validations'
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions)
+  const session = await requireUserSession()
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
   }
@@ -19,7 +18,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
+  const session = await requireUserSession()
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
   }
