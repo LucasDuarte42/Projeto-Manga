@@ -25,6 +25,7 @@ function parseNumber(value: unknown): number | null {
 
   if (typeof value === 'string') {
     const parsed = Number(value)
+
     return Number.isFinite(parsed) ? parsed : null
   }
 
@@ -42,16 +43,13 @@ function parseOwnedVolumes(value: unknown): number[] {
     .map((item) => Math.floor(item))
     .filter((item) => item > 0)
 
-<<<<<<< HEAD
-return Array.from(new Set(volumes)).sort((a, b) => a - b)}
-=======
   return volumes
     .filter(
-      (volume, index, array) => array.indexOf(volume) === index
+      (volume, index, array) =>
+        array.indexOf(volume) === index
     )
     .sort((a, b) => a - b)
 }
->>>>>>> main
 
 function parseStatus(value: unknown): MangaStatus {
   if (
@@ -136,11 +134,16 @@ export async function PUT(
       body.ownedVolumes ?? manga.ownedVolumes
     )
 
-    const parsedTotalVolumes = parseNumber(body.totalVolumes)
+    const parsedTotalVolumes = parseNumber(
+      body.totalVolumes
+    )
 
     const totalVolumes =
       parsedTotalVolumes !== null
-        ? Math.max(1, Math.floor(parsedTotalVolumes))
+        ? Math.max(
+            1,
+            Math.floor(parsedTotalVolumes)
+          )
         : null
 
     const parsedNote = parseNumber(body.note)
@@ -148,19 +151,27 @@ export async function PUT(
     let note: number | null = null
 
     if (parsedNote !== null) {
-      note = Math.min(10, Math.max(0, parsedNote))
+      note = Math.min(
+        10,
+        Math.max(0, parsedNote)
+      )
     }
 
     const parsedVolume = parseNumber(body.volume)
 
     const volume =
       parsedVolume !== null
-        ? Math.max(0, Math.floor(parsedVolume))
+        ? Math.max(
+            0,
+            Math.floor(parsedVolume)
+          )
         : ownedVolumes.length > 0
           ? Math.max(...ownedVolumes)
           : manga.volume
 
-    let status = parseStatus(body.status ?? manga.status)
+    let status = parseStatus(
+      body.status ?? manga.status
+    )
 
     // Se existe uma nota geral, a obra é considerada lida
     if (note !== null) {
@@ -168,7 +179,8 @@ export async function PUT(
     }
 
     const name =
-      typeof body.name === 'string' && body.name.trim()
+      typeof body.name === 'string' &&
+      body.name.trim()
         ? body.name.trim()
         : manga.name
 
@@ -206,7 +218,10 @@ export async function PUT(
 
     return NextResponse.json(updated)
   } catch (error) {
-    console.error('Erro ao atualizar mangá:', error)
+    console.error(
+      'Erro ao atualizar mangá:',
+      error
+    )
 
     return NextResponse.json(
       { error: 'Erro ao atualizar mangá' },
@@ -252,7 +267,10 @@ export async function DELETE(
       success: true,
     })
   } catch (error) {
-    console.error('Erro ao deletar mangá:', error)
+    console.error(
+      'Erro ao deletar mangá:',
+      error
+    )
 
     return NextResponse.json(
       { error: 'Erro ao deletar mangá' },
