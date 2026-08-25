@@ -8,6 +8,7 @@ const sessionMock = vi.hoisted(() => ({
 const prismaMock = vi.hoisted(() => ({
   manga: {
     findMany: vi.fn(),
+    count: vi.fn(),
     findUnique: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
@@ -65,12 +66,22 @@ describe('autorização das APIs de mangás', () => {
 
   it('filtra a coleção pelo usuário autenticado', async () => {
     prismaMock.manga.findMany.mockResolvedValue([])
+    prismaMock.manga.count.mockResolvedValue(0)
 
-    await getMangas(request('GET'))
+    const response = await getMangas(request('GET'))
 
+    expect(prismaMock.manga.count).toHaveBeenCalledWith({
+      where: { userId: 'user-a' },
+    })
     expect(prismaMock.manga.findMany).toHaveBeenCalledWith({
       where: { userId: 'user-a' },
       orderBy: { createdAt: 'desc' },
+      skip: 0,
+      take: 20,
+    })
+    expect(await response.json()).toEqual({
+      items: [],
+      pagination: { page: 1, pageSize: 20, totalItems: 0, totalPages: 1 },
     })
   })
 

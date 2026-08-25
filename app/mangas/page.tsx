@@ -62,6 +62,9 @@ export default function MangasPage() {
   const [search, setSearch] = useState('')
   const [sortOrder, setSortOrder] = useState<'RECENT' | 'AZ' | 'ZA'>('RECENT')
   const [mangas, setMangas] = useState<Manga[]>([])
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -85,14 +88,21 @@ export default function MangasPage() {
     if (status === 'authenticated') {
       fetchMangas()
     }
-  }, [status])
+  }, [status, page, search, filterStatus, sortOrder])
 
   const fetchMangas = async () => {
     try {
       setLoading(true)
       setError(null)
 
-      const response = await fetch('/api/mangas')
+      const params = new URLSearchParams({
+        page: String(page),
+        pageSize: '20',
+        q: search,
+        status: filterStatus,
+        sort: sortOrder,
+      })
+      const response = await fetch(`/api/mangas?${params.toString()}`)
 
       if (!response.ok) {
         throw new Error(`Erro ${response.status}`)
@@ -100,7 +110,9 @@ export default function MangasPage() {
 
       const data = await response.json()
 
-      setMangas(data)
+      setMangas(data.items ?? [])
+      setTotalItems(data.pagination?.totalItems ?? 0)
+      setTotalPages(data.pagination?.totalPages ?? 1)
     } catch (err) {
       setError(
         err instanceof Error
@@ -212,45 +224,6 @@ export default function MangasPage() {
 }
 
   const filteredMangas = mangas
-    .filter((manga) => {
-      let matchesStatus =
-        filterStatus === 'ALL' ||
-        manga.status === filterStatus
-
-      if (filterStatus === 'MISSING') {
-        const total = manga.totalVolumes || 0
-        const owned =
-          manga.ownedVolumes?.length || 0
-
-        matchesStatus =
-          total > 0 && owned < total
-      }
-
-      const matchesSearch =
-        manga.name
-          .toLowerCase()
-          .includes(search.toLowerCase()) ||
-        manga.author
-          ?.toLowerCase()
-          .includes(search.toLowerCase())
-
-      return matchesStatus && matchesSearch
-    })
-
-    .sort((a, b) => {
-      if (sortOrder === 'AZ') {
-        return a.name.localeCompare(b.name)
-      }
-
-      if (sortOrder === 'ZA') {
-        return b.name.localeCompare(a.name)
-      }
-
-      return (
-        new Date(b.createdAt).getTime() -
-        new Date(a.createdAt).getTime()
-      )
-    })
 
   const getStatusBadge = (status: string) => {
     const map: Record<
@@ -376,8 +349,8 @@ export default function MangasPage() {
               </h1>
 
               <p className="text-xs text-gray-500">
-                {mangas.length}{' '}
-                {mangas.length === 1
+                {totalItems}{' '}
+                {totalItems === 1
                   ? 'item'
                   : 'itens'}
               </p>
@@ -394,9 +367,9 @@ export default function MangasPage() {
 
             <button
               onClick={handleExportClick}
-              disabled={mangas.length === 0}
+              disabled={totalItems === 0}
               className="flex items-center gap-2 rounded-xl border border-gray-800 bg-gray-900/50 px-3 py-2.5 text-sm font-semibold text-gray-300 transition hover:border-gray-700 hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-40 sm:px-4"
-              title="Exportar coleção como texto"
+              title="Visualizar exportação em texto"
             >
               <Download size={18} />
 
@@ -404,6 +377,24 @@ export default function MangasPage() {
                 Exportar
               </span>
             </button>
+
+            <a
+              href="/api/mangas/export?format=json"
+              download="pinakes-colecao.json"
+              className="hidden rounded-xl border border-gray-800 bg-gray-900/50 px-3 py-2.5 text-sm font-semibold text-gray-300 transition hover:border-gray-700 hover:bg-gray-900 lg:inline-flex"
+              title="Baixar coleção em JSON"
+            >
+              JSON
+            </a>
+
+            <a
+              href="/api/mangas/export?format=csv"
+              download="pinakes-colecao.csv"
+              className="hidden rounded-xl border border-gray-800 bg-gray-900/50 px-3 py-2.5 text-sm font-semibold text-gray-300 transition hover:border-gray-700 hover:bg-gray-900 lg:inline-flex"
+              title="Baixar coleção em CSV"
+            >
+              CSV
+            </a>
 
             <button
               onClick={() => setShowModal(true)}
@@ -455,9 +446,10 @@ export default function MangasPage() {
               type="text"
               placeholder="Pesquisar mangá ou autor..."
               value={search}
-              onChange={(e) =>
+              onChange={(e) => {
                 setSearch(e.target.value)
-              }
+                setPage(1)
+              }}
               className="w-full rounded-2xl border border-gray-800 bg-gray-900/70 py-3.5 pl-12 pr-4 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-purple-500/60 focus:bg-gray-900 focus:ring-4 focus:ring-purple-500/5"
             />
 
@@ -480,9 +472,10 @@ export default function MangasPage() {
               }) => (
                 <button
                   key={key}
-                  onClick={() =>
+                  onClick={() => {
                     setFilterStatus(key as any)
-                  }
+                    setPage(1)
+                  }}
                   className={`flex shrink-0 items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-medium transition ${
                     filterStatus === key
                       ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20'
@@ -518,14 +511,15 @@ export default function MangasPage() {
 
             <select
               value={sortOrder}
-              onChange={(e) =>
+              onChange={(e) => {
                 setSortOrder(
                   e.target.value as
                     | 'RECENT'
                     | 'AZ'
                     | 'ZA'
                 )
-              }
+                setPage(1)
+              }}
               className="appearance-none rounded-xl border border-gray-800 bg-gray-900 px-4 py-2 pr-10 text-sm text-gray-300 outline-none transition hover:border-gray-700 focus:border-purple-500"
             >
               <option value="RECENT">
@@ -638,6 +632,7 @@ export default function MangasPage() {
 
           /* Manga grid */
 
+          <>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-5 lg:grid-cols-4 xl:grid-cols-5">
 
             {filteredMangas.map((manga) => {
@@ -804,6 +799,31 @@ export default function MangasPage() {
             })}
 
           </div>
+
+          {totalPages > 1 && (
+            <nav className="mt-8 flex items-center justify-center gap-4" aria-label="Paginação da coleção">
+              <button
+                type="button"
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                disabled={page === 1}
+                className="rounded-xl border border-gray-800 px-4 py-2 text-sm text-gray-300 transition hover:border-purple-500 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Anterior
+              </button>
+              <span className="text-sm text-gray-500">
+                Página <strong className="text-gray-200">{page}</strong> de {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                disabled={page === totalPages}
+                className="rounded-xl border border-gray-800 px-4 py-2 text-sm text-gray-300 transition hover:border-purple-500 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Próxima
+              </button>
+            </nav>
+          )}
+          </>
 
         )}
 

@@ -1,7 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { searchQuerySchema } from '@/lib/validations'
+import { consumeRateLimit, getClientIp } from '@/lib/security'
 
 export async function GET(req: NextRequest) {
+  const allowed = await consumeRateLimit(
+    `external-search:comic:${getClientIp(req.headers)}`,
+    30,
+    10 * 60 * 1000
+  )
+
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Limite de buscas atingido. Tente novamente em alguns minutos.' },
+      { status: 429, headers: { 'Retry-After': '600' } }
+    )
+  }
+
   const { searchParams } = new URL(req.url)
   const parsedQuery = searchQuerySchema.safeParse({
     q: searchParams.get('q') ?? '',
