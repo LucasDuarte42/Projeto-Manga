@@ -4,6 +4,7 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import { prisma } from './prisma'
 import bcrypt from 'bcryptjs'
 import { loginSchema } from './validations'
+import { consumeRateLimit } from './security'
 
 declare module 'next-auth' {
   interface Session {
@@ -36,11 +37,23 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Senha', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         const parsed = loginSchema.safeParse(credentials)
         if (!parsed.success) return null
 
         const { email, password } = parsed.data
+        const forwardedFor = req.headers?.['x-forwarded-for']
+        const ip = Array.isArray(forwardedFor)
+          ? forwardedFor[0]
+          : forwardedFor?.split(',')[0]?.trim() || 'unknown'
+
+        const allowed = await consumeRateLimit(
+          `login:${ip}:${email}`,
+          5,
+          15 * 60 * 1000
+        )
+
+        if (!allowed) return null
         const user = await prisma.user.findUnique({
           where: { email },
         })
