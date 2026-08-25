@@ -4,6 +4,7 @@ import {
   mangaCreateSchema,
   passwordSchema,
   resetPasswordSchema,
+  searchQuerySchema,
   volumeRatingSchema,
 } from './validations'
 import { hashResetToken } from './security'
@@ -35,6 +36,23 @@ describe('schemas de coleção', () => {
   it('rejeita avaliação fora do intervalo permitido', () => {
     expect(volumeRatingSchema.safeParse({ volume: 1, note: 11 }).success).toBe(false)
     expect(volumeRatingSchema.safeParse({ volume: 1, note: 8.5 }).success).toBe(true)
+  })
+
+  it('exige consulta curta e não vazia para buscas', () => {
+    expect(searchQuerySchema.safeParse({ q: '  ' }).success).toBe(false)
+    expect(searchQuerySchema.safeParse({ q: 'Naruto' }).success).toBe(true)
+    expect(searchQuerySchema.safeParse({ q: 'x'.repeat(101) }).success).toBe(false)
+  })
+
+  it('aceita apenas capas HTTPS', () => {
+    expect(mangaCreateSchema.safeParse({
+      name: 'Seguro',
+      coverUrl: 'https://images.example.com/cover.jpg',
+    }).success).toBe(true)
+    expect(mangaCreateSchema.safeParse({
+      name: 'Inseguro',
+      coverUrl: 'http://images.example.com/cover.jpg',
+    }).success).toBe(false)
   })
 })
 

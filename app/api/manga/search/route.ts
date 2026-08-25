@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { searchQuerySchema } from '@/lib/validations'
 
 const ANILIST_URL = 'https://graphql.anilist.co'
 
@@ -87,14 +88,19 @@ async function fetchAniList(search: string, perPage: number) {
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
-  const query = searchParams.get('q')
+  const parsedQuery = searchQuerySchema.safeParse({
+    q: searchParams.get('q') ?? '',
+  })
 
-  if (!query?.trim()) {
-    return NextResponse.json({ error: 'Query obrigatória' }, { status: 400 })
+  if (!parsedQuery.success) {
+    return NextResponse.json(
+      { error: parsedQuery.error.issues[0].message },
+      { status: 400 }
+    )
   }
 
   try {
-    const res = await fetchAniList(query.trim(), 10)
+    const res = await fetchAniList(parsedQuery.data.q, 10)
     const json = await res.json()
 
     if (json.errors?.length) {
@@ -122,7 +128,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(
       {
         error: 'Não foi possível pesquisar mangás no momento',
-        details,
       },
       { status: 503 }
     )

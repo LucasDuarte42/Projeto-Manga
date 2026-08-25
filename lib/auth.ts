@@ -47,13 +47,13 @@ export const authOptions: NextAuthOptions = {
           ? forwardedFor[0]
           : forwardedFor?.split(',')[0]?.trim() || 'unknown'
 
-        const allowed = await consumeRateLimit(
-          `login:${ip}:${email}`,
-          5,
-          15 * 60 * 1000
-        )
+        const windowMs = 15 * 60 * 1000
+        const [allowedByIdentity, allowedByIp] = await Promise.all([
+          consumeRateLimit(`login:identity:${ip}:${email}`, 5, windowMs),
+          consumeRateLimit(`login:ip:${ip}`, 20, windowMs),
+        ])
 
-        if (!allowed) return null
+        if (!allowedByIdentity || !allowedByIp) return null
         const user = await prisma.user.findUnique({
           where: { email },
         })

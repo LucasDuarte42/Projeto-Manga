@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useDebouncedValue } from '@/lib/useDebouncedValue'
 
 interface MangaResult {
   mal_id:  number
@@ -30,6 +31,7 @@ interface Props {
 export default function AddMangaModal({ onClose, onAdd, onAddManual }: Props) {
   const [tab,     setTab]     = useState<'search' | 'manual'>('search')
   const [query,   setQuery]   = useState('')
+  const debouncedQuery = useDebouncedValue(query)
   const [results, setResults] = useState<MangaResult[]>([])
   const [loading, setLoading] = useState(false)
   const [adding,  setAdding]  = useState<number | null>(null)
@@ -42,12 +44,15 @@ export default function AddMangaModal({ onClose, onAdd, onAddManual }: Props) {
   const [savingManual, setSavingManual] = useState(false)
   const [manualSuccess, setManualSuccess] = useState(false)
 
-  async function handleSearch() {
-    if (!query.trim()) return
+  async function handleSearch(searchTerm = query) {
+    if (searchTerm.trim().length < 3) {
+      setResults([])
+      return
+    }
     setLoading(true)
     setError(null)
     try {
-      const res  = await fetch(`/api/manga/search?q=${encodeURIComponent(query)}`)
+      const res  = await fetch(`/api/manga/search?q=${encodeURIComponent(searchTerm.trim())}`)
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       setResults(data.mangas)
@@ -57,6 +62,12 @@ export default function AddMangaModal({ onClose, onAdd, onAddManual }: Props) {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (tab === 'search' && debouncedQuery.trim().length >= 3) {
+      void handleSearch(debouncedQuery)
+    }
+  }, [debouncedQuery, tab])
 
   async function handleAdd(manga: MangaResult) {
     setAdding(manga.mal_id)
@@ -133,7 +144,7 @@ export default function AddMangaModal({ onClose, onAdd, onAddManual }: Props) {
                 className="flex-1 bg-gray-800 text-white rounded-lg px-4 py-2 outline-none border border-gray-700 focus:border-purple-500 transition"
               />
               <button
-                onClick={handleSearch}
+                onClick={() => void handleSearch()}
                 disabled={loading}
                 className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white px-5 py-2 rounded-lg font-medium transition"
               >

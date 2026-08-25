@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useDebouncedValue } from '@/lib/useDebouncedValue'
 
 type CollectionType = 'MANGA' | 'HQ'
 
@@ -39,6 +40,7 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
   const [tab,     setTab]     = useState<'search' | 'manual'>('search')
   const [type,    setType]    = useState<CollectionType>('MANGA')
   const [query,   setQuery]   = useState('')
+  const debouncedQuery = useDebouncedValue(query)
   const [results, setResults] = useState<ItemResult[]>([])
   const [loading, setLoading] = useState(false)
   const [adding,  setAdding]  = useState<number | null>(null)
@@ -53,8 +55,11 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
 
   const currentTypeInfo = COLLECTION_TYPES.find(t => t.value === type)
 
-  async function handleSearch() {
-    if (!query.trim()) return
+  async function handleSearch(searchTerm = query) {
+    if (searchTerm.trim().length < 3) {
+      setResults([])
+      return
+    }
     setLoading(true)
     setError(null)
     
@@ -63,7 +68,7 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
     const endpoint = isManga ? '/api/manga/search' : '/api/comic/search'
     
     try {
-      const res  = await fetch(`${endpoint}?q=${encodeURIComponent(query)}`)
+      const res  = await fetch(`${endpoint}?q=${encodeURIComponent(searchTerm.trim())}`)
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       
@@ -75,6 +80,12 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (tab === 'search' && debouncedQuery.trim().length >= 3) {
+      void handleSearch(debouncedQuery)
+    }
+  }, [debouncedQuery, tab, type])
 
   async function handleAdd(item: ItemResult) {
     setAdding(item.mal_id)
@@ -172,7 +183,7 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
                 className="flex-1 bg-gray-800 text-white rounded-lg px-4 py-2 outline-none border border-gray-700 focus:border-purple-500 transition"
               />
               <button
-                onClick={handleSearch}
+                onClick={() => void handleSearch()}
                 disabled={loading}
                 className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white px-5 py-2 rounded-lg font-medium transition"
               >
