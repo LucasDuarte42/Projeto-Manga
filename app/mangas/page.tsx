@@ -21,6 +21,7 @@ import {
 import AddItemModal from '@/components/AddItemModal'
 import MangaSkeleton from '@/components/MangaSkeleton'
 import QuickEditModal from '@/components/QuickEditModal'
+import LogoutButton from '@/components/LogoutButton'
 
 type CollectionType = 'MANGA' | 'HQ'
 
@@ -388,6 +389,8 @@ export default function MangasPage() {
                 Adicionar
               </span>
             </button>
+
+            <LogoutButton />
 
           </div>
 
