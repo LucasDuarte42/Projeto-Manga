@@ -1,0 +1,61 @@
+name: E2E tests
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, 'feature/**', 'test/**']
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: e2e
+          POSTGRES_PASSWORD: e2e
+          POSTGRES_DB: pinakes_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U e2e -d pinakes_e2e"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      E2E_DATABASE_URL: postgresql://e2e:e2e@localhost:5432/pinakes_e2e
+      DATABASE_URL: postgresql://e2e:e2e@localhost:5432/pinakes_e2e
+      NEXTAUTH_SECRET: e2e-ci-secret-change-me
+      NEXTAUTH_URL: http://127.0.0.1:3000
+      RESEND_API_KEY: re_placeholder_for_e2e
+      KV_REST_API_URL: ''
+      KV_REST_API_TOKEN: ''
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply database migrations
+        run: npm run db:migrate
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Build application
+        run: npm run build
+
+      - name: Run E2E tests
+        run: npm run e2e
