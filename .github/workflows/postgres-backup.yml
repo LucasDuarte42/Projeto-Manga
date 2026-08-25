@@ -1,0 +1,39 @@
+name: PostgreSQL backup
+
+on:
+  schedule:
+    - cron: '30 3 * * 0'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Create encrypted database dump
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$BACKUP_DATABASE_URL"
+          test -n "$BACKUP_ENCRYPTION_KEY"
+          mkdir -p backup
+          pg_dump "$BACKUP_DATABASE_URL" --format=custom --no-owner --no-privileges > backup/pinakes-$(date -u +%Y-%m-%d).dump
+          openssl enc -aes-256-cbc -pbkdf2 -salt \
+            -in backup/pinakes-*.dump \
+            -out backup/pinakes-$(date -u +%Y-%m-%d).dump.enc \
+            -pass env:BACKUP_ENCRYPTION_KEY
+          rm backup/pinakes-*.dump
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: postgres-backup-${{ github.run_id }}
+          path: backup/*.dump.enc
+          retention-days: 30

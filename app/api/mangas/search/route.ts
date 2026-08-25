@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { searchQuerySchema } from '@/lib/validations'
 
 const ANILIST_API = 'https://graphql.anilist.co'
 
@@ -33,14 +34,18 @@ export const dynamic = 'force-dynamic'
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
-    const search = searchParams.get('q')?.trim()
+    const parsedQuery = searchQuerySchema.safeParse({
+      q: searchParams.get('q') ?? '',
+    })
 
-    if (!search) {
+    if (!parsedQuery.success) {
       return NextResponse.json(
-        { error: 'Query obrigatória' },
+        { error: parsedQuery.error.issues[0].message },
         { status: 400 }
       )
     }
+
+    const search = parsedQuery.data.q
 
     const response = await fetch(ANILIST_API, {
       method: 'POST',

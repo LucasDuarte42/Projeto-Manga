@@ -1,12 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { searchQuerySchema } from '@/lib/validations'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
-  const query = searchParams.get('q')
+  const parsedQuery = searchQuerySchema.safeParse({
+    q: searchParams.get('q') ?? '',
+  })
 
-  if (!query) {
-    return NextResponse.json({ error: 'Query obrigatória' }, { status: 400 })
+  if (!parsedQuery.success) {
+    return NextResponse.json(
+      { error: parsedQuery.error.issues[0].message },
+      { status: 400 }
+    )
   }
+
+  const query = parsedQuery.data.q
 
   try {
     // Busca na Open Library (não precisa de chave)

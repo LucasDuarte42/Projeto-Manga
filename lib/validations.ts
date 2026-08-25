@@ -41,12 +41,27 @@ export const resetPasswordSchema = z.object({
 const optionalText = (max: number) =>
   z.string().trim().max(max).nullable().optional()
 
+const coverUrlSchema = z
+  .string()
+  .trim()
+  .url('URL da capa inválida')
+  .max(2048, 'URL da capa muito longa')
+  .refine((value) => {
+    try {
+      return new URL(value).protocol === 'https:'
+    } catch {
+      return false
+    }
+  }, 'A capa deve usar HTTPS')
+  .nullable()
+  .optional()
+
 const positiveInt = z.number().int().min(0).max(100000)
 
 export const mangaCreateSchema = z.object({
   name: boundedText(200).min(1, 'Nome obrigatório'),
   author: optionalText(200),
-  coverUrl: z.string().url().max(2048).nullable().optional(),
+  coverUrl: coverUrlSchema,
   volume: positiveInt.optional().default(1),
   totalVolumes: positiveInt.nullable().optional(),
   status: z.enum(['READ', 'READING', 'WANT_TO_READ']).optional().default('WANT_TO_READ'),
@@ -58,7 +73,7 @@ export const mangaCreateSchema = z.object({
 export const mangaUpdateSchema = z.object({
   name: boundedText(200).min(1).optional(),
   author: optionalText(200),
-  coverUrl: z.string().url().max(2048).nullable().optional(),
+  coverUrl: coverUrlSchema,
   volume: positiveInt.optional(),
   totalVolumes: positiveInt.nullable().optional(),
   ownedVolumes: z.array(z.number().int().min(1).max(100000)).max(10000).optional(),
