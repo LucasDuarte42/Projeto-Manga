@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { mangaUpdateSchema } from '@/lib/validations'
 
 type MangaStatus = 'READ' | 'READING' | 'WANT_TO_READ'
 
@@ -128,7 +129,17 @@ export async function PUT(
       )
     }
 
-    const body = (await req.json()) as UpdateMangaBody
+    const rawBody = await req.json()
+    const parsedBody = mangaUpdateSchema.safeParse(rawBody)
+
+    if (!parsedBody.success) {
+      return NextResponse.json(
+        { error: parsedBody.error.issues[0].message },
+        { status: 400 }
+      )
+    }
+
+    const body = parsedBody.data as UpdateMangaBody
 
     const ownedVolumes = parseOwnedVolumes(
       body.ownedVolumes ?? manga.ownedVolumes

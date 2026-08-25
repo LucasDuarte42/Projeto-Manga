@@ -2,54 +2,35 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 
 import { prisma } from '@/lib/prisma'
-
-interface ResetPasswordBody {
-  token?: unknown
-  password?: unknown
-}
+import { resetPasswordSchema } from '@/lib/validations'
+import { hashResetToken, consumeRateLimit, getClientIp } from '@/lib/security'
 
 export async function POST(req: NextRequest) {
   try {
-    const body =
-      (await req.json()) as ResetPasswordBody
+    const ip = getClientIp(req.headers)
 
-    const token =
-      typeof body.token === 'string'
-        ? body.token
-        : ''
-
-    const password =
-      typeof body.password === 'string'
-        ? body.password
-        : ''
-
-    if (!token || !password) {
+    if (!consumeRateLimit(`reset-password:${ip}`, 5, 15 * 60 * 1000)) {
       return NextResponse.json(
-        {
-          error: 'Dados inválidos.',
-        },
-        {
-          status: 400,
-        }
+        { error: 'Muitas tentativas. Tente novamente em 15 minutos.' },
+        { status: 429 }
       )
     }
 
-    if (password.length < 6) {
+    const body = await req.json()
+    const parsed = resetPasswordSchema.safeParse(body)
+
+    if (!parsed.success) {
       return NextResponse.json(
-        {
-          error:
-            'A senha deve ter pelo menos 6 caracteres.',
-        },
-        {
-          status: 400,
-        }
+        { error: parsed.error.issues[0].message },
+        { status: 400 }
       )
     }
 
+    const { token, password } = parsed.data
     const resetToken =
       await prisma.passwordResetToken.findUnique({
         where: {
-          token,
+          token: hashResetToken(token),
         },
       })
 

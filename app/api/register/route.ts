@@ -2,38 +2,12 @@ import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { registerSchema } from '@/lib/validations'
-
-// Rate limiting simples em memória
-const attempts = new Map<string, { count: number; lastAttempt: number }>()
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now()
-  const windowMs = 15 * 60 * 1000 // 15 minutos
-  const maxAttempts = 5
-
-  const record = attempts.get(ip)
-
-  if (!record) {
-    attempts.set(ip, { count: 1, lastAttempt: now })
-    return true
-  }
-
-  if (now - record.lastAttempt > windowMs) {
-    attempts.set(ip, { count: 1, lastAttempt: now })
-    return true
-  }
-
-  if (record.count >= maxAttempts) return false
-
-  record.count++
-  record.lastAttempt = now
-  return true
-}
+import { consumeRateLimit, getClientIp } from '@/lib/security'
 
 export async function POST(req: Request) {
-  const ip = req.headers.get('x-forwarded-for') || 'unknown'
+  const ip = getClientIp(req.headers)
 
-  if (!checkRateLimit(ip)) {
+  if (!consumeRateLimit(`register:${ip}`, 5, 15 * 60 * 1000)) {
     return NextResponse.json(
       { error: 'Muitas tentativas. Tente novamente em 15 minutos.' },
       { status: 429 }
