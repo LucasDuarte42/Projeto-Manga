@@ -28,6 +28,7 @@ jobs:
 
     env:
       E2E_DATABASE_URL: postgresql://e2e:e2e@localhost:5432/pinakes_e2e
+      DATABASE_URL: postgresql://e2e:e2e@localhost:5432/pinakes_e2e
       NEXTAUTH_SECRET: e2e-ci-secret-change-me
       NEXTAUTH_URL: http://127.0.0.1:3000
       RESEND_API_KEY: re_placeholder_for_e2e
