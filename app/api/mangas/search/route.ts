@@ -1,33 +1,122 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+const ANILIST_API = 'https://graphql.anilist.co'
+
+const query = `
+  query ($search: String!) {
+    Page(page: 1, perPage: 10) {
+      media(
+        search: $search
+        type: MANGA
+        sort: SEARCH_MATCH
+      ) {
+        id
+        title {
+          romaji
+          english
+          native
+        }
+        coverImage {
+          large
+          medium
+        }
+        volumes
+        status
+        averageScore
+        genres
+        format
+      }
+    }
+  }
+`
+
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url)
-  const query = searchParams.get('q')
+  try {
+    const { searchParams } = new URL(req.url)
+    const search = searchParams.get('q')?.trim()
 
-  if (!query) {
-    return NextResponse.json({ error: 'Query obrigatória' }, { status: 400 })
+    if (!search) {
+      return NextResponse.json(
+        { error: 'Query obrigatória' },
+        { status: 400 }
+      )
+    }
+
+    const response = await fetch(ANILIST_API, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        query,
+        variables: {
+          search,
+        },
+      }),
+      next: {
+        revalidate: 60,
+      },
+    })
+
+    if (!response.ok) {
+      console.error(
+        'Erro AniList:',
+        response.status,
+        await response.text()
+      )
+
+      return NextResponse.json(
+        { error: 'Erro ao buscar na API AniList' },
+        { status: 502 }
+      )
+    }
+
+    const result = await response.json()
+
+    if (result.errors) {
+      console.error('AniList GraphQL:', result.errors)
+
+      return NextResponse.json(
+        { error: 'Erro na consulta da AniList' },
+        { status: 502 }
+      )
+    }
+
+    const mangas = result.data?.Page?.media ?? []
+
+    const formattedMangas = mangas.map((manga: any) => ({
+      mal_id: manga.id,
+      title:
+        manga.title?.english ||
+        manga.title?.romaji ||
+        manga.title?.native ||
+        'Sem título',
+      image:
+        manga.coverImage?.large ||
+        manga.coverImage?.medium ||
+        null,
+      volumes: manga.volumes ?? null,
+      status: manga.status ?? null,
+      score:
+        manga.averageScore !== null &&
+        manga.averageScore !== undefined
+          ? manga.averageScore / 10
+          : null,
+      genre: manga.genres?.[0] ?? null,
+      genres: manga.genres ?? [],
+      format: manga.format ?? null,
+    }))
+
+    return NextResponse.json({
+      mangas: formattedMangas,
+    })
+  } catch (error) {
+    console.error('Erro /api/manga-search:', error)
+
+    return NextResponse.json(
+      { error: 'Erro interno ao buscar mangás' },
+      { status: 500 }
+    )
   }
-
-  const res = await fetch(
-    `https://api.jikan.moe/v4/manga?q=${encodeURIComponent(query)}&limit=10`,
-    { next: { revalidate: 60 } }
-  )
-
-  if (!res.ok) {
-    return NextResponse.json({ error: 'Erro ao buscar na API' }, { status: 500 })
-  }
-
-  const data = await res.json()
-
-  const mangas = data.data.map((m: any) => ({
-    mal_id:      m.mal_id,
-    title:       m.title,
-    image:       m.images?.jpg?.image_url ?? null,
-    volumes:     m.volumes ?? null,
-    status:      m.status,
-    score:       m.score ?? null,
-    genre:       m.genres?.[0]?.name ?? null,
-  }))
-
-  return NextResponse.json({ mangas })
 }

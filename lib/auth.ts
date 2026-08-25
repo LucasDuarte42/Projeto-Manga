@@ -56,19 +56,23 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async session({ session, token }: { session: Session; token: JWT }): Promise<Session> {
-      if (token && session.user) {
-        session.user.id = token.id as string
+  async session({ session, token }: { session: Session; token: JWT }): Promise<Session> {
+    if (token?.id) {
+      const userExists = await prisma.user.findUnique({ where: { id: token.id as string } })
+      if (!userExists) {
+        return { ...session, user: undefined as any }
       }
-      return session
-    },
-    async jwt({ token, user }: { token: JWT; user?: any }): Promise<JWT> {
-      if (user) {
-        token.id = user.id
-      }
-      return token
-    },
+      session.user.id = token.id as string
+    }
+    return session
   },
+  async jwt({ token, user }: { token: JWT; user?: any }): Promise<JWT> {
+    if (user) {
+      token.id = user.id
+    }
+    return token
+  },
+},
   pages: {
     signIn: '/login',
   },
