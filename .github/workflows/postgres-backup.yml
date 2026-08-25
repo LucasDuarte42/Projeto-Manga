@@ -31,7 +31,9 @@ jobs:
           test -n "$BACKUP_DATABASE_URL"
           test -n "$BACKUP_ENCRYPTION_KEY"
           mkdir -p backup
-          pg_dump "$BACKUP_DATABASE_URL" --format=custom --no-owner --no-privileges > backup/pinakes-$(date -u +%Y-%m-%d).dump
+          PG_DUMP=/usr/lib/postgresql/17/bin/pg_dump
+          "$PG_DUMP" --version
+          "$PG_DUMP" "$BACKUP_DATABASE_URL" --format=custom --no-owner --no-privileges > backup/pinakes-$(date -u +%Y-%m-%d).dump
           openssl enc -aes-256-cbc -pbkdf2 -salt \
             -in backup/pinakes-*.dump \
             -out backup/pinakes-$(date -u +%Y-%m-%d).dump.enc \
