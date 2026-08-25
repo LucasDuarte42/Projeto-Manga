@@ -21,6 +21,7 @@ import {
   X,
 } from 'lucide-react'
 import { Baloo_2, Inter } from 'next/font/google'
+import LogoutButton from '@/components/LogoutButton'
 
 const display = Baloo_2({
   subsets: ['latin'],
@@ -515,17 +516,21 @@ export default function MangaDetailPage() {
             </div>
           </div>
 
-          <button
-            onClick={() => setShowDelete(true)}
-            disabled={deleting}
-            className="flex items-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/[0.06] px-3 py-2 text-sm font-medium text-rose-400 transition hover:border-rose-500/40 hover:bg-rose-500/10 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4"
-          >
-            <Trash2 size={17} />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowDelete(true)}
+              disabled={deleting}
+              className="flex items-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/[0.06] px-3 py-2 text-sm font-medium text-rose-400 transition hover:border-rose-500/40 hover:bg-rose-500/10 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4"
+            >
+              <Trash2 size={17} />
 
-            <span className="hidden sm:inline">
-              Remover
-            </span>
-          </button>
+              <span className="hidden sm:inline">
+                Remover
+              </span>
+            </button>
+
+            <LogoutButton />
+          </div>
         </div>
       </header>
 

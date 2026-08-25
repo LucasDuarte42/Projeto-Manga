@@ -24,6 +24,8 @@ import MangaSkeleton from '@/components/MangaSkeleton'
 import QuickEditModal from '@/components/QuickEditModal'
 import ExportTextModal from '@/components/ExportTextModal'
 import { generateCollectionText, downloadText } from '@/utils/exportCollection'
+import LogoutButton from '@/components/LogoutButton'
+
 
 type CollectionType = 'MANGA' | 'HQ'
 
@@ -413,6 +415,8 @@ export default function MangasPage() {
                 Adicionar
               </span>
             </button>
+
+            <LogoutButton />
 
           </div>
 
