@@ -81,6 +81,34 @@ npm run dev
 
 Abra [http://localhost:3000](http://localhost:3000).
 
+## Testes end-to-end
+
+Os testes E2E ficam em `e2e/` e usam Playwright contra um PostgreSQL exclusivo. Nunca use `DATABASE_URL` de Preview ou Production para executar esses testes.
+
+Crie um banco local chamado `pinakes_e2e` e copie `.env.test.example` para `.env.test`. No PowerShell, defina a URL apenas para a sessão atual:
+
+```powershell
+$env:E2E_DATABASE_URL="postgresql://e2e:e2e@localhost:5432/pinakes_e2e"
+$env:NEXTAUTH_SECRET="e2e-only-secret-change-me"
+$env:NEXTAUTH_URL="http://127.0.0.1:3000"
+```
+
+Aplique as migrations no banco de teste e execute os testes:
+
+```powershell
+npx prisma migrate deploy
+npm run build
+npm run e2e
+```
+
+Para abrir o modo visual do Playwright:
+
+```powershell
+npm run e2e:ui
+```
+
+O workflow `.github/workflows/e2e.yml` cria automaticamente um PostgreSQL 17 descartável no GitHub Actions, aplica as migrations, gera o build e executa os testes em Chromium em cada pull request para `main`.
+
 ## Rate limiting com Upstash
 
 As rotas de cadastro, recuperação e redefinição de senha usam `@upstash/ratelimit` com janela deslizante de 5 tentativas a cada 15 minutos. Todas as instâncias da aplicação compartilham os contadores pelo Redis.
