@@ -97,24 +97,24 @@ function LoginForm() {
         <div className="absolute left-1/2 top-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-purple-500/[0.03] blur-[100px]" />
       </div>
 
-{/* Botão voltar */}
-  <button
-    type="button"
-    onClick={() => router.back()}
-    className="group absolute left-4 top-4 flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.03] text-gray-500 transition hover:border-purple-500/30 hover:bg-purple-500/10 hover:text-purple-300 sm:left-5 sm:top-5"
-    aria-label="Voltar"
-  >
-    <svg
-      viewBox="0 0 24 24"
-      className="h-5 w-5 transition-transform group-hover:-translate-x-1"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
-      <path d="M19 12H5" />
-      <path d="m11 18-6-6 6-6" />
-    </svg>
-  </button>
+    {/* Botão voltar */}
+      <button
+        type="button"
+        onClick={() => router.back()}
+        className="group absolute left-4 top-4 flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.03] text-gray-500 transition hover:border-purple-500/30 hover:bg-purple-500/10 hover:text-purple-300 sm:left-5 sm:top-5"
+        aria-label="Voltar"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          className="h-5 w-5 transition-transform group-hover:-translate-x-1"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path d="M19 12H5" />
+          <path d="m11 18-6-6 6-6" />
+        </svg>
+      </button>
       {/* Grid de fundo */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.035]"
