@@ -7,13 +7,17 @@ const limiters = new Map<string, Ratelimit>()
 let warnedAboutMissingConfig = false
 
 function getRedis(): Redis | null {
-  const url = process.env.UPSTASH_REDIS_REST_URL
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN
+  const url =
+    process.env.KV_REST_API_URL ||
+    process.env.UPSTASH_REDIS_REST_URL
+  const token =
+    process.env.KV_REST_API_TOKEN ||
+    process.env.UPSTASH_REDIS_REST_TOKEN
 
   if (!url || !token) {
     if (!warnedAboutMissingConfig) {
       console.warn(
-        'UPSTASH_REDIS_REST_URL/UPSTASH_REDIS_REST_TOKEN não configuradas.'
+        'KV_REST_API_URL/KV_REST_API_TOKEN ou UPSTASH_REDIS_REST_URL/UPSTASH_REDIS_REST_TOKEN não configuradas.'
       )
       warnedAboutMissingConfig = true
     }
