@@ -87,6 +87,10 @@ As rotas de cadastro, recuperação e redefinição de senha usam `@upstash/rate
 
 Na Vercel, configure `KV_REST_API_URL` e `KV_REST_API_TOKEN` nos ambientes Preview e Production. O token somente leitura (`KV_REST_API_READ_ONLY_TOKEN`) não deve ser usado, porque o rate limiting precisa gravar contadores. Após salvar as variáveis, faça um novo deploy. Sem Redis configurado, o projeto não deve ser considerado pronto para produção porque as rotas sensíveis serão bloqueadas pelo mecanismo fail-closed. Para receber alertas de erros, configure também `SENTRY_DSN` no servidor e `NEXT_PUBLIC_SENTRY_DSN` no ambiente público do frontend.
 
+## Migrations do Prisma
+
+As migrations ficam versionadas em `prisma/migrations`. Em um banco novo, execute `npm run db:migrate`. Para desenvolvimento, crie novas alterações com `npm run db:migrate:dev` e versione a migration gerada. Em um banco existente que foi criado anteriormente com `prisma db push`, faça o baseline da migration inicial antes de usar `prisma migrate deploy`; não execute a migration inicial diretamente em produção sem confirmar o estado do banco, pois ela contém `CREATE TABLE`.
+
 ## Limpeza e backup
 
 A Vercel executa diariamente a rota `/api/cron/cleanup-tokens` para excluir tokens de recuperação expirados. Configure `CRON_SECRET` no ambiente Production; a Vercel envia esse segredo no header `Authorization` da execução agendada.
