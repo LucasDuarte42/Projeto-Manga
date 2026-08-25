@@ -16,11 +16,14 @@ import {
   Heart,
   AlertCircle,
   ChevronDown,
+  Download,
 } from 'lucide-react'
 
 import AddItemModal from '@/components/AddItemModal'
 import MangaSkeleton from '@/components/MangaSkeleton'
 import QuickEditModal from '@/components/QuickEditModal'
+import ExportTextModal from '@/components/ExportTextModal'
+import { generateCollectionText, downloadText } from '@/utils/exportCollection'
 
 type CollectionType = 'MANGA' | 'HQ'
 
@@ -66,6 +69,9 @@ export default function MangasPage() {
 
   const [showModal, setShowModal] = useState(false)
   const [editingManga, setEditingManga] = useState<Manga | null>(null)
+
+  const [showExportModal, setShowExportModal] = useState(false)
+  const [exportContent, setExportContent] = useState('')
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -196,6 +202,12 @@ export default function MangasPage() {
 
     fetchMangas()
   }
+
+  function handleExportClick() {
+  const text = generateCollectionText(mangas)
+  setExportContent(text)
+  setShowExportModal(true)
+}
 
   const filteredMangas = mangas
     .filter((manga) => {
@@ -377,6 +389,19 @@ export default function MangasPage() {
               {session?.user?.name ||
                 session?.user?.email}
             </span>
+
+            <button
+              onClick={handleExportClick}
+              disabled={mangas.length === 0}
+              className="flex items-center gap-2 rounded-xl border border-gray-800 bg-gray-900/50 px-3 py-2.5 text-sm font-semibold text-gray-300 transition hover:border-gray-700 hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-40 sm:px-4"
+              title="Exportar coleção como texto"
+            >
+              <Download size={18} />
+
+              <span className="hidden sm:inline">
+                Exportar
+              </span>
+            </button>
 
             <button
               onClick={() => setShowModal(true)}
@@ -802,6 +827,17 @@ export default function MangasPage() {
             setEditingManga(null)
           }
           onSave={handleQuickUpdate}
+        />
+
+      )}
+
+      {/* Export */}
+
+      {showExportModal && (
+
+        <ExportTextModal
+          content={exportContent}
+          onClose={() => setShowExportModal(false)}
         />
 
       )}
