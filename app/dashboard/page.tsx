@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
+import ExportCollectionButton from '@/components/ExportCollectionButton'
 import Link from 'next/link'
 import {
   Library,
@@ -120,25 +121,34 @@ export default async function DashboardPage() {
             </div>
           </Link>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
 
-            <span className="hidden max-w-[180px] truncate text-sm text-gray-500 md:block">
-              {session.user.name ||
-                session.user.email}
-            </span>
+  <span className="hidden max-w-[180px] truncate text-sm text-gray-500 lg:block">
+    {session.user.name ||
+      session.user.email}
+  </span>
 
-            <Link
-              href="/mangas"
-              className="flex items-center gap-2 rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-semibold shadow-lg shadow-purple-900/20 transition hover:bg-purple-700"
-            >
-              <Library size={17} />
+  <ExportCollectionButton
+    mangas={mangas.map((manga) => ({
+      name: manga.name,
+      collectionType: manga.collectionType,
+      totalVolumes: manga.totalVolumes,
+      ownedVolumes: manga.ownedVolumes,
+    }))}
+  />
 
-              <span className="hidden sm:inline">
-                Minha coleção
-              </span>
-            </Link>
+  <Link
+    href="/mangas"
+    className="flex items-center gap-2 rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-semibold shadow-lg shadow-purple-900/20 transition hover:bg-purple-700"
+  >
+    <Library size={17} />
 
-          </div>
+    <span className="hidden sm:inline">
+      Minha coleção
+    </span>
+  </Link>
+
+</div>
 
         </div>
 
