@@ -2,21 +2,35 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import crypto from 'crypto'
 import { Resend } from 'resend'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
-
-interface ForgotPasswordBody {
-  email?: unknown
-}
+import { forgotPasswordSchema } from '@/lib/validations'
+import {
+  consumeRateLimit,
+  getClientIp,
+  hashResetToken,
+} from '@/lib/security'
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as ForgotPasswordBody
+    const ip = getClientIp(req.headers)
 
-    const email =
-      typeof body.email === 'string'
-        ? body.email.trim().toLowerCase()
-        : ''
+    if (!consumeRateLimit(`forgot-password:${ip}`, 5, 15 * 60 * 1000)) {
+      return NextResponse.json(
+        { error: 'Muitas tentativas. Tente novamente em 15 minutos.' },
+        { status: 429 }
+      )
+    }
+
+    const body = await req.json()
+    const parsed = forgotPasswordSchema.safeParse(body)
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0].message },
+        { status: 400 }
+      )
+    }
+
+    const { email } = parsed.data
 
     const response = {
       message:
@@ -26,6 +40,26 @@ export async function POST(req: NextRequest) {
     if (!email) {
       return NextResponse.json(response)
     }
+
+    const resendApiKey = process.env.RESEND_API_KEY
+
+    if (!resendApiKey) {
+      console.error(
+        'RESEND_API_KEY não está configurada; recuperação de senha indisponível.'
+      )
+
+      return NextResponse.json(
+        {
+          error:
+            'O serviço de recuperação de senha está temporariamente indisponível.',
+        },
+        {
+          status: 503,
+        }
+      )
+    }
+
+    const resend = new Resend(resendApiKey)
 
     const user = await prisma.user.findUnique({
       where: {
@@ -54,7 +88,7 @@ export async function POST(req: NextRequest) {
 
     await prisma.passwordResetToken.create({
       data: {
-        token,
+        token: hashResetToken(token),
         userId: user.id,
         expiresAt,
       },

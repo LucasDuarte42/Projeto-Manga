@@ -3,25 +3,7 @@ import { getServerSession } from 'next-auth'
 
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-
-interface VolumeRatingBody {
-  volume?: unknown
-  note?: unknown
-}
-
-function parseNumber(value: unknown): number | null {
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : null
-  }
-
-  if (typeof value === 'string') {
-    const parsed = Number(value)
-
-    return Number.isFinite(parsed) ? parsed : null
-  }
-
-  return null
-}
+import { volumeRatingSchema } from '@/lib/validations'
 
 async function getUserManga(
   mangaId: string,
@@ -112,32 +94,17 @@ export async function POST(
       )
     }
 
-    const body = (await req.json()) as VolumeRatingBody
+    const body = await req.json()
+    const parsed = volumeRatingSchema.safeParse(body)
 
-    const parsedVolume = parseNumber(body.volume)
-    const parsedNote = parseNumber(body.note)
-
-    if (
-      parsedVolume === null ||
-      parsedVolume < 1 ||
-      !Number.isInteger(parsedVolume)
-    ) {
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Volume inválido' },
+        { error: parsed.error.issues[0].message },
         { status: 400 }
       )
     }
 
-    if (
-      parsedNote === null ||
-      parsedNote < 0 ||
-      parsedNote > 10
-    ) {
-      return NextResponse.json(
-        { error: 'Nota inválida' },
-        { status: 400 }
-      )
-    }
+    const { volume: parsedVolume, note: parsedNote } = parsed.data
 
     const rating = await prisma.volumeRating.upsert({
       where: {

@@ -15,7 +15,7 @@
     "bcryptjs": "^3.0.3",
     "lucide-react": "^1.14.0",
     "next": "^14.0.4",
-    "next-auth": "^4.24.14",
+    "next-auth": "^4.24.15",
     "react": "^18",
     "react-dom": "^18",
     "resend": "^6.22.1",

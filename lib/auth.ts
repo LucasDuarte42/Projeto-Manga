@@ -3,6 +3,7 @@ import { JWT } from 'next-auth/jwt'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { prisma } from './prisma'
 import bcrypt from 'bcryptjs'
+import { loginSchema } from './validations'
 
 declare module 'next-auth' {
   interface Session {
@@ -36,16 +37,18 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Senha', type: 'password' },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null
+        const parsed = loginSchema.safeParse(credentials)
+        if (!parsed.success) return null
 
+        const { email, password } = parsed.data
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
+          where: { email },
         })
 
         if (!user) return null
 
         const passwordMatch = await bcrypt.compare(
-          credentials.password,
+          password,
           user.password
         )
 

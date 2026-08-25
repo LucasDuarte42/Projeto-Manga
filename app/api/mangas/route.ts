@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { mangaCreateSchema } from '@/lib/validations'
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -24,11 +25,16 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { name, author, coverUrl, volume, totalVolumes, status, note, genre, collectionType } = body
+  const parsed = mangaCreateSchema.safeParse(body)
 
-  if (!name) {
-    return NextResponse.json({ error: 'Nome obrigatório' }, { status: 400 })
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: parsed.error.issues[0].message },
+      { status: 400 }
+    )
   }
+
+  const { name, author, coverUrl, volume, totalVolumes, status, note, genre, collectionType } = parsed.data
 
   // Evita duplicata (mesmo userId + name + volume)
   const existing = await prisma.manga.findUnique({
