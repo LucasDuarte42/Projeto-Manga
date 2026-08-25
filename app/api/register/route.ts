@@ -7,7 +7,7 @@ import { consumeRateLimit, getClientIp } from '@/lib/security'
 export async function POST(req: Request) {
   const ip = getClientIp(req.headers)
 
-  if (!consumeRateLimit(`register:${ip}`, 5, 15 * 60 * 1000)) {
+  if (!(await consumeRateLimit(`register:${ip}`, 5, 15 * 60 * 1000))) {
     return NextResponse.json(
       { error: 'Muitas tentativas. Tente novamente em 15 minutos.' },
       { status: 429 }

@@ -1,201 +1,93 @@
-# 📚 Projeto Coleção de Mangás e HQs
-<<<<<<< HEAD
+# Pinakes Mangá
 
-Bem-vindo ao seu sistema de gerenciamento de coleção de mangás e HQs! Este projeto foi desenvolvido para ajudar você a organizar, acompanhar e visualizar seu progresso de leitura de forma intuitiva e eficiente.
+Sistema para organizar uma coleção de mangás e HQs, acompanhar o progresso de leitura e visualizar estatísticas pessoais.
 
-## ✨ Funcionalidades Principais
+## Funcionalidades
 
-Este sistema oferece uma série de recursos para enriquecer sua experiência de colecionador:
+- Gerenciamento de mangás e HQs.
+- Cadastro, edição, exclusão e avaliação por volume.
+- Dashboard com estatísticas da coleção.
+- Busca de mangás e HQs em serviços externos.
+- Autenticação com credenciais e recuperação de senha.
+- Rate limiting distribuído com Upstash Redis quando configurado.
+- Interface responsiva com suporte a logout nos headers autenticados.
 
--   **Gerenciamento de Coleção:** Adicione, edite e organize seus mangás e HQs.
--   **Suporte a Múltiplos Tipos:** Classifique suas obras como `Mangá` ou `HQ`, com buscas dedicadas para cada tipo.
--   **Busca Inteligente:**
-    -   Para `Mangás`: Integração com a API Jikan (MyAnimeList) para busca automática de títulos, capas e informações.
-    -   Para `HQs`: Integração com a Open Library API para busca de títulos e capas, sem necessidade de chave de API.
--   **Dashboard Avançado:** Visualize estatísticas detalhadas sobre sua coleção:
-    -   **Total de Obras:** Quantidade total de mangás/HQs na sua coleção.
-    -   **Volumes Lidos:** Soma de todos os volumes que você avaliou individualmente (indicando leitura).
-    -   **Lendo:** Obras atualmente em progresso de leitura.
-    -   **Quero Ler:** Obras que você planeja ler.
-    -   **Volumes que tenho:** Contagem exata dos volumes que você marcou como possuídos.
-    -   **Coleção em Andamento:** Obras que ainda não foram completadas.
-    -   **Coleção Lida:** Obras que você completou 100% (volume atual >= total de volumes).
-    -   **Média de Notas:** Sua nota média para as obras avaliadas.
--   **Edição Rápida:** Edite informações essenciais (título, autor, volume atual, nota, status e volumes possuídos) diretamente do card da coleção, sem sair da página de listagem.
--   **Automação de Status:** Ao atribuir uma nota a uma obra, ela é automaticamente marcada como `Lido`.
--   **Skeleton Loading:** Animações de carregamento que proporcionam uma experiência de usuário mais fluida enquanto os dados são buscados.
--   **Responsividade Mobile:** Interface otimizada para funcionar perfeitamente em dispositivos móveis, garantindo uma experiência consistente em qualquer tela.
+## Pré-requisitos
 
-## 🚀 Como Rodar o Projeto Localmente
+Instale o Node.js 20 ou superior, Git e tenha acesso a um banco PostgreSQL local ou hospedado.
 
-Siga os passos abaixo para configurar e executar o projeto em sua máquina local.
+Para o rate limiting distribuído, crie um banco Redis no Upstash, pelo [Upstash](https://upstash.com/) ou pelo Marketplace da Vercel. A aplicação também pode iniciar localmente sem as credenciais do Upstash; nesse caso, o rate limiting fica liberado apenas em desenvolvimento e bloqueado em produção até a configuração ser feita.
 
-### Pré-requisitos
+## Instalação
 
-Certifique-se de ter o seguinte instalado:
-
--   [Node.js](https://nodejs.org/en/) (versão 18 ou superior)
--   [npm](https://www.npmjs.com/) ou [Yarn](https://yarnpkg.com/)
--   [Git](https://git-scm.com/)
--   Um banco de dados PostgreSQL (pode ser local ou um serviço como [ElephantSQL](https://www.elephantsql.com/))
-
-### 1. Clonar o Repositório
+Clone a branch atual do recurso:
 
 ```bash
-git clone https://github.com/LucasDuarte42/Projeto-Manga.git
+git clone -b feature/logout-header https://github.com/LucasDuarte42/Projeto-Manga.git
 cd Projeto-Manga
+npm install
+npx prisma generate
 ```
 
-### 2. Configurar Variáveis de Ambiente
-
-Crie um arquivo `.env` na raiz do projeto com as seguintes variáveis:
+Crie um arquivo `.env.local` na raiz:
 
 ```env
-DATABASE_URL="postgresql://user:password@host:port/database?schema=public"
-NEXTAUTH_SECRET="sua_chave_secreta_para_nextauth"
+DATABASE_URL="postgresql://user:password@host:5432/database?schema=public"
+NEXTAUTH_SECRET="gere-uma-chave-longa-e-aleatoria"
 NEXTAUTH_URL="http://localhost:3000"
 
-# Opcional: Chave da API Comic Vine (se decidir usar no futuro)
-# COMIC_VINE_API_KEY="sua_chave_da_comic_vine"
+# Upstash Redis
+UPSTASH_REDIS_REST_URL="https://seu-banco.upstash.io"
+UPSTASH_REDIS_REST_TOKEN="seu-token"
+
+# Necessário para enviar e-mails de recuperação
+RESEND_API_KEY="re_sua_chave"
 ```
 
--   `DATABASE_URL`: Conexão com seu banco de dados PostgreSQL.
--   `NEXTAUTH_SECRET`: Uma string aleatória e longa para segurança do NextAuth. Você pode gerar uma com `openssl rand -base64 32`.
--   `NEXTAUTH_URL`: A URL base da sua aplicação (para desenvolvimento local, `http://localhost:3000`).
-
-### 3. Instalar Dependências
+Gere uma chave segura para o NextAuth com:
 
 ```bash
-npm install
-# ou
-yarn install
+openssl rand -base64 32
 ```
 
-### 4. Configurar o Banco de Dados
+Nunca publique `.env.local` no GitHub. O arquivo já está incluído no `.gitignore`.
 
-Execute os comandos do Prisma para gerar o cliente e aplicar as migrações no seu banco de dados:
+## Banco de dados
+
+Aplique o schema Prisma ao banco de desenvolvimento:
 
 ```bash
-npx prisma generate
 npx prisma db push
 ```
 
-### 5. Rodar o Servidor de Desenvolvimento
+Em produção, prefira migrations versionadas quando o schema estiver estabilizado:
+
+```bash
+npx prisma migrate dev --name initial
+```
+
+## Desenvolvimento
 
 ```bash
 npm run dev
-# ou
-yarn dev
 ```
 
-O aplicativo estará disponível em `http://localhost:3000`.
+Abra [http://localhost:3000](http://localhost:3000).
 
+## Rate limiting com Upstash
 
+As rotas de cadastro, recuperação e redefinição de senha usam `@upstash/ratelimit` com janela deslizante de 5 tentativas a cada 15 minutos. Todas as instâncias da aplicação compartilham os contadores pelo Redis.
 
-## 📄 Licença
+Na Vercel, configure `UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN` nos ambientes Preview e Production. Após salvar as variáveis, faça um novo deploy. Sem Redis configurado, o projeto não deve ser considerado pronto para produção porque as rotas sensíveis serão bloqueadas pelo mecanismo fail-closed.
 
-Este projeto está licenciado sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
-
----
-
-=======
->>>>>>> feat/suporte-comics
-
-Bem-vindo ao seu sistema de gerenciamento de coleção de mangás e HQs! Este projeto foi desenvolvido para ajudar você a organizar, acompanhar e visualizar seu progresso de leitura de forma intuitiva e eficiente.
-
-## ✨ Funcionalidades Principais
-
-Este sistema oferece uma série de recursos para enriquecer sua experiência de colecionador:
-
--   **Gerenciamento de Coleção:** Adicione, edite e organize seus mangás e HQs.
--   **Suporte a Múltiplos Tipos:** Classifique suas obras como `Mangá` ou `HQ`, com buscas dedicadas para cada tipo.
--   **Busca Inteligente:**
-    -   Para `Mangás`: Integração com a API Jikan (MyAnimeList) para busca automática de títulos, capas e informações.
-    -   Para `HQs`: Integração com a Open Library API para busca de títulos e capas, sem necessidade de chave de API.
--   **Dashboard Avançado:** Visualize estatísticas detalhadas sobre sua coleção:
-    -   **Total de Obras:** Quantidade total de mangás/HQs na sua coleção.
-    -   **Volumes Lidos:** Soma de todos os volumes que você avaliou individualmente (indicando leitura).
-    -   **Lendo:** Obras atualmente em progresso de leitura.
-    -   **Quero Ler:** Obras que você planeja ler.
-    -   **Volumes que tenho:** Contagem exata dos volumes que você marcou como possuídos.
-    -   **Coleção em Andamento:** Obras que ainda não foram completadas.
-    -   **Coleção Lida:** Obras que você completou 100% (volume atual >= total de volumes).
-    -   **Média de Notas:** Sua nota média para as obras avaliadas.
--   **Edição Rápida:** Edite informações essenciais (título, autor, volume atual, nota, status e volumes possuídos) diretamente do card da coleção, sem sair da página de listagem.
--   **Automação de Status:** Ao atribuir uma nota a uma obra, ela é automaticamente marcada como `Lido`.
--   **Skeleton Loading:** Animações de carregamento que proporcionam uma experiência de usuário mais fluida enquanto os dados são buscados.
--   **Responsividade Mobile:** Interface otimizada para funcionar perfeitamente em dispositivos móveis, garantindo uma experiência consistente em qualquer tela.
-
-## 🚀 Como Rodar o Projeto Localmente
-
-Siga os passos abaixo para configurar e executar o projeto em sua máquina local.
-
-### Pré-requisitos
-
-Certifique-se de ter o seguinte instalado:
-
--   [Node.js](https://nodejs.org/en/) (versão 18 ou superior)
--   [npm](https://www.npmjs.com/) ou [Yarn](https://yarnpkg.com/)
--   [Git](https://git-scm.com/)
--   Um banco de dados PostgreSQL (pode ser local ou um serviço como [ElephantSQL](https://www.elephantsql.com/))
-
-### 1. Clonar o Repositório
+## Validação
 
 ```bash
-git clone https://github.com/LucasDuarte42/Projeto-Manga.git
-cd Projeto-Manga
+npx tsc --noEmit
+npm run build
+npm audit --omit=dev
 ```
 
-### 2. Configurar Variáveis de Ambiente
+## Licença
 
-Crie um arquivo `.env` na raiz do projeto com as seguintes variáveis:
-
-```env
-DATABASE_URL="postgresql://user:password@host:port/database?schema=public"
-NEXTAUTH_SECRET="sua_chave_secreta_para_nextauth"
-NEXTAUTH_URL="http://localhost:3000"
-
-# Opcional: Chave da API Comic Vine (se decidir usar no futuro)
-# COMIC_VINE_API_KEY="sua_chave_da_comic_vine"
-```
-
--   `DATABASE_URL`: Conexão com seu banco de dados PostgreSQL.
--   `NEXTAUTH_SECRET`: Uma string aleatória e longa para segurança do NextAuth. Você pode gerar uma com `openssl rand -base64 32`.
--   `NEXTAUTH_URL`: A URL base da sua aplicação (para desenvolvimento local, `http://localhost:3000`).
-
-### 3. Instalar Dependências
-
-```bash
-npm install
-# ou
-yarn install
-```
-
-### 4. Configurar o Banco de Dados
-
-Execute os comandos do Prisma para gerar o cliente e aplicar as migrações no seu banco de dados:
-
-```bash
-npx prisma generate
-npx prisma db push
-```
-
-### 5. Rodar o Servidor de Desenvolvimento
-
-```bash
-npm run dev
-# ou
-yarn dev
-```
-
-O aplicativo estará disponível em `http://localhost:3000`.
-
-
-
-## 📄 Licença
-
-Este projeto está licenciado sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
-
----
-
-
+Este projeto está licenciado sob a licença MIT. Consulte o arquivo `LICENSE` para mais detalhes.

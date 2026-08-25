@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req.headers)
 
-    if (!consumeRateLimit(`forgot-password:${ip}`, 5, 15 * 60 * 1000)) {
+    if (!(await consumeRateLimit(`forgot-password:${ip}`, 5, 15 * 60 * 1000))) {
       return NextResponse.json(
         { error: 'Muitas tentativas. Tente novamente em 15 minutos.' },
         { status: 429 }
