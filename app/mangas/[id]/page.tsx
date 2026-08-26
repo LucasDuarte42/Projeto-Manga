@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { Baloo_2, Inter } from 'next/font/google'
 import LogoutButton from '@/components/LogoutButton'
+import RatingShareCard from '@/components/RatingShareCard'
 
 const display = Baloo_2({
   subsets: ['latin'],
@@ -1110,6 +1111,18 @@ export default function MangaDetailPage() {
             </div>
           </div>
         </section>
+
+        <RatingShareCard
+          name={mangaName || manga.name}
+          author={author || manga.author}
+          coverUrl={manga.coverUrl}
+          ratings={Object.entries(pendingRatings).map(([volume, rating]) => ({
+            volume: Number(volume),
+            note: rating,
+          }))}
+          expectedVolumes={ownedVolumes}
+          generalNote={note === '' ? null : Number(note)}
+        />
 
         {/* Save */}
         <button
