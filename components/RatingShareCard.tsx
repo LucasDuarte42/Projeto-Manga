@@ -8,7 +8,6 @@ interface RatingShareCardProps {
   author: string | null
   coverUrl: string | null
   ratings: Array<{ volume: number; note: number }>
-  generalNote: number | null
   expectedVolumes: number[]
 }
 
@@ -76,7 +75,7 @@ function loadCover(url: string | null) {
   })
 }
 
-async function createRatingImage({ name, author, coverUrl, ratings, generalNote }: RatingShareCardProps) {
+async function createRatingImage({ name, author, coverUrl, ratings }: RatingShareCardProps) {
   const canvas = document.createElement('canvas')
   canvas.width = 1600
   canvas.height = 900
@@ -123,15 +122,19 @@ async function createRatingImage({ name, author, coverUrl, ratings, generalNote 
     context.fillText(author.slice(0, 34), coverX, 688, coverWidth + 50)
   }
 
+  const average = ratings.length > 0
+    ? ratings.reduce((sum, rating) => sum + rating.note, 0) / ratings.length
+    : null
+
   context.fillStyle = '#f5a623'
   context.font = '700 38px Arial'
   context.fillText('★', coverX, 765)
   context.fillStyle = '#f4f1f7'
   context.font = '700 34px Arial'
-  context.fillText(generalNote !== null ? generalNote.toFixed(1) : '—', coverX + 43, 765)
+  context.fillText(average !== null ? average.toFixed(1) : '—', coverX + 43, 765)
   context.fillStyle = '#8d8792'
   context.font = '400 23px Arial'
-  context.fillText('nota geral', coverX + 132, 765)
+  context.fillText('média dos volumes', coverX + 132, 765)
 
   const chartX = 455
   const chartY = 72

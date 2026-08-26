@@ -291,7 +291,7 @@ export default function MangaDetailPage() {
 
       const ratingRequests = Object.entries(
         pendingRatings
-      ).map(([volume, rating]) => {
+      ).filter(([volume]) => ownedVolumes.includes(Number(volume))).map(([volume, rating]) => {
         return fetch(`/api/mangas/${id}/volumes`, {
           method: 'POST',
 
@@ -462,7 +462,9 @@ export default function MangaDetailPage() {
       : 0
 
   const average = useMemo(() => {
-    const ratings = Object.values(pendingRatings)
+    const ratings = ownedVolumes
+      .map((volume) => pendingRatings[volume])
+      .filter((rating): rating is number => rating !== undefined)
 
     if (ratings.length === 0) {
       return '—'
@@ -946,7 +948,7 @@ export default function MangaDetailPage() {
             </div>
 
             <div className="mt-8 grid grid-cols-3 gap-3 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
-              {volumeArray.map(
+              {ownedVolumes.map(
                 (volume) => {
                   const rating =
                     pendingRatings[volume]
@@ -1068,7 +1070,7 @@ export default function MangaDetailPage() {
             </div>
 
             <p className="mt-6 text-xs text-gray-500">
-              As avaliações individuais serão salvas junto com as alterações da obra.
+              As avaliações aparecem somente para os volumes marcados como adquiridos e serão salvas junto com as alterações da obra.
             </p>
         </section>
 
@@ -1110,12 +1112,13 @@ export default function MangaDetailPage() {
           name={mangaName || manga.name}
           author={author || manga.author}
           coverUrl={manga.coverUrl ? `/api/mangas/${id}/cover` : null}
-          ratings={Object.entries(pendingRatings).map(([volume, rating]) => ({
-            volume: Number(volume),
-            note: rating,
-          }))}
-          expectedVolumes={volumeArray}
-          generalNote={note === '' ? null : Number(note)}
+          ratings={Object.entries(pendingRatings)
+            .filter(([volume]) => ownedVolumes.includes(Number(volume)))
+            .map(([volume, rating]) => ({
+              volume: Number(volume),
+              note: rating,
+            }))}
+          expectedVolumes={ownedVolumes}
         />
 
         {/* Save */}
