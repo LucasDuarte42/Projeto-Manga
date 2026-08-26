@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import SiteFooter from '@/components/SiteFooter'
 
 export default async function HomePage() {
@@ -21,9 +22,14 @@ export default async function HomePage() {
       {/* Navbar */}
       <nav className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
         <Link href="/" className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-600 font-bold shadow-lg shadow-purple-900/30">
-            P
-          </div>
+          <Image
+            src="/brand/logo.png"
+            alt="Pinakes Manga"
+            width={44}
+            height={44}
+            className="block object-cover"
+            priority
+          />
 
           <div>
             <h1 className="text-lg font-bold leading-none">
