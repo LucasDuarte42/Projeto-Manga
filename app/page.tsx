@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import SiteFooter from '@/components/SiteFooter'
 
 export default async function HomePage() {
   const session = await getServerSession(authOptions)
@@ -196,25 +197,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="relative z-10 border-t border-gray-900 px-6 py-8">
-
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 text-sm text-gray-600 md:flex-row">
-
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-purple-600 text-xs font-bold text-white">
-              P
-            </div>
-
-            Pinakes Mangá
-          </div>
-
-          <p>
-            Organize. Leia. Colecione.
-          </p>
-
-        </div>
-      </footer>
+      <SiteFooter />
 
     </div>
   )
