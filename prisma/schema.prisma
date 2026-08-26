@@ -8,16 +8,16 @@ datasource db {
 }
 
 model User {
-  id                  String               @id @default(cuid())
-  email               String               @unique
-  password            String
-  name                String?
+  id       String  @id @default(cuid())
+  email    String  @unique
+  password String
+  name     String?
 
   mangas              Manga[]
   passwordResetTokens PasswordResetToken[]
 
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model PasswordResetToken {
@@ -27,7 +27,7 @@ model PasswordResetToken {
   expiresAt DateTime
   createdAt DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -50,6 +50,27 @@ enum VolumeStatus {
   LOANED
 }
 
+enum EditionType {
+  STANDARD
+  TWO_IN_ONE
+  THREE_IN_ONE
+  BIG
+  DELUXE
+  KANZENBAN
+  OMNIBUS
+  SPECIAL
+  BOX_SET
+  DIGITAL
+  OTHER
+}
+
+enum PublicationStatus {
+  ONGOING
+  COMPLETE
+  HIATUS
+  UNKNOWN
+}
+
 model Manga {
   id             String         @id @default(cuid())
   name           String
@@ -65,69 +86,141 @@ model Manga {
   genre          String?
   coverUrl       String?
 
-  userId         String
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   volumeRatings  VolumeRating[]
   chapterRatings ChapterRating[]
   volumes        MangaVolume[]
 
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([userId, name, volume])
 }
 
 model MangaVolume {
-  id        String          @id @default(cuid())
+  id        String       @id @default(cuid())
   mangaId   String
   number    Int
-  status    VolumeStatus    @default(MISSING)
+  status    VolumeStatus @default(MISSING)
   loanedTo  String?
   loanedAt  DateTime?
   dueDate   DateTime?
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 
-  manga     Manga           @relation(fields: [mangaId], references: [id], onDelete: Cascade)
-  history   VolumeHistory[]
+  manga   Manga           @relation(fields: [mangaId], references: [id], onDelete: Cascade)
+  history VolumeHistory[]
 
   @@unique([mangaId, number])
   @@index([mangaId, status])
 }
 
 model VolumeHistory {
-  id        String       @id @default(cuid())
-  volumeId  String
+  id         String        @id @default(cuid())
+  volumeId   String
   fromStatus VolumeStatus?
-  toStatus VolumeStatus
-  loanedTo  String?
-  dueDate   DateTime?
-  changedAt DateTime     @default(now())
+  toStatus   VolumeStatus
+  loanedTo   String?
+  dueDate    DateTime?
+  changedAt  DateTime      @default(now())
 
-  volume    MangaVolume  @relation(fields: [volumeId], references: [id], onDelete: Cascade)
+  volume MangaVolume @relation(fields: [volumeId], references: [id], onDelete: Cascade)
 
   @@index([volumeId, changedAt])
 }
 
 model VolumeRating {
-  id        String   @id @default(cuid())
-  mangaId   String
-  volume    Int
-  note      Float
+  id      String @id @default(cuid())
+  mangaId String
+  volume  Int
+  note    Float
 
-  manga     Manga    @relation(fields: [mangaId], references: [id], onDelete: Cascade)
+  manga Manga @relation(fields: [mangaId], references: [id], onDelete: Cascade)
 
   @@unique([mangaId, volume])
 }
 
 model ChapterRating {
-  id        String   @id @default(cuid())
-  mangaId   String
-  chapter   Int
-  note      Float
+  id      String @id @default(cuid())
+  mangaId String
+  chapter Int
+  note    Float
 
-  manga     Manga    @relation(fields: [mangaId], references: [id], onDelete: Cascade)
+  manga Manga @relation(fields: [mangaId], references: [id], onDelete: Cascade)
 
   @@unique([mangaId, chapter])
+}
+
+model CatalogWork {
+  id              String         @id @default(cuid())
+  title           String
+  normalizedTitle String
+  author          String?
+  workType        CollectionType @default(MANGA)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  editions CatalogEdition[]
+
+  @@unique([normalizedTitle, workType])
+  @@index([title])
+}
+
+model CatalogEdition {
+  id                   String            @id @default(cuid())
+  workId               String
+  name                 String
+  editionType          EditionType       @default(STANDARD)
+  publisher            String?
+  country              String            @default("BR")
+  publicationStatus    PublicationStatus @default(UNKNOWN)
+  latestVolumeObserved Int?
+  totalVolumes         Int?
+  sourceUrl            String?
+  lastVerifiedAt       DateTime?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  work    CatalogWork     @relation(fields: [workId], references: [id], onDelete: Cascade)
+  volumes CatalogVolume[]
+  sources CatalogSource[]
+
+  @@unique([workId, publisher, name, country])
+  @@index([publisher, editionType])
+}
+
+model CatalogVolume {
+  id             String    @id @default(cuid())
+  editionId      String
+  number         Int
+  title          String?
+  isbn           String?
+  releaseDateBR  DateTime?
+  sourceUrl      String?
+  coverUrl       String?
+  lastVerifiedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  edition CatalogEdition @relation(fields: [editionId], references: [id], onDelete: Cascade)
+
+  @@unique([editionId, number])
+  @@index([isbn])
+}
+
+model CatalogSource {
+  id           String   @id @default(cuid())
+  editionId    String
+  sourceName   String
+  sourceUrl    String
+  observedYear Int
+  observedAt   DateTime @default(now())
+  evidence     String?
+
+  edition CatalogEdition @relation(fields: [editionId], references: [id], onDelete: Cascade)
+
+  @@unique([editionId, sourceUrl, observedYear])
+  @@index([observedYear, sourceName])
 }
