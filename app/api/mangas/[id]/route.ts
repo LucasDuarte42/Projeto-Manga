@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { requireUserSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { mangaUpdateSchema } from '@/lib/validations'
@@ -246,10 +247,14 @@ export async function PUT(
 
     return NextResponse.json(updated)
   } catch (error) {
-    console.error(
-      'Erro ao atualizar mangá:',
-      error
-    )
+    console.error('Erro ao atualizar mangá:', error)
+
+    if (error instanceof Prisma.PrismaClientKnownRequestError && (error.code === 'P2021' || error.code === 'P2022')) {
+      return NextResponse.json(
+        { error: 'O banco ainda não recebeu a migration de capítulos. Execute: npx prisma migrate deploy' },
+        { status: 503 }
+      )
+    }
 
     return NextResponse.json(
       { error: 'Erro ao atualizar mangá' },
