@@ -59,7 +59,8 @@ export default async function HomePage() {
       </nav>
 
       {/* Hero */}
-      <main className="relative z-10 mx-auto flex max-w-7xl flex-col items-center px-6 pb-24 pt-20 text-center md:pt-32">
+      <main className="relative z-10 mx-auto grid max-w-7xl items-center gap-12 px-6 pb-24 pt-16 md:grid-cols-2 md:gap-16 md:pt-24">
+        <div className="text-center md:text-left">
 
         {/* Badge */}
         <div className="mb-8 flex items-center gap-2 rounded-full border border-purple-500/20 bg-purple-500/10 px-4 py-2 text-sm text-purple-300">
@@ -103,6 +104,19 @@ export default async function HomePage() {
         <p className="mt-5 text-xs text-gray-600">
           Simples, rápido e feito para colecionadores.
         </p>
+        </div>
+
+        <div className="relative mx-auto w-full max-w-xl">
+          <div className="pointer-events-none absolute -inset-6 rounded-[2.5rem] bg-purple-600/20 blur-3xl" />
+          <Image
+            src="/hero-cat-reading.png"
+            alt="Gato lendo um livro cercado por sua coleção de mangás"
+            width={1536}
+            height={1024}
+            className="relative h-auto w-full rounded-3xl object-cover shadow-2xl shadow-purple-950/50"
+            priority
+          />
+        </div>
       </main>
 
       
