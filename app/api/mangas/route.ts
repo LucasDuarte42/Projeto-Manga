@@ -3,6 +3,19 @@ import { requireUserSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { mangaCreateSchema, mangaListQuerySchema } from '@/lib/validations'
 
+function hasMissingVolumes(manga: { totalVolumes: number | null; ownedVolumes: number[] }) {
+  return Boolean(manga.totalVolumes && manga.totalVolumes > manga.ownedVolumes.length)
+}
+
+function matchesProgress(manga: { status: string; totalVolumes: number | null; ownedVolumes: number[] }, progress: string) {
+  if (progress === 'ALL') return true
+  const owned = manga.ownedVolumes.length
+  const total = manga.totalVolumes
+  if (progress === 'COMPLETE') return manga.status === 'READ' || Boolean(total && owned >= total)
+  if (progress === 'NOT_STARTED') return owned === 0 && manga.status === 'WANT_TO_READ'
+  return manga.status === 'READING' || (owned > 0 && Boolean(total && owned < total))
+}
+
 export async function GET(req: NextRequest) {
   const session = await requireUserSession()
   if (!session?.user?.id) {
@@ -15,17 +28,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
 
-  const { q, status, sort, page, pageSize } = parsed.data
+  const { q, author, genre, status, collectionType, progress, volumes, sort, page, pageSize } = parsed.data
   const baseWhere = {
     userId: session.user.id,
-    ...(q
-      ? {
-          OR: [
-            { name: { contains: q, mode: 'insensitive' as const } },
-            { author: { contains: q, mode: 'insensitive' as const } },
-          ],
-        }
-      : {}),
+    ...(q ? { OR: [{ name: { contains: q, mode: 'insensitive' as const } }, { author: { contains: q, mode: 'insensitive' as const } }] } : {}),
+    ...(author ? { author: { contains: author, mode: 'insensitive' as const } } : {}),
+    ...(genre ? { genre: { contains: genre, mode: 'insensitive' as const } } : {}),
+    ...(collectionType !== 'ALL' ? { collectionType } : {}),
+    ...(status !== 'ALL' && status !== 'MISSING' ? { status } : {}),
   }
 
   const orderBy = sort === 'AZ'
@@ -34,25 +44,27 @@ export async function GET(req: NextRequest) {
       ? { name: 'desc' as const }
       : { createdAt: 'desc' as const }
 
-  if (status === 'MISSING') {
-    const candidates = await prisma.manga.findMany({
-      where: { ...baseWhere, totalVolumes: { gt: 0 } },
-      orderBy,
-    })
-    const missing = candidates.filter((manga) => manga.ownedVolumes.length < (manga.totalVolumes ?? 0))
-    const totalItems = missing.length
-    const items = missing.slice((page - 1) * pageSize, page * pageSize)
+  const requiresMemoryFiltering = status === 'MISSING' || progress !== 'ALL' || volumes !== 'ALL'
 
+  if (requiresMemoryFiltering) {
+    const candidates = await prisma.manga.findMany({ where: baseWhere, orderBy })
+    const filtered = candidates.filter((manga) => {
+      const missing = hasMissingVolumes(manga)
+      const matchesVolumeFilter = volumes === 'ALL' || (volumes === 'MISSING' ? missing : !missing)
+      const matchesStatusFilter = status !== 'MISSING' || missing
+      return matchesStatusFilter && matchesVolumeFilter && matchesProgress(manga, progress)
+    })
+    const totalItems = filtered.length
+    const items = filtered.slice((page - 1) * pageSize, page * pageSize)
     return NextResponse.json({
       items,
       pagination: { page, pageSize, totalItems, totalPages: Math.max(1, Math.ceil(totalItems / pageSize)) },
     })
   }
 
-  const where = status === 'ALL' ? baseWhere : { ...baseWhere, status }
   const [totalItems, items] = await Promise.all([
-    prisma.manga.count({ where }),
-    prisma.manga.findMany({ where, orderBy, skip: (page - 1) * pageSize, take: pageSize }),
+    prisma.manga.count({ where: baseWhere }),
+    prisma.manga.findMany({ where: baseWhere, orderBy, skip: (page - 1) * pageSize, take: pageSize }),
   ])
 
   return NextResponse.json({
@@ -69,16 +81,11 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json()
   const parsed = mangaCreateSchema.safeParse(body)
-
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: parsed.error.issues[0].message },
-      { status: 400 }
-    )
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
 
   const { name, author, coverUrl, volume, totalVolumes, status, note, genre, collectionType } = parsed.data
-
   const existing = await prisma.manga.findUnique({
     where: { userId_name_volume: { userId: session.user.id, name, volume: volume ?? 1 } },
   })

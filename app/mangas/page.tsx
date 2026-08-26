@@ -17,6 +17,7 @@ import {
   AlertCircle,
   ChevronDown,
   Download,
+  SlidersHorizontal,
 } from 'lucide-react'
 
 import AddItemModal from '@/components/AddItemModal'
@@ -71,6 +72,12 @@ export default function MangasPage() {
   const [filterStatus, setFilterStatus] = useState<
     'ALL' | 'READ' | 'READING' | 'WANT_TO_READ' | 'MISSING'
   >('ALL')
+  const [authorFilter, setAuthorFilter] = useState('')
+  const [genreFilter, setGenreFilter] = useState('')
+  const [collectionTypeFilter, setCollectionTypeFilter] = useState<'ALL' | 'MANGA' | 'HQ'>('ALL')
+  const [progressFilter, setProgressFilter] = useState<'ALL' | 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETE'>('ALL')
+  const [volumesFilter, setVolumesFilter] = useState<'ALL' | 'MISSING' | 'COMPLETE'>('ALL')
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
 
   const [showModal, setShowModal] = useState(false)
   const [editingManga, setEditingManga] = useState<Manga | null>(null)
@@ -88,7 +95,7 @@ export default function MangasPage() {
     if (status === 'authenticated') {
       fetchMangas()
     }
-  }, [status, page, search, filterStatus, sortOrder])
+  }, [status, page, search, filterStatus, authorFilter, genreFilter, collectionTypeFilter, progressFilter, volumesFilter, sortOrder])
 
   const fetchMangas = async () => {
     try {
@@ -100,6 +107,11 @@ export default function MangasPage() {
         pageSize: '20',
         q: search,
         status: filterStatus,
+        author: authorFilter,
+        genre: genreFilter,
+        collectionType: collectionTypeFilter,
+        progress: progressFilter,
+        volumes: volumesFilter,
         sort: sortOrder,
       })
       const response = await fetch(`/api/mangas?${params.toString()}`)
@@ -512,6 +524,16 @@ export default function MangasPage() {
 
           </div>
 
+          <button
+            type="button"
+            onClick={() => setShowAdvancedFilters((current) => !current)}
+            aria-expanded={showAdvancedFilters}
+            className={`flex shrink-0 items-center justify-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-medium transition ${showAdvancedFilters || authorFilter || genreFilter || collectionTypeFilter !== 'ALL' || progressFilter !== 'ALL' || volumesFilter !== 'ALL' ? 'border-purple-500/40 bg-purple-500/10 text-purple-300' : 'border-gray-800 bg-gray-900/50 text-gray-400 hover:border-gray-700 hover:text-gray-200'}`}
+          >
+            <SlidersHorizontal size={15} />
+            Filtros avançados
+          </button>
+
           {/* Sort */}
 
           <div className="relative shrink-0">
@@ -550,6 +572,42 @@ export default function MangasPage() {
           </div>
 
         </div>
+
+        {showAdvancedFilters && (
+          <section className="mb-8 rounded-2xl border border-gray-800 bg-gray-900/50 p-4 sm:p-5" aria-label="Filtros avançados">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              <label className="flex flex-col gap-2">
+                <span className="text-xs font-medium text-gray-500">Autor</span>
+                <input value={authorFilter} onChange={(event) => { setAuthorFilter(event.target.value); setPage(1) }} placeholder="Filtrar por autor" className="rounded-xl border border-gray-800 bg-gray-950 px-3 py-2.5 text-sm text-white outline-none focus:border-purple-500" />
+              </label>
+              <label className="flex flex-col gap-2">
+                <span className="text-xs font-medium text-gray-500">Gênero</span>
+                <input value={genreFilter} onChange={(event) => { setGenreFilter(event.target.value); setPage(1) }} placeholder="Ex.: ação, romance" className="rounded-xl border border-gray-800 bg-gray-950 px-3 py-2.5 text-sm text-white outline-none focus:border-purple-500" />
+              </label>
+              <label className="flex flex-col gap-2">
+                <span className="text-xs font-medium text-gray-500">Tipo de coleção</span>
+                <select value={collectionTypeFilter} onChange={(event) => { setCollectionTypeFilter(event.target.value as typeof collectionTypeFilter); setPage(1) }} className="rounded-xl border border-gray-800 bg-gray-950 px-3 py-2.5 text-sm text-white outline-none focus:border-purple-500">
+                  <option value="ALL">Todos os tipos</option><option value="MANGA">Mangás</option><option value="HQ">HQs</option>
+                </select>
+              </label>
+              <label className="flex flex-col gap-2">
+                <span className="text-xs font-medium text-gray-500">Progresso</span>
+                <select value={progressFilter} onChange={(event) => { setProgressFilter(event.target.value as typeof progressFilter); setPage(1) }} className="rounded-xl border border-gray-800 bg-gray-950 px-3 py-2.5 text-sm text-white outline-none focus:border-purple-500">
+                  <option value="ALL">Todos</option><option value="NOT_STARTED">Não iniciados</option><option value="IN_PROGRESS">Em andamento</option><option value="COMPLETE">Concluídos</option>
+                </select>
+              </label>
+              <label className="flex flex-col gap-2">
+                <span className="text-xs font-medium text-gray-500">Volumes</span>
+                <select value={volumesFilter} onChange={(event) => { setVolumesFilter(event.target.value as typeof volumesFilter); setPage(1) }} className="rounded-xl border border-gray-800 bg-gray-950 px-3 py-2.5 text-sm text-white outline-none focus:border-purple-500">
+                  <option value="ALL">Todos</option><option value="MISSING">Com volumes faltantes</option><option value="COMPLETE">Coleção completa</option>
+                </select>
+              </label>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button type="button" onClick={() => { setAuthorFilter(''); setGenreFilter(''); setCollectionTypeFilter('ALL'); setProgressFilter('ALL'); setVolumesFilter('ALL'); setFilterStatus('ALL'); setPage(1) }} className="text-sm font-medium text-gray-400 transition hover:text-white">Limpar filtros</button>
+            </div>
+          </section>
+        )}
 
         {/* Error */}
 
