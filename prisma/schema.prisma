@@ -43,6 +43,13 @@ enum MangaStatus {
   WANT_TO_READ
 }
 
+enum VolumeStatus {
+  MISSING
+  OWNED
+  READ
+  LOANED
+}
+
 model Manga {
   id             String         @id @default(cuid())
   name           String
@@ -60,11 +67,44 @@ model Manga {
   user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   volumeRatings  VolumeRating[]
+  volumes        MangaVolume[]
 
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
   @@unique([userId, name, volume])
+}
+
+model MangaVolume {
+  id        String          @id @default(cuid())
+  mangaId   String
+  number    Int
+  status    VolumeStatus    @default(MISSING)
+  loanedTo  String?
+  loanedAt  DateTime?
+  dueDate   DateTime?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  manga     Manga           @relation(fields: [mangaId], references: [id], onDelete: Cascade)
+  history   VolumeHistory[]
+
+  @@unique([mangaId, number])
+  @@index([mangaId, status])
+}
+
+model VolumeHistory {
+  id        String       @id @default(cuid())
+  volumeId  String
+  fromStatus VolumeStatus?
+  toStatus VolumeStatus
+  loanedTo  String?
+  dueDate   DateTime?
+  changedAt DateTime     @default(now())
+
+  volume    MangaVolume  @relation(fields: [volumeId], references: [id], onDelete: Cascade)
+
+  @@index([volumeId, changedAt])
 }
 
 model VolumeRating {

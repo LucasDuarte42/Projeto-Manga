@@ -17,6 +17,7 @@ import {
   AlertCircle,
   ChevronDown,
   Download,
+  Share2,
 } from 'lucide-react'
 
 import AddItemModal from '@/components/AddItemModal'
@@ -25,6 +26,7 @@ import QuickEditModal from '@/components/QuickEditModal'
 import ExportTextModal from '@/components/ExportTextModal'
 import { downloadText } from '@/utils/exportCollection'
 import LogoutButton from '@/components/LogoutButton'
+import ShareCollectionModal from '@/components/ShareCollectionModal'
 
 
 type CollectionType = 'MANGA' | 'HQ'
@@ -76,6 +78,7 @@ export default function MangasPage() {
   const [editingManga, setEditingManga] = useState<Manga | null>(null)
 
   const [showExportModal, setShowExportModal] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
   const [exportContent, setExportContent] = useState('')
 
   useEffect(() => {
@@ -401,6 +404,17 @@ export default function MangasPage() {
               <span className="hidden sm:inline">
                 Exportar
               </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowShareModal(true)}
+              disabled={totalItems === 0}
+              className="flex items-center gap-2 rounded-xl border border-gray-800 bg-gray-900/50 px-3 py-2.5 text-sm font-semibold text-gray-300 transition hover:border-purple-500/50 hover:bg-purple-500/10 disabled:cursor-not-allowed disabled:opacity-40 sm:px-4"
+              title="Criar resumo visual da coleção"
+            >
+              <Share2 size={18} />
+              <span className="hidden sm:inline">Compartilhar</span>
             </button>
 
             <button
@@ -872,6 +886,17 @@ export default function MangasPage() {
           onDownload={handleDownload}
         />
 
+      )}
+
+      {showShareModal && (
+        <ShareCollectionModal
+          username={session?.user?.name}
+          totalItems={totalItems}
+          page={page}
+          totalPages={totalPages}
+          items={mangas}
+          onClose={() => setShowShareModal(false)}
+        />
       )}
 
     </div>
