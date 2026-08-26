@@ -776,6 +776,29 @@ export default function MangaDetailPage() {
               </div>
             </div>
 
+            {totalVolsNum > 0 && (
+              <div className="grid grid-cols-5 gap-2 sm:grid-cols-8 md:grid-cols-10">
+                {volumeArray.map((volume) => {
+                  const isOwned = ownedVolumes.includes(volume)
+                  return (
+                    <button
+                      key={volume}
+                      type="button"
+                      onClick={() => toggleVolume(volume)}
+                      aria-pressed={isOwned}
+                      className={`aspect-square rounded-xl border text-sm font-semibold transition ${
+                        isOwned
+                          ? 'border-purple-400/30 bg-gradient-to-br from-purple-500 to-fuchsia-500 text-white shadow-lg shadow-purple-900/30'
+                          : 'border-white/10 bg-white/[0.025] text-gray-500 hover:border-purple-500/40 hover:bg-purple-500/[0.06] hover:text-gray-200'
+                      }`}
+                    >
+                      {volume}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
             {totalVolsNum === 0 && (
               <div className="rounded-2xl border border-dashed border-white/10 py-10 text-center text-sm text-gray-500">
                 Defina o total de volumes para
@@ -870,45 +893,6 @@ export default function MangaDetailPage() {
             </div>
           </div>
         </section>
-
-        {/* Volume buttons */}
-        {totalVolsNum > 0 && (
-          <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-6 sm:p-8">
-            <div className="mb-7 flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">
-                  Volumes
-                </p>
-                <h2 className="mt-2 text-2xl font-bold text-white [font-family:var(--font-display)]">
-                  Marque os volumes que você tem
-                </h2>
-              </div>
-              <span className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 font-mono text-xs text-gray-400">
-                {volumesOwned} / {totalVolsNum}
-              </span>
-            </div>
-            <div className="grid grid-cols-5 gap-2 sm:grid-cols-8 md:grid-cols-10">
-              {volumeArray.map((volume) => {
-                const isOwned = ownedVolumes.includes(volume)
-                return (
-                  <button
-                    key={volume}
-                    type="button"
-                    onClick={() => toggleVolume(volume)}
-                    aria-pressed={isOwned}
-                    className={`aspect-square rounded-xl border text-sm font-semibold transition ${
-                      isOwned
-                        ? 'border-purple-400/30 bg-gradient-to-br from-purple-500 to-fuchsia-500 text-white shadow-lg shadow-purple-900/30'
-                        : 'border-white/10 bg-white/[0.025] text-gray-500 hover:border-purple-500/40 hover:bg-purple-500/[0.06] hover:text-gray-200'
-                    }`}
-                  >
-                    {volume}
-                  </button>
-                )
-              })}
-            </div>
-          </section>
-        )}
 
         {/* Volume ratings */}
         {ownedVolumes.length > 0 && (
