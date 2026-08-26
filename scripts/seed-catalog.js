@@ -28,6 +28,19 @@ const records = [
   { title: 'The Beginning After the End', edition: 'The Beginning After the End', type: EditionType.STANDARD, publisher: 'NewPOP', latest: 4, year: 2025, url: 'https://www.newpop.com.br/2025-lancamentos-de-abril-mes-4/', evidence: 'Volume 04 no checklist oficial de abril de 2025.' },
   { title: 'Uma Vida Imortal', author: 'Yoshitoki Oima', edition: 'Uma Vida Imortal', type: EditionType.STANDARD, publisher: 'NewPOP', latest: 12, year: 2025, url: 'https://www.newpop.com.br/2025-lancamentos-de-fevereiro-mes-2/', evidence: 'Uma Vida Imortal Volume 12 no checklist oficial de fevereiro de 2025.' },
   { title: 'Cavaleiros do Zodíaco: Episódio G', edition: 'Cavaleiros do Zodíaco: Episódio G', type: EditionType.STANDARD, publisher: 'NewPOP', latest: 4, year: 2025, url: 'https://www.newpop.com.br/2025-lancamentos-de-fevereiro-mes-2/', evidence: 'Volume 04 no checklist oficial de fevereiro de 2025.' },
+  // Naoki Urasawa — Blog BBM, edições brasileiras separadas
+  { title: 'Monster', author: 'Naoki Urasawa', edition: 'Monster — Conrad original', type: EditionType.STANDARD, publisher: 'Conrad', latest: 10, total: 18, status: PublicationStatus.HIATUS, year: 2008, url: 'https://blogbbm.com/manga/monster/', evidence: 'Primeira publicação brasileira: 10 volumes lançados de 18 planejados; publicação cancelada.' },
+  { title: 'Monster', author: 'Naoki Urasawa', edition: 'Monster — Panini edição normal', type: EditionType.STANDARD, publisher: 'Panini', latest: 18, total: 18, status: PublicationStatus.COMPLETE, year: 2015, url: 'https://blogbbm.com/manga/monster/', evidence: 'Segunda publicação brasileira completa com 18 volumes.' },
+  { title: 'Monster', author: 'Naoki Urasawa', edition: 'Monster — Panini kanzenban', type: EditionType.KANZENBAN, publisher: 'Panini', latest: 9, total: 9, status: PublicationStatus.COMPLETE, year: 2021, url: 'https://blogbbm.com/manga/monster/', evidence: 'Terceira publicação brasileira: 9 tomos kanzenban, reunindo dois volumes originais por tomo.' },
+  { title: 'Pluto', author: 'Naoki Urasawa', edition: 'Pluto — Panini edição anterior', type: EditionType.STANDARD, publisher: 'Panini', latest: 8, total: 8, status: PublicationStatus.COMPLETE, year: 2019, url: 'https://blogbbm.com/manga/pluto/', evidence: 'Primeira publicação brasileira completa com 8 volumes.' },
+  { title: 'Pluto', author: 'Naoki Urasawa', edition: 'Pluto — Panini edição de luxo', type: EditionType.DELUXE, publisher: 'Panini', latest: 8, total: 8, status: PublicationStatus.COMPLETE, year: 2025, url: 'https://blogbbm.com/manga/pluto/', evidence: 'Segunda publicação brasileira completa com 8 volumes, publicada de 2024 a 2025.' },
+  { title: 'Mujirushi: Le Signe Des Rêves', author: 'Naoki Urasawa', edition: 'Mujirushi — Panini deluxe slipcase', type: EditionType.DELUXE, publisher: 'Panini', latest: null, total: 2, status: PublicationStatus.ONGOING, year: 2026, url: 'https://blogbbm.com/manga/mujirushi/', evidence: 'Edição brasileira prevista para outubro de 2026 em slipcase com dois volumes internos.' },
+  { title: 'Billy Bat', author: 'Naoki Urasawa e Takashi Nagasaki', edition: 'Billy Bat — Panini', type: EditionType.STANDARD, publisher: 'Panini', latest: 9, total: 20, status: PublicationStatus.ONGOING, year: 2026, url: 'https://blogbbm.com/manga/billy-bat/', evidence: '9 volumes brasileiros publicados; volume 10 indicado como final e previsto para setembro de 2026.' },
+  { title: 'Asadora!', author: 'Naoki Urasawa', edition: 'Asadora! — Panini', type: EditionType.STANDARD, publisher: 'Panini', latest: 6, total: 9, status: PublicationStatus.ONGOING, year: 2026, url: 'https://blogbbm.com/manga/asadora/', evidence: '6 volumes brasileiros publicados; volumes 7, 8 e 9 previstos para 2026 e 2027.' },
+  { title: '20th Century Boys', author: 'Naoki Urasawa', edition: '20th Century Boys — Panini edição original', type: EditionType.STANDARD, publisher: 'Panini', latest: 22, total: 22, status: PublicationStatus.COMPLETE, year: 2016, url: 'https://blogbbm.com/manga/20_century_boys/', evidence: 'Primeira publicação brasileira completa com 22 volumes.' },
+  { title: '20th Century Boys', author: 'Naoki Urasawa', edition: '20th Century Boys — Panini Edição Definitiva', type: EditionType.DELUXE, publisher: 'Panini', latest: 9, total: 11, status: PublicationStatus.ONGOING, year: 2026, url: 'https://blogbbm.com/manga/20_century_boys/', evidence: 'Nova edição definitiva: 9 volumes publicados; volumes 10 e 11 indicados para 2026.' },
+  { title: '21st Century Boys', author: 'Naoki Urasawa', edition: '21st Century Boys — Panini', type: EditionType.STANDARD, publisher: 'Panini', latest: 2, total: 2, status: PublicationStatus.COMPLETE, year: 2016, url: 'https://blogbbm.com/manga/21_century_boys/', evidence: 'Continuação direta de 20th Century Boys, com dois volumes brasileiros publicados.' },
+  { title: 'Combat / Pineapple Army', author: 'Kazuya Kudo e Naoki Urasawa', edition: 'Combat — PNC', type: EditionType.STANDARD, publisher: 'PNC', latest: 1, total: 8, status: PublicationStatus.HIATUS, year: 2003, url: 'https://blogbbm.com/manga/combat/', evidence: 'Autoria compartilhada; apenas um dos oito volumes japoneses foi publicado no Brasil e a edição foi cancelada.' },
   // 2026 — HQs Panini e Mythos
   { title: 'O Espetacular Homem-Aranha', author: 'Stan Lee e Steve Ditko', edition: 'Edição Definitiva', type: EditionType.DELUXE, workType: CollectionType.HQ, publisher: 'Panini', latest: 7, year: 2026, url: 'https://panini.com.br/home-marvel', evidence: 'Volumes 1 e 7 da Edição Definitiva listados em pré-venda no catálogo Marvel.' },
   { title: 'Os Fabulosos X-Men', edition: 'Edição Definitiva', type: EditionType.DELUXE, workType: CollectionType.HQ, publisher: 'Panini', latest: 7, year: 2026, url: 'https://panini.com.br/os-fabulosos-x-men-edicao-definitiva-vol-7', evidence: 'Volume 7 da Edição Definitiva listado em pré-venda.' },
@@ -67,7 +80,8 @@ async function main() {
       where: { id: editionId },
       update: {
         latestVolumeObserved: item.latest,
-        publicationStatus: PublicationStatus.ONGOING,
+        totalVolumes: item.total ?? undefined,
+        publicationStatus: item.status ?? PublicationStatus.ONGOING,
         sourceUrl: item.url,
         lastVerifiedAt: new Date(),
       },
@@ -78,8 +92,9 @@ async function main() {
         editionType: item.type,
         publisher: item.publisher,
         country: 'BR',
-        publicationStatus: PublicationStatus.ONGOING,
         latestVolumeObserved: item.latest,
+        totalVolumes: item.total,
+        publicationStatus: item.status ?? PublicationStatus.ONGOING,
         sourceUrl: item.url,
         lastVerifiedAt: new Date(),
       },
@@ -98,7 +113,7 @@ async function main() {
     await prisma.catalogSource.upsert({
       where: { id: sourceId },
       update: { evidence: item.evidence, observedAt: new Date() },
-      create: { id: sourceId, editionId: edition.id, sourceName: item.publisher, sourceUrl: item.url, observedYear: item.year, evidence: item.evidence },
+      create: { id: sourceId, editionId: edition.id, sourceName: item.url.includes('blogbbm.com') ? 'Blog BBM' : item.publisher, sourceUrl: item.url, observedYear: item.year, evidence: item.evidence },
     });
   }
 
