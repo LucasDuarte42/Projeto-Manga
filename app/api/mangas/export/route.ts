@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireUserSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
+import { generateCollectionText } from '@/utils/exportCollection'
 
 function csvCell(value: unknown): string {
   const text = Array.isArray(value) ? value.join(', ') : String(value ?? '')
@@ -14,8 +15,8 @@ export async function GET(req: NextRequest) {
   }
 
   const format = new URL(req.url).searchParams.get('format')
-  if (format !== 'json' && format !== 'csv') {
-    return NextResponse.json({ error: 'Formato inválido. Use json ou csv.' }, { status: 400 })
+  if (format !== 'txt' && format !== 'json' && format !== 'csv') {
+    return NextResponse.json({ error: 'Formato inválido. Use txt, json ou csv.' }, { status: 400 })
   }
 
   const mangas = await prisma.manga.findMany({
@@ -37,6 +38,17 @@ export async function GET(req: NextRequest) {
       updatedAt: true,
     },
   })
+
+  if (format === 'txt') {
+    return new NextResponse(generateCollectionText(mangas), {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Content-Disposition': 'attachment; filename="pinakes-colecao.txt"',
+        'Cache-Control': 'no-store',
+      },
+    })
+  }
 
   if (format === 'json') {
     return new NextResponse(JSON.stringify(mangas, null, 2), {

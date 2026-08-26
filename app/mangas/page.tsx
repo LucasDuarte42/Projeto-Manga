@@ -23,7 +23,7 @@ import AddItemModal from '@/components/AddItemModal'
 import MangaSkeleton from '@/components/MangaSkeleton'
 import QuickEditModal from '@/components/QuickEditModal'
 import ExportTextModal from '@/components/ExportTextModal'
-import { generateCollectionText, downloadText } from '@/utils/exportCollection'
+import { downloadText } from '@/utils/exportCollection'
 import LogoutButton from '@/components/LogoutButton'
 
 
@@ -217,11 +217,36 @@ export default function MangasPage() {
     fetchMangas()
   }
 
-  function handleExportClick() {
-  const text = generateCollectionText(mangas)
-  setExportContent(text)
-  setShowExportModal(true)
-}
+  async function handleExportClick() {
+    try {
+      const response = await fetch('/api/mangas/export?format=txt')
+      if (!response.ok) throw new Error('Não foi possível preparar a exportação')
+      setExportContent(await response.text())
+      setShowExportModal(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao preparar exportação')
+    }
+  }
+
+  async function handleDownload(format: 'txt' | 'csv' | 'json') {
+    if (format === 'txt') {
+      downloadText(exportContent, 'pinakes-colecao.txt')
+      return
+    }
+
+    const response = await fetch(`/api/mangas/export?format=${format}`)
+    if (!response.ok) throw new Error('Não foi possível baixar a exportação')
+
+    const blob = await response.blob()
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `pinakes-colecao.${format}`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+  }
 
   const filteredMangas = mangas
 
@@ -377,24 +402,6 @@ export default function MangasPage() {
                 Exportar
               </span>
             </button>
-
-            <a
-              href="/api/mangas/export?format=json"
-              download="pinakes-colecao.json"
-              className="hidden rounded-xl border border-gray-800 bg-gray-900/50 px-3 py-2.5 text-sm font-semibold text-gray-300 transition hover:border-gray-700 hover:bg-gray-900 lg:inline-flex"
-              title="Baixar coleção em JSON"
-            >
-              JSON
-            </a>
-
-            <a
-              href="/api/mangas/export?format=csv"
-              download="pinakes-colecao.csv"
-              className="hidden rounded-xl border border-gray-800 bg-gray-900/50 px-3 py-2.5 text-sm font-semibold text-gray-300 transition hover:border-gray-700 hover:bg-gray-900 lg:inline-flex"
-              title="Baixar coleção em CSV"
-            >
-              CSV
-            </a>
 
             <button
               onClick={() => setShowModal(true)}
@@ -862,6 +869,7 @@ export default function MangasPage() {
         <ExportTextModal
           content={exportContent}
           onClose={() => setShowExportModal(false)}
+          onDownload={handleDownload}
         />
 
       )}
