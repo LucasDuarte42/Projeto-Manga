@@ -87,6 +87,20 @@ export const volumeRatingSchema = z.object({
   note: z.number().min(0).max(10),
 })
 
+export const volumeStatusSchema = z.object({
+  volume: z.number().int().min(1).max(100000),
+  status: z.enum(['MISSING', 'OWNED', 'READ', 'LOANED']),
+  loanedTo: z.string().trim().max(120, 'Nome muito longo').nullable().optional(),
+  dueDate: z.string().datetime({ offset: true }).nullable().optional(),
+}).superRefine((data, ctx) => {
+  if (data.status === 'LOANED' && !data.loanedTo) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['loanedTo'], message: 'Informe para quem o volume foi emprestado' })
+  }
+  if (data.status !== 'LOANED' && (data.loanedTo || data.dueDate)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['status'], message: 'Dados de empréstimo só podem ser usados com o status emprestado' })
+  }
+})
+
 export const searchQuerySchema = z.object({
   q: z.string().trim().min(1, 'Query obrigatória').max(100, 'Query muito longa'),
 })

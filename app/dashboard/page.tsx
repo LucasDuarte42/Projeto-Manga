@@ -9,6 +9,8 @@ import {
   Check,
   Heart,
   Layers,
+  AlertCircle,
+  HandCoins,
   TrendingUp,
   Star,
   ArrowRight,
@@ -28,10 +30,9 @@ export default async function DashboardPage() {
       userId: session.user.id,
     },
     include: {
-      _count: {
-        select: {
-          volumeRatings: true,
-        },
+      volumes: true,
+      volumeRatings: {
+        select: { volume: true },
       },
     },
     orderBy: {
@@ -42,7 +43,35 @@ export default async function DashboardPage() {
   const total = mangas.length
 
   const volumesLidosTotal = mangas.reduce(
-    (acc, manga) => acc + manga._count.volumeRatings,
+    (acc, manga) => {
+      const readVolumes = manga.volumes.filter((volume) => volume.status === 'READ').length
+      const ratedVolumes = manga.volumeRatings.length
+      return acc + Math.max(readVolumes, ratedVolumes)
+    },
+    0
+  )
+
+  const volumesEmprestadosTotal = mangas.reduce(
+    (acc, manga) => acc + manga.volumes.filter((volume) => volume.status === 'LOANED').length,
+    0
+  )
+
+  const volumesAdquiridosTotal = mangas.reduce(
+    (acc, manga) => {
+      const persisted = manga.volumes.filter((volume) => volume.status !== 'MISSING').length
+      return acc + Math.max(persisted, manga.ownedVolumes.length)
+    },
+    0
+  )
+
+  const volumesFaltantesTotal = mangas.reduce(
+    (acc, manga) => {
+      if (!manga.totalVolumes) return acc
+      return acc + Math.max(0, manga.totalVolumes - Math.max(
+        manga.volumes.filter((volume) => volume.status !== 'MISSING').length,
+        manga.ownedVolumes.length
+      ))
+    },
     0
   )
 
@@ -84,9 +113,14 @@ export default async function DashboardPage() {
     0
   )
 
+  const totalVolumesConhecidos = mangas.reduce(
+    (acc, manga) => acc + (manga.totalVolumes ?? 0),
+    0
+  )
+
   const progressoColecao =
-    total > 0
-      ? Math.round((colecaoLida / total) * 100)
+    totalVolumesConhecidos > 0
+      ? Math.min(100, Math.round((volumesLidosTotal / totalVolumesConhecidos) * 100))
       : 0
 
   return (
@@ -198,6 +232,13 @@ export default async function DashboardPage() {
             iconClass="bg-blue-500/10 text-blue-400"
           />
 
+          <StatCard
+            label="Faltantes"
+            value={volumesFaltantesTotal}
+            icon={<AlertCircle size={20} />}
+            iconClass="bg-rose-500/10 text-rose-400"
+          />
+
         </section>
 
         {/* Destaque */}
@@ -248,11 +289,11 @@ export default async function DashboardPage() {
             <div className="mt-3 flex justify-between text-xs text-gray-500">
 
               <span>
-                {colecaoLida} concluídas
+                {volumesLidosTotal}/{totalVolumesConhecidos || '?'} volumes lidos
               </span>
 
               <span>
-                {colecaoEmAndamento} em andamento
+                {colecaoEmAndamento} obras em andamento
               </span>
 
             </div>
@@ -290,8 +331,8 @@ export default async function DashboardPage() {
 
           <SmallStat
             icon={<Layers size={18} />}
-            label="Volumes na coleção"
-            value={totalVolumesUsuario}
+            label="Volumes adquiridos"
+            value={Math.max(totalVolumesUsuario, volumesAdquiridosTotal)}
             color="text-purple-400"
           />
 
@@ -307,6 +348,13 @@ export default async function DashboardPage() {
             label="Coleções concluídas"
             value={colecaoLida}
             color="text-emerald-400"
+          />
+
+          <SmallStat
+            icon={<HandCoins size={18} />}
+            label="Volumes emprestados"
+            value={volumesEmprestadosTotal}
+            color="text-amber-400"
           />
 
         </section>
