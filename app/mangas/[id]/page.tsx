@@ -147,6 +147,7 @@ export default function MangaDetailPage() {
 
   const [showDelete, setShowDelete] = useState(false)
   const [showBulkRatingDialog, setShowBulkRatingDialog] = useState(false)
+  const [bulkRatingTarget, setBulkRatingTarget] = useState<'volumes' | 'chapters'>('volumes')
   const [bulkNote, setBulkNote] = useState('')
 
   const [mangaName, setMangaName] = useState('')
@@ -390,21 +391,49 @@ export default function MangaDetailPage() {
     }
   }
 
+  function openBulkRatingDialog(target: 'volumes' | 'chapters') {
+    setBulkRatingTarget(target)
+    setBulkNote('')
+    setShowBulkRatingDialog(true)
+  }
+
+  function applyRatingToAllChapters() {
+    if (bulkNote === '' || readChapters.length === 0) return
+    const parsed = Number(bulkNote)
+    if (Number.isNaN(parsed)) return
+    const limited = Math.min(10, Math.max(0, parsed))
+    const nextRatings: Record<number, number> = {}
+    readChapters.forEach((chapter) => { nextRatings[chapter] = limited })
+    setPendingChapterRatings(nextRatings)
+    setShowBulkRatingDialog(false)
+    setSuccess(`Nota ${limited.toFixed(1)} aplicada a todos os capítulos lidos. Clique em salvar para confirmar.`)
+  }
+
   function applyRatingToAllVolumes() {
-    if (bulkNote === '' || volumeArray.length === 0) return
+    if (bulkNote === '' || ownedVolumes.length === 0) return
 
     const parsed = Number(bulkNote)
     if (Number.isNaN(parsed)) return
 
     const limited = Math.min(10, Math.max(0, parsed))
     const nextRatings: Record<number, number> = {}
-    volumeArray.forEach((volume) => {
+    ownedVolumes.forEach((volume) => {
       nextRatings[volume] = limited
     })
 
     setPendingRatings(nextRatings)
     setShowBulkRatingDialog(false)
     setSuccess(`Nota ${limited.toFixed(1)} aplicada a todos os volumes. Clique em salvar para confirmar.`)
+  }
+
+  function markAllChaptersRead() {
+    setReadChapters(chapterArray)
+    setSuccess('Todos os capítulos foram marcados como lidos. Clique em salvar para confirmar.')
+  }
+
+  function markAllVolumesOwned() {
+    setOwnedVolumes(volumeArray)
+    setSuccess('Todos os volumes foram marcados como pertencentes à sua coleção. Clique em salvar para confirmar.')
   }
 
   function toggleChapter(chapter: number) {
@@ -859,6 +888,10 @@ export default function MangaDetailPage() {
                   <Plus size={16} />
                 </button>
               </div>
+
+              <button type="button" onClick={markAllVolumesOwned} disabled={volumeArray.length === 0} className="rounded-xl border border-purple-500/30 bg-purple-500/10 px-3 py-2 text-xs font-semibold text-purple-200 transition hover:bg-purple-500/20 disabled:cursor-not-allowed disabled:opacity-40">
+                Tenho todos os volumes
+              </button>
             </div>
 
             {totalVolsNum > 0 && (
@@ -900,7 +933,10 @@ export default function MangaDetailPage() {
                 <h2 className="mt-2 text-2xl font-bold text-white [font-family:var(--font-display)]">Capítulos lidos</h2>
                 <p className="mt-2 text-sm text-gray-500">Selecione os capítulos lidos e depois atribua uma nota individual a cada um.</p>
               </div>
-              <span className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 font-mono text-xs text-gray-400">{chaptersRead} / {totalChaptersNum}</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 font-mono text-xs text-gray-400">{chaptersRead} / {totalChaptersNum}</span>
+                <button type="button" onClick={markAllChaptersRead} disabled={chapterArray.length === 0} className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40">Li todos os capítulos</button>
+              </div>
             </div>
 
             <label className="mt-7 flex max-w-xs flex-col gap-2">
@@ -922,7 +958,7 @@ export default function MangaDetailPage() {
                     return <button key={chapter} type="button" onClick={() => toggleChapter(chapter)} aria-pressed={isRead} className={`aspect-square rounded-xl border text-xs font-semibold transition ${isRead ? 'border-emerald-400/30 bg-emerald-500 text-gray-950' : 'border-white/10 bg-white/[0.025] text-gray-500 hover:border-purple-500/40 hover:text-white'}`}>C{chapter}</button>
                   })}
                 </div>
-                {readChapters.length > 0 && <div className="mt-8 border-t border-white/10 pt-6"><h3 className="text-lg font-semibold text-white">Notas dos capítulos lidos</h3><div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-6"><>{readChapters.map((chapter) => { const rating = pendingChapterRatings[chapter]; const config = rating !== undefined ? getRatingConfig(rating) : null; return <label key={chapter} className="flex flex-col gap-2"><span className="font-mono text-xs text-gray-500">Cap. {chapter}</span><div className={`rounded-xl border p-2 ${config ? `${config.color} border-transparent` : 'border-white/10 bg-white/[0.04]'}`}><input type="number" min="0" max="10" step="0.5" value={rating ?? ''} placeholder="—" onChange={(event) => { const value = event.target.value; setPendingChapterRatings((current) => { const next = { ...current }; if (value === '') delete next[chapter]; else { const parsed = Number(value); if (!Number.isNaN(parsed)) next[chapter] = Math.min(10, Math.max(0, parsed)) }; return next }) }} className="w-full bg-transparent text-center text-sm font-bold text-white outline-none placeholder:text-white/40" aria-label={`Nota do capítulo ${chapter}`} /></div>{config && <span className="text-center text-[10px] text-gray-500">{config.label}</span>}</label> })}</></div></div>}
+                {readChapters.length > 0 && <div className="mt-8 border-t border-white/10 pt-6"><div className="flex flex-wrap items-center justify-between gap-3"><h3 className="text-lg font-semibold text-white">Notas dos capítulos lidos</h3><button type="button" onClick={() => openBulkRatingDialog('chapters')} disabled={readChapters.length === 0} className="rounded-xl border border-purple-500/30 bg-purple-500/10 px-3 py-2 text-xs font-semibold text-purple-200 transition hover:bg-purple-500/20 disabled:cursor-not-allowed disabled:opacity-40">Dar nota para todos</button></div><div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-6"><>{readChapters.map((chapter) => { const rating = pendingChapterRatings[chapter]; const config = rating !== undefined ? getRatingConfig(rating) : null; return <label key={chapter} className="flex flex-col gap-2"><span className="font-mono text-xs text-gray-500">Cap. {chapter}</span><div className={`rounded-xl border p-2 ${config ? `${config.color} border-transparent` : 'border-white/10 bg-white/[0.04]'}`}><input type="number" min="0" max="10" step="0.5" value={rating ?? ''} placeholder="—" onChange={(event) => { const value = event.target.value; setPendingChapterRatings((current) => { const next = { ...current }; if (value === '') delete next[chapter]; else { const parsed = Number(value); if (!Number.isNaN(parsed)) next[chapter] = Math.min(10, Math.max(0, parsed)) }; return next }) }} className="w-full bg-transparent text-center text-sm font-bold text-white outline-none placeholder:text-white/40" aria-label={`Nota do capítulo ${chapter}`} /></div>{config && <span className="text-center text-[10px] text-gray-500">{config.label}</span>}</label> })}</></div></div>}
               </>
             ) : <div className="mt-7 rounded-2xl border border-dashed border-white/10 py-10 text-center text-sm text-gray-500">Defina o total de capítulos para começar.</div>}
           </div>
@@ -1156,11 +1192,8 @@ export default function MangaDetailPage() {
             <div className="mt-8 flex justify-end border-t border-white/10 pt-6">
               <button
                 type="button"
-                onClick={() => {
-                  setBulkNote(note)
-                  setShowBulkRatingDialog(true)
-                }}
-                disabled={volumeArray.length === 0}
+                onClick={() => openBulkRatingDialog('volumes')}
+                disabled={ownedVolumes.length === 0}
                 className="flex items-center justify-center gap-2 rounded-xl border border-purple-500/30 bg-purple-500/10 px-4 py-3 text-sm font-semibold text-purple-200 transition hover:bg-purple-500/20 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <Star size={17} />
@@ -1218,11 +1251,11 @@ export default function MangaDetailPage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">Avaliação em massa</p>
-                <h2 id="bulk-rating-title" className="mt-2 text-xl font-bold text-white [font-family:var(--font-display)]">Dar a mesma nota a todos?</h2>
+                <h2 id="bulk-rating-title" className="mt-2 text-xl font-bold text-white [font-family:var(--font-display)]">Dar nota a todos os {bulkRatingTarget === 'chapters' ? 'capítulos lidos' : 'volumes que você tem'}?</h2>
               </div>
               <button type="button" onClick={() => setShowBulkRatingDialog(false)} aria-label="Fechar" className="flex h-9 w-9 items-center justify-center rounded-xl text-gray-500 transition hover:bg-white/5 hover:text-white"><X size={19} /></button>
             </div>
-            <p className="mt-4 text-sm leading-6 text-gray-400">A nota escolhida será aplicada aos {volumeArray.length} volumes desta obra. Você poderá ajustar cada volume individualmente depois.</p>
+            <p className="mt-4 text-sm leading-6 text-gray-400">A nota escolhida será aplicada a {bulkRatingTarget === 'chapters' ? `${readChapters.length} capítulos lidos` : `${ownedVolumes.length} volumes que você tem`}. Você poderá ajustar cada item individualmente depois.</p>
             <label className="mt-6 flex items-center gap-3">
               <span className="text-sm text-gray-400">Nota</span>
               <input
@@ -1239,7 +1272,7 @@ export default function MangaDetailPage() {
             </label>
             <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button type="button" onClick={() => setShowBulkRatingDialog(false)} className="rounded-xl border border-white/10 bg-white/[0.03] px-5 py-2.5 text-sm font-medium text-gray-300 transition hover:bg-white/[0.06] hover:text-white">Cancelar</button>
-              <button type="button" onClick={applyRatingToAllVolumes} disabled={bulkNote === '' || Number.isNaN(Number(bulkNote))} className="rounded-xl bg-purple-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-40">Aplicar nota</button>
+              <button type="button" onClick={bulkRatingTarget === 'chapters' ? applyRatingToAllChapters : applyRatingToAllVolumes} disabled={bulkNote === '' || Number.isNaN(Number(bulkNote))} className="rounded-xl bg-purple-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-40">Aplicar nota</button>
             </div>
           </div>
         </div>
