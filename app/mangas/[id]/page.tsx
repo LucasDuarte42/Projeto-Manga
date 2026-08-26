@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { Baloo_2, Inter } from 'next/font/google'
 import LogoutButton from '@/components/LogoutButton'
+import RatingShareCard from '@/components/RatingShareCard'
 
 const display = Baloo_2({
   subsets: ['latin'],
@@ -43,6 +44,8 @@ interface Manga {
   volume: number
   totalVolumes: number | null
   ownedVolumes: number[]
+  totalChapters: number | null
+  readChapters: number[]
   status: MangaStatus
   note: number | null
   coverUrl: string | null
@@ -52,6 +55,11 @@ interface Manga {
 
 interface VolumeRating {
   volume: number
+  note: number
+}
+
+interface ChapterRating {
+  chapter: number
   note: number
 }
 
@@ -138,11 +146,18 @@ export default function MangaDetailPage() {
   const [success, setSuccess] = useState<string | null>(null)
 
   const [showDelete, setShowDelete] = useState(false)
+  const [showBulkRatingDialog, setShowBulkRatingDialog] = useState(false)
+  const [bulkRatingTarget, setBulkRatingTarget] = useState<'volumes' | 'chapters'>('volumes')
+  const [bulkNote, setBulkNote] = useState('')
 
   const [mangaName, setMangaName] = useState('')
   const [author, setAuthor] = useState('')
   const [totalVolumes, setTotalVolumes] = useState('')
   const [ownedVolumes, setOwnedVolumes] = useState<number[]>([])
+  const [totalChapters, setTotalChapters] = useState('')
+  const [readChapters, setReadChapters] = useState<number[]>([])
+  const [pendingChapterRatings, setPendingChapterRatings] = useState<Record<number, number>>({})
+  const [activeTracker, setActiveTracker] = useState<'volumes' | 'chapters'>('volumes')
 
   const [mangaStatus, setMangaStatus] =
     useState<MangaStatus>('WANT_TO_READ')
@@ -169,9 +184,10 @@ export default function MangaDetailPage() {
       setLoading(true)
       setError(null)
 
-      const [mangaRes, ratingsRes] = await Promise.all([
+      const [mangaRes, ratingsRes, chapterRatingsRes] = await Promise.all([
         fetch(`/api/mangas/${id}`),
         fetch(`/api/mangas/${id}/volumes`),
+        fetch(`/api/mangas/${id}/chapters`),
       ])
 
       if (!mangaRes.ok) {
@@ -181,10 +197,10 @@ export default function MangaDetailPage() {
       const mangaData: Manga = await mangaRes.json()
 
       let ratingsData: VolumeRating[] = []
+      let chapterRatingsData: ChapterRating[] = []
 
-      if (ratingsRes.ok) {
-        ratingsData = await ratingsRes.json()
-      }
+      if (ratingsRes.ok) ratingsData = await ratingsRes.json()
+      if (chapterRatingsRes.ok) chapterRatingsData = await chapterRatingsRes.json()
 
       setManga(mangaData)
 
@@ -197,6 +213,8 @@ export default function MangaDetailPage() {
       )
 
       setOwnedVolumes(mangaData.ownedVolumes ?? [])
+      setTotalChapters(mangaData.totalChapters?.toString() ?? '')
+      setReadChapters(mangaData.readChapters ?? [])
 
       setMangaStatus(mangaData.status)
 
@@ -213,6 +231,12 @@ export default function MangaDetailPage() {
       })
 
       setPendingRatings(ratingsMap)
+
+      const chapterRatingsMap: Record<number, number> = {}
+      chapterRatingsData.forEach((rating) => {
+        chapterRatingsMap[rating.chapter] = rating.note
+      })
+      setPendingChapterRatings(chapterRatingsMap)
     } catch (err) {
       setError(
         err instanceof Error
@@ -232,10 +256,7 @@ export default function MangaDetailPage() {
     setSuccess(null)
 
     try {
-      const finalStatus: MangaStatus =
-        note !== ''
-          ? 'READ'
-          : mangaStatus
+      const finalStatus: MangaStatus = mangaStatus
 
       const total =
         totalVolumes !== ''
@@ -263,15 +284,12 @@ export default function MangaDetailPage() {
               : manga.volume,
 
           totalVolumes: total,
+          totalChapters: totalChapters !== '' ? Number(totalChapters) : null,
+          readChapters,
 
           ownedVolumes,
 
           status: finalStatus,
-
-          note:
-            note !== ''
-              ? Number(note)
-              : null,
 
           genre: manga.genre,
 
@@ -288,7 +306,7 @@ export default function MangaDetailPage() {
 
       const ratingRequests = Object.entries(
         pendingRatings
-      ).map(([volume, rating]) => {
+      ).filter(([volume]) => ownedVolumes.includes(Number(volume))).map(([volume, rating]) => {
         return fetch(`/api/mangas/${id}/volumes`, {
           method: 'POST',
 
@@ -304,6 +322,16 @@ export default function MangaDetailPage() {
       })
 
       await Promise.all(ratingRequests)
+
+      const chapterRatingRequests = Object.entries(pendingChapterRatings)
+        .filter(([chapter]) => readChapters.includes(Number(chapter)))
+        .map(([chapter, rating]) => fetch(`/api/mangas/${id}/chapters`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chapter: Number(chapter), note: rating }),
+        }))
+
+      await Promise.all(chapterRatingRequests)
 
       setManga(updatedManga)
 
@@ -353,6 +381,57 @@ export default function MangaDetailPage() {
       setDeleting(false)
       setShowDelete(false)
     }
+  }
+
+  function openBulkRatingDialog(target: 'volumes' | 'chapters') {
+    setBulkRatingTarget(target)
+    setBulkNote('')
+    setShowBulkRatingDialog(true)
+  }
+
+  function applyRatingToAllChapters() {
+    if (bulkNote === '' || readChapters.length === 0) return
+    const parsed = Number(bulkNote)
+    if (Number.isNaN(parsed)) return
+    const limited = Math.min(10, Math.max(0, parsed))
+    const nextRatings: Record<number, number> = {}
+    readChapters.forEach((chapter) => { nextRatings[chapter] = limited })
+    setPendingChapterRatings(nextRatings)
+    setShowBulkRatingDialog(false)
+    setSuccess(`Nota ${limited.toFixed(1)} aplicada a todos os capítulos lidos. Clique em salvar para confirmar.`)
+  }
+
+  function applyRatingToAllVolumes() {
+    if (bulkNote === '' || ownedVolumes.length === 0) return
+
+    const parsed = Number(bulkNote)
+    if (Number.isNaN(parsed)) return
+
+    const limited = Math.min(10, Math.max(0, parsed))
+    const nextRatings: Record<number, number> = {}
+    ownedVolumes.forEach((volume) => {
+      nextRatings[volume] = limited
+    })
+
+    setPendingRatings(nextRatings)
+    setShowBulkRatingDialog(false)
+    setSuccess(`Nota ${limited.toFixed(1)} aplicada a todos os volumes. Clique em salvar para confirmar.`)
+  }
+
+  function markAllChaptersRead() {
+    setReadChapters(chapterArray)
+    setSuccess('Todos os capítulos foram marcados como lidos. Clique em salvar para confirmar.')
+  }
+
+  function markAllVolumesOwned() {
+    setOwnedVolumes(volumeArray)
+    setSuccess('Todos os volumes foram marcados como pertencentes à sua coleção. Clique em salvar para confirmar.')
+  }
+
+  function toggleChapter(chapter: number) {
+    setReadChapters((current) => current.includes(chapter)
+      ? current.filter((item) => item !== chapter)
+      : [...current, chapter].sort((a, b) => a - b))
   }
 
   function toggleVolume(volume: number) {
@@ -421,6 +500,17 @@ export default function MangaDetailPage() {
     (_, index) => index + 1
   )
 
+  const totalChaptersNum = totalChapters !== ''
+    ? Math.max(0, Number(totalChapters))
+    : 0
+
+  const chapterArray = Array.from(
+    { length: totalChaptersNum },
+    (_, index) => index + 1
+  )
+
+  const chaptersRead = readChapters.length
+
   const volumesOwned = ownedVolumes.length
 
   const volumesMissing =
@@ -442,7 +532,9 @@ export default function MangaDetailPage() {
       : 0
 
   const average = useMemo(() => {
-    const ratings = Object.values(pendingRatings)
+    const ratings = ownedVolumes
+      .map((volume) => pendingRatings[volume])
+      .filter((rating): rating is number => rating !== undefined)
 
     if (ratings.length === 0) {
       return '—'
@@ -656,10 +748,24 @@ export default function MangaDetailPage() {
           </div>
         </section>
 
+        {/* Tracking mode */}
+        <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">Forma de acompanhar</p>
+              <p className="mt-1 text-sm text-gray-400">Escolha se deseja controlar volumes ou capítulos.</p>
+            </div>
+            <div className="flex rounded-xl border border-white/10 bg-white/[0.03] p-1">
+              <button type="button" onClick={() => setActiveTracker('volumes')} className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${activeTracker === 'volumes' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>Volumes</button>
+              <button type="button" onClick={() => setActiveTracker('chapters')} className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${activeTracker === 'chapters' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>Capítulos</button>
+            </div>
+          </div>
+        </section>
+
         {/* Collection + Info */}
         <section className="grid gap-6 lg:grid-cols-[1.4fr_.6fr]">
           {/* Volumes */}
-          <div className="rounded-3xl border border-white/10 bg-white/[0.025] p-6 sm:p-8">
+          <div className={`${activeTracker === 'volumes' ? '' : 'hidden'} rounded-3xl border border-white/10 bg-white/[0.025] p-6 sm:p-8`}>
             <div className="mb-7 flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">
@@ -774,6 +880,10 @@ export default function MangaDetailPage() {
                   <Plus size={16} />
                 </button>
               </div>
+
+              <button type="button" onClick={markAllVolumesOwned} disabled={volumeArray.length === 0} className="rounded-xl border border-purple-500/30 bg-purple-500/10 px-3 py-2 text-xs font-semibold text-purple-200 transition hover:bg-purple-500/20 disabled:cursor-not-allowed disabled:opacity-40">
+                Tenho todos os volumes
+              </button>
             </div>
 
             {totalVolsNum > 0 && (
@@ -805,6 +915,44 @@ export default function MangaDetailPage() {
                 começar sua coleção.
               </div>
             )}
+          </div>
+
+          {/* Chapters */}
+          <div className={`${activeTracker === 'chapters' ? '' : 'hidden'} rounded-3xl border border-white/10 bg-white/[0.025] p-6 sm:p-8`}>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">Coleção</p>
+                <h2 className="mt-2 text-2xl font-bold text-white [font-family:var(--font-display)]">Capítulos lidos</h2>
+                <p className="mt-2 text-sm text-gray-500">Selecione os capítulos lidos e depois atribua uma nota individual a cada um.</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 font-mono text-xs text-gray-400">{chaptersRead} / {totalChaptersNum}</span>
+                <button type="button" onClick={markAllChaptersRead} disabled={chapterArray.length === 0} className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40">Li todos os capítulos</button>
+              </div>
+            </div>
+
+            <label className="mt-7 flex max-w-xs flex-col gap-2">
+              <span className="text-sm text-gray-400">Total de capítulos</span>
+              <input type="number" min="1" value={totalChapters} onChange={(event) => {
+                const value = event.target.value
+                setTotalChapters(value)
+                const nextTotal = value === '' ? 0 : Math.max(1, Number(value))
+                setReadChapters((current) => current.filter((chapter) => chapter <= nextTotal))
+                setPendingChapterRatings((current) => Object.fromEntries(Object.entries(current).filter(([chapter]) => Number(chapter) <= nextTotal)))
+              }} className="rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-3 text-sm text-white outline-none focus:border-purple-500/60" />
+            </label>
+
+            {chapterArray.length > 0 ? (
+              <>
+                <div className="mt-7 grid grid-cols-5 gap-2 sm:grid-cols-8 md:grid-cols-10">
+                  {chapterArray.map((chapter) => {
+                    const isRead = readChapters.includes(chapter)
+                    return <button key={chapter} type="button" onClick={() => toggleChapter(chapter)} aria-pressed={isRead} className={`aspect-square rounded-xl border text-xs font-semibold transition ${isRead ? 'border-emerald-400/30 bg-emerald-500 text-gray-950' : 'border-white/10 bg-white/[0.025] text-gray-500 hover:border-purple-500/40 hover:text-white'}`}>C{chapter}</button>
+                  })}
+                </div>
+                {readChapters.length > 0 && <div className="mt-8 border-t border-white/10 pt-6"><div className="flex flex-wrap items-center justify-between gap-3"><h3 className="text-lg font-semibold text-white">Notas dos capítulos lidos</h3><button type="button" onClick={() => openBulkRatingDialog('chapters')} disabled={readChapters.length === 0} className="rounded-xl border border-purple-500/30 bg-purple-500/10 px-3 py-2 text-xs font-semibold text-purple-200 transition hover:bg-purple-500/20 disabled:cursor-not-allowed disabled:opacity-40">Dar nota para todos</button></div><div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-6"><>{readChapters.map((chapter) => { const rating = pendingChapterRatings[chapter]; const config = rating !== undefined ? getRatingConfig(rating) : null; return <label key={chapter} className="flex flex-col gap-2"><span className="font-mono text-xs text-gray-500">Cap. {chapter}</span><div className={`rounded-xl border p-2 ${config ? `${config.color} border-transparent` : 'border-white/10 bg-white/[0.04]'}`}><input type="number" min="0" max="10" step="0.5" value={rating ?? ''} placeholder="—" onChange={(event) => { const value = event.target.value; setPendingChapterRatings((current) => { const next = { ...current }; if (value === '') delete next[chapter]; else { const parsed = Number(value); if (!Number.isNaN(parsed)) next[chapter] = Math.min(10, Math.max(0, parsed)) }; return next }) }} className="w-full bg-transparent text-center text-sm font-bold text-white outline-none placeholder:text-white/40" aria-label={`Nota do capítulo ${chapter}`} /></div>{config && <span className="text-center text-[10px] text-gray-500">{config.label}</span>}</label> })}</></div></div>}
+              </>
+            ) : <div className="mt-7 rounded-2xl border border-dashed border-white/10 py-10 text-center text-sm text-gray-500">Defina o total de capítulos para começar.</div>}
           </div>
 
           {/* Information */}
@@ -895,8 +1043,8 @@ export default function MangaDetailPage() {
         </section>
 
         {/* Volume ratings */}
-        {ownedVolumes.length > 0 && (
-          <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-6 sm:p-8">
+        {activeTracker === 'volumes' && (
+        <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-6 sm:p-8">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">
@@ -1033,83 +1181,46 @@ export default function MangaDetailPage() {
               )}
             </div>
 
+            <div className="mt-8 flex justify-end border-t border-white/10 pt-6">
+              <button
+                type="button"
+                onClick={() => openBulkRatingDialog('volumes')}
+                disabled={ownedVolumes.length === 0}
+                className="flex items-center justify-center gap-2 rounded-xl border border-purple-500/30 bg-purple-500/10 px-4 py-3 text-sm font-semibold text-purple-200 transition hover:bg-purple-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Star size={17} />
+                Dar nota a todos os volumes
+              </button>
+            </div>
+
             <p className="mt-6 text-xs text-gray-500">
-              As avaliações individuais serão salvas
-              junto com as alterações da obra.
+              As avaliações aparecem somente para os volumes marcados como adquiridos e serão salvas junto com as alterações da obra.
             </p>
-          </section>
+        </section>
         )}
 
-        {/* General rating */}
-        <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-6 sm:p-8">
-          <div className="flex flex-wrap items-end justify-between gap-5">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">
-                Sua avaliação
-              </p>
-
-              <h2 className="mt-2 text-2xl font-bold text-white [font-family:var(--font-display)]">
-                Como foi a experiência?
-              </h2>
-
-              <p className="mt-2 text-sm text-gray-500">
-                Ao adicionar uma nota geral, a obra será
-                marcada automaticamente como lida.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <input
-                type="number"
-                min="0"
-                max="10"
-                step="0.5"
-                value={note}
-                onChange={(event) => {
-                  const value =
-                    event.target.value
-
-                  if (value === '') {
-                    setNote('')
-                    return
-                  }
-
-                  const parsed =
-                    Number(value)
-
-                  if (
-                    !Number.isNaN(parsed)
-                  ) {
-                    setNote(
-                      String(
-                        Math.min(
-                          10,
-                          Math.max(
-                            0,
-                            parsed
-                          )
-                        )
-                      )
-                    )
-                  }
-                }}
-                placeholder="0"
-                className="w-24 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-center font-mono text-lg font-bold text-white outline-none transition focus:border-purple-500/60"
-              />
-
-              <span className="text-sm text-gray-500">
-                / 10
-              </span>
-
-              {note !== '' && (
-                <Star
-                  size={22}
-                  className="fill-amber-400 text-amber-400"
-                />
-              )}
-            </div>
-          </div>
-        </section>
+        {activeTracker === 'volumes' ? (
+          <RatingShareCard
+            name={mangaName || manga.name}
+            author={author || manga.author}
+            coverUrl={manga.coverUrl ? `/api/mangas/${id}/cover` : null}
+            ratings={Object.entries(pendingRatings)
+              .filter(([volume]) => ownedVolumes.includes(Number(volume)))
+              .map(([volume, rating]) => ({ volume: Number(volume), note: rating }))}
+            expectedVolumes={ownedVolumes}
+          />
+        ) : (
+          <RatingShareCard
+            name={mangaName || manga.name}
+            author={author || manga.author}
+            coverUrl={manga.coverUrl ? `/api/mangas/${id}/cover` : null}
+            ratings={Object.entries(pendingChapterRatings)
+              .filter(([chapter]) => readChapters.includes(Number(chapter)))
+              .map(([chapter, rating]) => ({ volume: Number(chapter), note: rating }))}
+            expectedVolumes={readChapters}
+            mode="chapters"
+          />
+        )}
 
         {/* Save */}
         <button
@@ -1134,6 +1245,40 @@ export default function MangaDetailPage() {
           )}
         </button>
       </main>
+
+      {/* Bulk rating modal */}
+      {showBulkRatingDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <div role="dialog" aria-modal="true" aria-labelledby="bulk-rating-title" className="w-full max-w-md rounded-3xl border border-white/10 bg-gray-950 p-6 shadow-2xl shadow-black/60">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">Avaliação em massa</p>
+                <h2 id="bulk-rating-title" className="mt-2 text-xl font-bold text-white [font-family:var(--font-display)]">Dar nota a todos os {bulkRatingTarget === 'chapters' ? 'capítulos lidos' : 'volumes que você tem'}?</h2>
+              </div>
+              <button type="button" onClick={() => setShowBulkRatingDialog(false)} aria-label="Fechar" className="flex h-9 w-9 items-center justify-center rounded-xl text-gray-500 transition hover:bg-white/5 hover:text-white"><X size={19} /></button>
+            </div>
+            <p className="mt-4 text-sm leading-6 text-gray-400">A nota escolhida será aplicada a {bulkRatingTarget === 'chapters' ? `${readChapters.length} capítulos lidos` : `${ownedVolumes.length} volumes que você tem`}. Você poderá ajustar cada item individualmente depois.</p>
+            <label className="mt-6 flex items-center gap-3">
+              <span className="text-sm text-gray-400">Nota</span>
+              <input
+                type="number"
+                min="0"
+                max="10"
+                step="0.5"
+                value={bulkNote}
+                onChange={(event) => setBulkNote(event.target.value === '' ? '' : String(Math.min(10, Math.max(0, Number(event.target.value))))) }
+                className="w-24 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-center font-mono text-lg font-bold text-white outline-none focus:border-purple-500/60"
+                autoFocus
+              />
+              <span className="text-sm text-gray-500">/ 10</span>
+            </label>
+            <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button type="button" onClick={() => setShowBulkRatingDialog(false)} className="rounded-xl border border-white/10 bg-white/[0.03] px-5 py-2.5 text-sm font-medium text-gray-300 transition hover:bg-white/[0.06] hover:text-white">Cancelar</button>
+              <button type="button" onClick={bulkRatingTarget === 'chapters' ? applyRatingToAllChapters : applyRatingToAllVolumes} disabled={bulkNote === '' || Number.isNaN(Number(bulkNote))} className="rounded-xl bg-purple-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-40">Aplicar nota</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete modal */}
       {showDelete && (

@@ -64,6 +64,7 @@ export const mangaCreateSchema = z.object({
   coverUrl: coverUrlSchema,
   volume: positiveInt.optional().default(1),
   totalVolumes: positiveInt.nullable().optional(),
+  totalChapters: positiveInt.nullable().optional(),
   status: z.enum(['READ', 'READING', 'WANT_TO_READ']).optional().default('WANT_TO_READ'),
   note: z.number().min(0).max(10).nullable().optional(),
   genre: optionalText(100),
@@ -76,6 +77,8 @@ export const mangaUpdateSchema = z.object({
   coverUrl: coverUrlSchema,
   volume: positiveInt.optional(),
   totalVolumes: positiveInt.nullable().optional(),
+  totalChapters: positiveInt.nullable().optional(),
+  readChapters: z.array(z.number().int().min(1).max(100000)).max(100000).optional(),
   ownedVolumes: z.array(z.number().int().min(1).max(100000)).max(10000).optional(),
   status: z.enum(['READ', 'READING', 'WANT_TO_READ']).optional(),
   note: z.number().min(0).max(10).nullable().optional(),
@@ -84,6 +87,11 @@ export const mangaUpdateSchema = z.object({
 
 export const volumeRatingSchema = z.object({
   volume: z.number().int().min(1).max(100000),
+  note: z.number().min(0).max(10),
+})
+
+export const chapterRatingSchema = z.object({
+  chapter: z.number().int().min(1).max(100000),
   note: z.number().min(0).max(10),
 })
 
