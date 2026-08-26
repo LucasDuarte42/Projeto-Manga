@@ -3,6 +3,7 @@ import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   Library,
   BookOpen,
@@ -140,18 +141,14 @@ export default async function DashboardPage() {
             href="/dashboard"
             className="flex items-center gap-3"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-600 font-bold shadow-lg shadow-purple-900/30">
-              P
+            <div className="relative h-10 w-10 overflow-hidden rounded-xl shadow-lg shadow-purple-900/30">
+              <Image src="/brand/logo.png" alt="Pinakes" fill sizes="40px" className="object-cover" priority />
             </div>
 
             <div>
               <h1 className="text-base font-bold">
-                Pinakes
+                Pinakes Manga
               </h1>
-
-              <p className="text-xs text-purple-400">
-                Mangá
-              </p>
             </div>
           </Link>
 

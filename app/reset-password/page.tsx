@@ -3,6 +3,7 @@
 import { Suspense, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 
 function getPasswordStrength(password: string) {
   let score = 0
@@ -197,26 +198,14 @@ function ResetPasswordForm() {
 
             <div className="absolute inset-0 rounded-2xl bg-purple-500/40 blur-xl" />
 
-            <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-purple-400/30 bg-gradient-to-br from-purple-500 to-fuchsia-600 shadow-2xl shadow-purple-900/40">
-
-              <svg
-                viewBox="0 0 24 24"
-                className="h-8 w-8 text-white"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" />
-              </svg>
-
+            <div className="relative h-24 w-24 overflow-hidden rounded-2xl shadow-2xl shadow-purple-900/40">
+              <Image src="/brand/logo.png" alt="Pinakes" fill sizes="96px" className="object-cover" priority />
             </div>
 
           </div>
 
           <h1 className="text-3xl font-bold tracking-tight text-white">
-              Pinakes<span className="text-purple-400">Manga</span>
+              Pinakes Manga
           </h1>
 
           <p className="mt-2 text-sm text-gray-500">

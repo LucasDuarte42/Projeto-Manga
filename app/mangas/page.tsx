@@ -380,7 +380,10 @@ export default function MangasPage() {
               />
             </Link>
 
-            <div>
+            <div className="flex items-center gap-2.5">
+              <div className="relative h-9 w-9 overflow-hidden rounded-xl shadow-lg shadow-purple-900/20">
+                <Image src="/brand/logo.png" alt="Pinakes" fill sizes="36px" className="object-cover" priority />
+              </div>
               <h1 className="text-base font-bold sm:text-lg">
                 Minha coleção
               </h1>

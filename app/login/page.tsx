@@ -5,6 +5,7 @@ import { signIn, useSession } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 
 function LoginForm() {
   const router = useRouter()
@@ -100,7 +101,7 @@ function LoginForm() {
     {/* Botão voltar */}
       <button
         type="button"
-        onClick={() => router.back()}
+        onClick={() => router.push('/') }
         className="group absolute left-4 top-4 flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.03] text-gray-500 transition hover:border-purple-500/30 hover:bg-purple-500/10 hover:text-purple-300 sm:left-5 sm:top-5"
         aria-label="Voltar"
       >
@@ -129,25 +130,12 @@ function LoginForm() {
         
         {/* Logo */}
         <div className="mb-8 flex flex-col items-center">
-          <div className="relative mb-5">
-            <div className="absolute inset-0 rounded-2xl bg-purple-500/40 blur-xl" />
-
-            <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-purple-400/30 bg-gradient-to-br from-purple-500 to-fuchsia-600 shadow-2xl shadow-purple-900/40">
-              <svg
-                viewBox="0 0 24 24"
-                className="h-8 w-8 text-white"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" />
-              </svg>
-            </div>
+          <div className="mb-5">
+            <Image src="/brand/logo.png" alt="Pinakes Manga" width={96} height={96} className="block object-cover" priority />
           </div>
 
           <h1 className="text-3xl font-bold tracking-tight text-white">
-            Manga<span className="text-purple-400">Vault</span>
+            Pinakes Manga
           </h1>
 
           <p className="mt-2 text-sm text-gray-500">
