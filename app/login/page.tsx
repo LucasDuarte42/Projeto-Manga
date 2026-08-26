@@ -101,7 +101,7 @@ function LoginForm() {
     {/* Botão voltar */}
       <button
         type="button"
-        onClick={() => router.back()}
+        onClick={() => router.push('/') }
         className="group absolute left-4 top-4 flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.03] text-gray-500 transition hover:border-purple-500/30 hover:bg-purple-500/10 hover:text-purple-300 sm:left-5 sm:top-5"
         aria-label="Voltar"
       >
@@ -130,12 +130,8 @@ function LoginForm() {
         
         {/* Logo */}
         <div className="mb-8 flex flex-col items-center">
-          <div className="relative mb-5">
-            <div className="absolute inset-0 rounded-2xl bg-purple-500/40 blur-xl" />
-
-            <div className="relative h-24 w-24 overflow-hidden rounded-2xl shadow-2xl shadow-purple-900/40">
-              <Image src="/brand/logo.png" alt="Pinakes" fill sizes="96px" className="object-cover" priority />
-            </div>
+          <div className="mb-5">
+            <Image src="/brand/logo.png" alt="Pinakes Manga" width={96} height={96} className="block object-cover" priority />
           </div>
 
           <h1 className="text-3xl font-bold tracking-tight text-white">
