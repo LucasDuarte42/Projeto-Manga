@@ -104,18 +104,42 @@ export default async function HomePage() {
         <p className="mt-5 text-xs text-gray-600">
           Simples, rápido e feito para colecionadores.
         </p>
+
+        <div className="mt-9 grid grid-cols-3 gap-2 text-left sm:max-w-md sm:gap-3">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3 backdrop-blur-sm">
+            <p className="text-lg font-bold text-white">100%</p>
+            <p className="mt-1 text-[11px] leading-tight text-gray-500">organizado</p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3 backdrop-blur-sm">
+            <p className="text-lg font-bold text-white">1 só</p>
+            <p className="mt-1 text-[11px] leading-tight text-gray-500">lugar</p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3 backdrop-blur-sm">
+            <p className="text-lg font-bold text-white">Seu</p>
+            <p className="mt-1 text-[11px] leading-tight text-gray-500">ritmo</p>
+          </div>
+        </div>
         </div>
 
         <div className="relative mx-auto w-full max-w-xl">
           <div className="pointer-events-none absolute -inset-6 rounded-[2.5rem] bg-purple-600/20 blur-3xl" />
-          <Image
-            src="/hero-cat-reading.png"
-            alt="Gato lendo um livro cercado por sua coleção de mangás"
-            width={1536}
-            height={1024}
-            className="relative h-auto w-full rounded-3xl object-cover shadow-2xl shadow-purple-950/50"
-            priority
-          />
+          <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gray-900/60 p-2 shadow-2xl shadow-purple-950/50">
+            <Image
+              src="/hero-cat-reading.png"
+              alt="Gato lendo um livro cercado por sua coleção de mangás"
+              width={1536}
+              height={1024}
+              className="h-auto w-full rounded-2xl object-cover"
+              priority
+            />
+            <div className="absolute bottom-5 left-5 right-5 flex items-center justify-between rounded-2xl border border-white/10 bg-gray-950/80 px-4 py-3 backdrop-blur-md">
+              <div>
+                <p className="text-xs font-semibold text-purple-300">PINAKES MANGA</p>
+                <p className="mt-1 text-sm font-medium text-white">Sua próxima leitura começa aqui.</p>
+              </div>
+              <span className="ml-3 text-xl text-purple-300">✦</span>
+            </div>
+          </div>
         </div>
       </main>
 
