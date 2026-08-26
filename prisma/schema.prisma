@@ -57,6 +57,8 @@ model Manga {
   volume         Int
   totalVolumes   Int?
   ownedVolumes   Int[]          @default([])
+  totalChapters  Int?
+  readChapters   Int[]          @default([])
   status         MangaStatus    @default(WANT_TO_READ)
   collectionType CollectionType @default(MANGA)
   note           Float?         @map("rating")
@@ -67,6 +69,7 @@ model Manga {
   user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   volumeRatings  VolumeRating[]
+  chapterRatings ChapterRating[]
   volumes        MangaVolume[]
 
   createdAt      DateTime       @default(now())
@@ -116,4 +119,15 @@ model VolumeRating {
   manga     Manga    @relation(fields: [mangaId], references: [id], onDelete: Cascade)
 
   @@unique([mangaId, volume])
+}
+
+model ChapterRating {
+  id        String   @id @default(cuid())
+  mangaId   String
+  chapter   Int
+  note      Float
+
+  manga     Manga    @relation(fields: [mangaId], references: [id], onDelete: Cascade)
+
+  @@unique([mangaId, chapter])
 }

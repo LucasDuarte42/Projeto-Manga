@@ -10,6 +10,8 @@ interface UpdateMangaBody {
   author?: unknown
   volume?: unknown
   totalVolumes?: unknown
+  totalChapters?: unknown
+  readChapters?: unknown
   ownedVolumes?: unknown
   status?: unknown
   note?: unknown
@@ -29,6 +31,18 @@ function parseNumber(value: unknown): number | null {
   }
 
   return null
+}
+
+function parseChapterList(value: unknown, totalChapters: number | null): number[] {
+  if (!Array.isArray(value)) return []
+
+  const chapters = value
+    .map((item) => parseNumber(item))
+    .filter((item): item is number => item !== null)
+    .map((item) => Math.floor(item))
+    .filter((item) => item > 0 && (totalChapters === null || item <= totalChapters))
+
+  return chapters.filter((chapter, index, array) => array.indexOf(chapter) === index).sort((a, b) => a - b)
 }
 
 function parseOwnedVolumes(value: unknown): number[] {
@@ -155,16 +169,24 @@ export async function PUT(
           )
         : null
 
-    const parsedNote = parseNumber(body.note)
+    const parsedTotalChapters = parseNumber(body.totalChapters)
+    const totalChapters = parsedTotalChapters !== null
+      ? Math.max(1, Math.floor(parsedTotalChapters))
+      : body.totalChapters === null
+        ? null
+        : manga.totalChapters
 
-    let note: number | null = null
+    const readChapters = body.readChapters !== undefined
+      ? parseChapterList(body.readChapters, totalChapters)
+      : manga.readChapters
 
-    if (parsedNote !== null) {
-      note = Math.min(
-        10,
-        Math.max(0, parsedNote)
-      )
-    }
+    const parsedNote = body.note === undefined
+      ? manga.note
+      : parseNumber(body.note)
+
+    const note = parsedNote === null
+      ? null
+      : Math.min(10, Math.max(0, parsedNote))
 
     const parsedVolume = parseNumber(body.volume)
 
@@ -181,11 +203,6 @@ export async function PUT(
     let status = parseStatus(
       body.status ?? manga.status
     )
-
-    // Se existe uma nota geral, a obra é considerada lida
-    if (note !== null) {
-      status = 'READ'
-    }
 
     const name =
       typeof body.name === 'string' &&
@@ -218,6 +235,8 @@ export async function PUT(
         volume,
         totalVolumes,
         ownedVolumes,
+        totalChapters,
+        readChapters,
         status,
         note,
         genre,
