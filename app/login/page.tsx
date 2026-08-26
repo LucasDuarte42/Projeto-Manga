@@ -133,13 +133,13 @@ function LoginForm() {
           <div className="relative mb-5">
             <div className="absolute inset-0 rounded-2xl bg-purple-500/40 blur-xl" />
 
-            <div className="relative h-24 w-24 overflow-hidden rounded-2xl border border-purple-400/30 bg-gray-950 shadow-2xl shadow-purple-900/40">
+            <div className="relative h-24 w-24 overflow-hidden rounded-2xl shadow-2xl shadow-purple-900/40">
               <Image src="/brand/logo.png" alt="Pinakes" fill sizes="96px" className="object-cover" priority />
             </div>
           </div>
 
           <h1 className="text-3xl font-bold tracking-tight text-white">
-            Manga<span className="text-purple-400">Vault</span>
+            Pinakes Manga
           </h1>
 
           <p className="mt-2 text-sm text-gray-500">
