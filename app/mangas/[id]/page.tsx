@@ -44,6 +44,8 @@ interface Manga {
   volume: number
   totalVolumes: number | null
   ownedVolumes: number[]
+  totalChapters: number | null
+  readChapters: number[]
   status: MangaStatus
   note: number | null
   coverUrl: string | null
@@ -53,6 +55,11 @@ interface Manga {
 
 interface VolumeRating {
   volume: number
+  note: number
+}
+
+interface ChapterRating {
+  chapter: number
   note: number
 }
 
@@ -146,6 +153,10 @@ export default function MangaDetailPage() {
   const [author, setAuthor] = useState('')
   const [totalVolumes, setTotalVolumes] = useState('')
   const [ownedVolumes, setOwnedVolumes] = useState<number[]>([])
+  const [totalChapters, setTotalChapters] = useState('')
+  const [readChapters, setReadChapters] = useState<number[]>([])
+  const [pendingChapterRatings, setPendingChapterRatings] = useState<Record<number, number>>({})
+  const [activeTracker, setActiveTracker] = useState<'volumes' | 'chapters'>('volumes')
 
   const [mangaStatus, setMangaStatus] =
     useState<MangaStatus>('WANT_TO_READ')
@@ -172,9 +183,10 @@ export default function MangaDetailPage() {
       setLoading(true)
       setError(null)
 
-      const [mangaRes, ratingsRes] = await Promise.all([
+      const [mangaRes, ratingsRes, chapterRatingsRes] = await Promise.all([
         fetch(`/api/mangas/${id}`),
         fetch(`/api/mangas/${id}/volumes`),
+        fetch(`/api/mangas/${id}/chapters`),
       ])
 
       if (!mangaRes.ok) {
@@ -184,10 +196,10 @@ export default function MangaDetailPage() {
       const mangaData: Manga = await mangaRes.json()
 
       let ratingsData: VolumeRating[] = []
+      let chapterRatingsData: ChapterRating[] = []
 
-      if (ratingsRes.ok) {
-        ratingsData = await ratingsRes.json()
-      }
+      if (ratingsRes.ok) ratingsData = await ratingsRes.json()
+      if (chapterRatingsRes.ok) chapterRatingsData = await chapterRatingsRes.json()
 
       setManga(mangaData)
 
@@ -200,6 +212,8 @@ export default function MangaDetailPage() {
       )
 
       setOwnedVolumes(mangaData.ownedVolumes ?? [])
+      setTotalChapters(mangaData.totalChapters?.toString() ?? '')
+      setReadChapters(mangaData.readChapters ?? [])
 
       setMangaStatus(mangaData.status)
 
@@ -216,6 +230,12 @@ export default function MangaDetailPage() {
       })
 
       setPendingRatings(ratingsMap)
+
+      const chapterRatingsMap: Record<number, number> = {}
+      chapterRatingsData.forEach((rating) => {
+        chapterRatingsMap[rating.chapter] = rating.note
+      })
+      setPendingChapterRatings(chapterRatingsMap)
     } catch (err) {
       setError(
         err instanceof Error
@@ -266,6 +286,8 @@ export default function MangaDetailPage() {
               : manga.volume,
 
           totalVolumes: total,
+          totalChapters: totalChapters !== '' ? Number(totalChapters) : null,
+          readChapters,
 
           ownedVolumes,
 
@@ -307,6 +329,16 @@ export default function MangaDetailPage() {
       })
 
       await Promise.all(ratingRequests)
+
+      const chapterRatingRequests = Object.entries(pendingChapterRatings)
+        .filter(([chapter]) => readChapters.includes(Number(chapter)))
+        .map(([chapter, rating]) => fetch(`/api/mangas/${id}/chapters`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chapter: Number(chapter), note: rating }),
+        }))
+
+      await Promise.all(chapterRatingRequests)
 
       setManga(updatedManga)
 
@@ -375,6 +407,12 @@ export default function MangaDetailPage() {
     setSuccess(`Nota ${limited.toFixed(1)} aplicada a todos os volumes. Clique em salvar para confirmar.`)
   }
 
+  function toggleChapter(chapter: number) {
+    setReadChapters((current) => current.includes(chapter)
+      ? current.filter((item) => item !== chapter)
+      : [...current, chapter].sort((a, b) => a - b))
+  }
+
   function toggleVolume(volume: number) {
     setOwnedVolumes((current) => {
       if (current.includes(volume)) {
@@ -440,6 +478,17 @@ export default function MangaDetailPage() {
     { length: totalVolsNum },
     (_, index) => index + 1
   )
+
+  const totalChaptersNum = totalChapters !== ''
+    ? Math.max(0, Number(totalChapters))
+    : 0
+
+  const chapterArray = Array.from(
+    { length: totalChaptersNum },
+    (_, index) => index + 1
+  )
+
+  const chaptersRead = readChapters.length
 
   const volumesOwned = ownedVolumes.length
 
@@ -916,7 +965,72 @@ export default function MangaDetailPage() {
           </div>
         </section>
 
+        <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">Forma de acompanhar</p>
+              <p className="mt-1 text-sm text-gray-400">Escolha se deseja controlar volumes ou capítulos.</p>
+            </div>
+            <div className="flex rounded-xl border border-white/10 bg-white/[0.03] p-1">
+              <button type="button" onClick={() => setActiveTracker('volumes')} className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${activeTracker === 'volumes' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>Volumes</button>
+              <button type="button" onClick={() => setActiveTracker('chapters')} className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${activeTracker === 'chapters' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>Capítulos</button>
+            </div>
+          </div>
+        </section>
+
+        {activeTracker === 'chapters' && (
+          <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-6 sm:p-8">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">Capítulos</p>
+                <h2 className="mt-2 text-2xl font-bold text-white [font-family:var(--font-display)]">Capítulos lidos</h2>
+                <p className="mt-2 text-sm text-gray-500">Defina o total e selecione os capítulos que você já leu para avaliá-los individualmente.</p>
+              </div>
+              <span className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 font-mono text-sm text-purple-200">{chaptersRead} lidos</span>
+            </div>
+
+            <label className="mt-7 flex max-w-xs flex-col gap-2">
+              <span className="text-sm text-gray-400">Total de capítulos</span>
+              <input type="number" min="1" value={totalChapters} onChange={(event) => {
+                const value = event.target.value
+                setTotalChapters(value)
+                const nextTotal = value === '' ? 0 : Math.max(1, Number(value))
+                setReadChapters((current) => current.filter((chapter) => chapter <= nextTotal))
+                setPendingChapterRatings((current) => Object.fromEntries(Object.entries(current).filter(([chapter]) => Number(chapter) <= nextTotal)))
+              }} className="rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-3 text-sm text-white outline-none focus:border-purple-500/60" />
+            </label>
+
+            {chapterArray.length > 0 ? (
+              <>
+                <div className="mt-7 grid grid-cols-5 gap-2 sm:grid-cols-8 md:grid-cols-10">
+                  {chapterArray.map((chapter) => {
+                    const isRead = readChapters.includes(chapter)
+                    return <button key={chapter} type="button" onClick={() => toggleChapter(chapter)} aria-pressed={isRead} className={`aspect-square rounded-xl border text-xs font-semibold transition ${isRead ? 'border-emerald-400/30 bg-emerald-500 text-gray-950' : 'border-white/10 bg-white/[0.025] text-gray-500 hover:border-purple-500/40 hover:text-white'}`}>C{chapter}</button>
+                  })}
+                </div>
+
+                {readChapters.length > 0 && (
+                  <div className="mt-8 border-t border-white/10 pt-6">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-lg font-semibold text-white">Notas dos capítulos lidos</h3>
+                      <span className="text-xs text-gray-500">{Object.keys(pendingChapterRatings).length} avaliados</span>
+                    </div>
+                    <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
+                      {readChapters.map((chapter) => {
+                        const rating = pendingChapterRatings[chapter]
+                        const config = rating !== undefined ? getRatingConfig(rating) : null
+                        return <label key={chapter} className="flex flex-col gap-2"><span className="font-mono text-xs text-gray-500">Cap. {chapter}</span><div className={`rounded-xl border p-2 ${config ? `${config.color} border-transparent` : 'border-white/10 bg-white/[0.04]'}`}><input type="number" min="0" max="10" step="0.5" value={rating ?? ''} placeholder="—" onChange={(event) => { const value = event.target.value; setPendingChapterRatings((current) => { const next = { ...current }; if (value === '') delete next[chapter]; else { const parsed = Number(value); if (!Number.isNaN(parsed)) next[chapter] = Math.min(10, Math.max(0, parsed)) }; return next }) }} className="w-full bg-transparent text-center text-sm font-bold text-white outline-none placeholder:text-white/40" aria-label={`Nota do capítulo ${chapter}`} /></div>{config && <span className="text-center text-[10px] text-gray-500">{config.label}</span>}</label>
+                      })}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : <div className="mt-7 rounded-2xl border border-dashed border-white/10 py-10 text-center text-sm text-gray-500">Defina o total de capítulos para começar.</div>}
+          </section>
+        )}
+
         {/* Volume ratings */}
+        {activeTracker === 'volumes' && (
         <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-6 sm:p-8">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
@@ -1073,6 +1187,7 @@ export default function MangaDetailPage() {
               As avaliações aparecem somente para os volumes marcados como adquiridos e serão salvas junto com as alterações da obra.
             </p>
         </section>
+        )}
 
         <RatingShareCard
           name={mangaName || manga.name}
