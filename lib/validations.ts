@@ -90,3 +90,11 @@ export const volumeRatingSchema = z.object({
 export const searchQuerySchema = z.object({
   q: z.string().trim().min(1, 'Query obrigatória').max(100, 'Query muito longa'),
 })
+
+export const mangaListQuerySchema = z.object({
+  q: z.string().trim().max(100, 'Busca muito longa').optional().default(''),
+  status: z.enum(['ALL', 'READ', 'READING', 'WANT_TO_READ', 'MISSING']).optional().default('ALL'),
+  sort: z.enum(['RECENT', 'AZ', 'ZA']).optional().default('RECENT'),
+  page: z.coerce.number().int().min(1).max(100000).optional().default(1),
+  pageSize: z.coerce.number().int().min(1).max(50).optional().default(20),
+})

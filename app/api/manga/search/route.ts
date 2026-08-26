@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { searchQuerySchema } from '@/lib/validations'
+import { consumeRateLimit, getClientIp } from '@/lib/security'
 
 const ANILIST_URL = 'https://graphql.anilist.co'
 
@@ -87,6 +88,19 @@ async function fetchAniList(search: string, perPage: number) {
 }
 
 export async function GET(req: NextRequest) {
+  const allowed = await consumeRateLimit(
+    `external-search:manga:${getClientIp(req.headers)}`,
+    30,
+    10 * 60 * 1000
+  )
+
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Limite de buscas atingido. Tente novamente em alguns minutos.' },
+      { status: 429, headers: { 'Retry-After': '600' } }
+    )
+  }
+
   const { searchParams } = new URL(req.url)
   const parsedQuery = searchQuerySchema.safeParse({
     q: searchParams.get('q') ?? '',
