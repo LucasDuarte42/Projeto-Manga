@@ -1052,34 +1052,7 @@ export default function MangaDetailPage() {
               )}
             </div>
 
-            <div className="mt-8 grid gap-4 border-t border-white/10 pt-6 md:grid-cols-[1fr_auto] md:items-end">
-              <div>
-                <p className="text-sm font-semibold text-white">Nota geral da obra</p>
-                <p className="mt-1 text-xs leading-5 text-gray-500">Essa nota resume sua experiência com a obra e será usada no resumo visual.</p>
-                <div className="mt-3 flex items-center gap-3">
-                  <input
-                    type="number"
-                    min="0"
-                    max="10"
-                    step="0.5"
-                    value={note}
-                    onChange={(event) => {
-                      const value = event.target.value
-                      if (value === '') {
-                        setNote('')
-                        return
-                      }
-                      const parsed = Number(value)
-                      if (!Number.isNaN(parsed)) setNote(String(Math.min(10, Math.max(0, parsed))))
-                    }}
-                    placeholder="0"
-                    className="w-24 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-center font-mono text-lg font-bold text-white outline-none transition focus:border-purple-500/60"
-                    aria-label="Nota geral da obra"
-                  />
-                  <span className="text-sm text-gray-500">/ 10</span>
-                  {note !== '' && <Star size={21} className="fill-amber-400 text-amber-400" />}
-                </div>
-              </div>
+            <div className="mt-8 flex justify-end border-t border-white/10 pt-6">
               <button
                 type="button"
                 onClick={() => {
@@ -1090,19 +1063,53 @@ export default function MangaDetailPage() {
                 className="flex items-center justify-center gap-2 rounded-xl border border-purple-500/30 bg-purple-500/10 px-4 py-3 text-sm font-semibold text-purple-200 transition hover:bg-purple-500/20 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <Star size={17} />
-                Dar nota a todos
+                Dar nota a todos os volumes
               </button>
             </div>
 
             <p className="mt-6 text-xs text-gray-500">
-              As avaliações individuais e a nota geral serão salvas junto com as alterações da obra.
+              As avaliações individuais serão salvas junto com as alterações da obra.
             </p>
+        </section>
+
+        {/* General rating */}
+        <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-6 sm:p-8">
+          <div className="flex flex-wrap items-end justify-between gap-5">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">Sua avaliação</p>
+              <h2 className="mt-2 text-2xl font-bold text-white [font-family:var(--font-display)]">Como foi a experiência?</h2>
+              <p className="mt-2 text-sm text-gray-500">Ao adicionar uma nota geral, a obra será marcada automaticamente como lida.</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                min="0"
+                max="10"
+                step="0.5"
+                value={note}
+                onChange={(event) => {
+                  const value = event.target.value
+                  if (value === '') {
+                    setNote('')
+                    return
+                  }
+                  const parsed = Number(value)
+                  if (!Number.isNaN(parsed)) setNote(String(Math.min(10, Math.max(0, parsed))))
+                }}
+                placeholder="0"
+                className="w-24 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-center font-mono text-lg font-bold text-white outline-none transition focus:border-purple-500/60"
+                aria-label="Nota geral da obra"
+              />
+              <span className="text-sm text-gray-500">/ 10</span>
+              {note !== '' && <Star size={22} className="fill-amber-400 text-amber-400" />}
+            </div>
+          </div>
         </section>
 
         <RatingShareCard
           name={mangaName || manga.name}
           author={author || manga.author}
-          coverUrl={manga.coverUrl}
+          coverUrl={manga.coverUrl ? `/api/mangas/${id}/cover` : null}
           ratings={Object.entries(pendingRatings).map(([volume, rating]) => ({
             volume: Number(volume),
             note: rating,
