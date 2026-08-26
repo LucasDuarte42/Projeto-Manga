@@ -915,8 +915,7 @@ export default function MangaDetailPage() {
         </section>
 
         {/* Volume ratings */}
-        {totalVolsNum > 0 && (
-          <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-6 sm:p-8">
+        <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-6 sm:p-8">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">
@@ -1098,8 +1097,7 @@ export default function MangaDetailPage() {
             <p className="mt-6 text-xs text-gray-500">
               As avaliações individuais e a nota geral serão salvas junto com as alterações da obra.
             </p>
-          </section>
-        )}
+        </section>
 
         <RatingShareCard
           name={mangaName || manga.name}
