@@ -166,6 +166,7 @@ export default function MangaDetailPage() {
 
   const [pendingRatings, setPendingRatings] =
     useState<Record<number, number>>({})
+  const [savedSnapshot, setSavedSnapshot] = useState('')
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -237,6 +238,17 @@ export default function MangaDetailPage() {
         chapterRatingsMap[rating.chapter] = rating.note
       })
       setPendingChapterRatings(chapterRatingsMap)
+      setSavedSnapshot(JSON.stringify({
+        mangaName: mangaData.name,
+        author: mangaData.author ?? '',
+        totalVolumes: mangaData.totalVolumes?.toString() ?? '',
+        ownedVolumes: mangaData.ownedVolumes ?? [],
+        mangaStatus: mangaData.status,
+        totalChapters: mangaData.totalChapters?.toString() ?? '',
+        readChapters: mangaData.readChapters ?? [],
+        pendingRatings: ratingsMap,
+        pendingChapterRatings: chapterRatingsMap,
+      }))
     } catch (err) {
       setError(
         err instanceof Error
@@ -298,7 +310,14 @@ export default function MangaDetailPage() {
       })
 
       if (!response.ok) {
-        throw new Error('Erro ao salvar as alterações')
+        let message = 'Erro ao salvar as alterações'
+        try {
+          const data = await response.json()
+          if (typeof data.error === 'string') message = data.error
+        } catch {
+          // Mantém a mensagem padrão quando a API não retorna JSON.
+        }
+        throw new Error(message)
       }
 
       const updatedManga: Manga =
@@ -321,7 +340,9 @@ export default function MangaDetailPage() {
         })
       })
 
-      await Promise.all(ratingRequests)
+      const ratingResponses = await Promise.all(ratingRequests)
+      const failedRating = ratingResponses.find((ratingResponse) => !ratingResponse.ok)
+      if (failedRating) throw new Error('Não foi possível salvar uma avaliação de volume.')
 
       const chapterRatingRequests = Object.entries(pendingChapterRatings)
         .filter(([chapter]) => readChapters.includes(Number(chapter)))
@@ -331,12 +352,15 @@ export default function MangaDetailPage() {
           body: JSON.stringify({ chapter: Number(chapter), note: rating }),
         }))
 
-      await Promise.all(chapterRatingRequests)
+      const chapterRatingResponses = await Promise.all(chapterRatingRequests)
+      const failedChapterRating = chapterRatingResponses.find((ratingResponse) => !ratingResponse.ok)
+      if (failedChapterRating) throw new Error('Não foi possível salvar uma avaliação de capítulo.')
 
       setManga(updatedManga)
 
       setMangaStatus(updatedManga.status)
 
+      setSavedSnapshot(currentDraftSnapshot)
       setSuccess('Alterações salvas com sucesso!')
 
       window.setTimeout(() => {
@@ -510,6 +534,20 @@ export default function MangaDetailPage() {
   )
 
   const chaptersRead = readChapters.length
+
+  const currentDraftSnapshot = useMemo(() => JSON.stringify({
+    mangaName,
+    author,
+    totalVolumes,
+    ownedVolumes,
+    mangaStatus,
+    totalChapters,
+    readChapters,
+    pendingRatings,
+    pendingChapterRatings,
+  }), [mangaName, author, totalVolumes, ownedVolumes, mangaStatus, totalChapters, readChapters, pendingRatings, pendingChapterRatings])
+
+  const hasUnsavedChanges = savedSnapshot !== '' && savedSnapshot !== currentDraftSnapshot
 
   const volumesOwned = ownedVolumes.length
 
@@ -761,6 +799,20 @@ export default function MangaDetailPage() {
             </div>
           </div>
         </section>
+
+        {hasUnsavedChanges && (
+          <div className="sticky top-20 z-10 flex justify-end">
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-fuchsia-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-purple-950/40 transition hover:from-purple-500 hover:to-fuchsia-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Save size={16} />
+              {saving ? 'Salvando...' : 'Salvar alterações'}
+            </button>
+          </div>
+        )}
 
         {/* Collection + Info */}
         <section className="grid gap-6 lg:grid-cols-[1.4fr_.6fr]">
