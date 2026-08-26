@@ -256,10 +256,7 @@ export default function MangaDetailPage() {
     setSuccess(null)
 
     try {
-      const finalStatus: MangaStatus =
-        note !== ''
-          ? 'READ'
-          : mangaStatus
+      const finalStatus: MangaStatus = mangaStatus
 
       const total =
         totalVolumes !== ''
@@ -293,11 +290,6 @@ export default function MangaDetailPage() {
           ownedVolumes,
 
           status: finalStatus,
-
-          note:
-            note !== ''
-              ? Number(note)
-              : null,
 
           genre: manga.genre,
 

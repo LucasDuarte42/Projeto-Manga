@@ -180,16 +180,13 @@ export async function PUT(
       ? parseChapterList(body.readChapters, totalChapters)
       : manga.readChapters
 
-    const parsedNote = parseNumber(body.note)
+    const parsedNote = body.note === undefined
+      ? manga.note
+      : parseNumber(body.note)
 
-    let note: number | null = null
-
-    if (parsedNote !== null) {
-      note = Math.min(
-        10,
-        Math.max(0, parsedNote)
-      )
-    }
+    const note = parsedNote === null
+      ? null
+      : Math.min(10, Math.max(0, parsedNote))
 
     const parsedVolume = parseNumber(body.volume)
 
@@ -206,11 +203,6 @@ export async function PUT(
     let status = parseStatus(
       body.status ?? manga.status
     )
-
-    // Se existe uma nota geral, a obra é considerada lida
-    if (note !== null) {
-      status = 'READ'
-    }
 
     const name =
       typeof body.name === 'string' &&
