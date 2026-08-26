@@ -1207,18 +1207,28 @@ export default function MangaDetailPage() {
         </section>
         )}
 
-        <RatingShareCard
-          name={mangaName || manga.name}
-          author={author || manga.author}
-          coverUrl={manga.coverUrl ? `/api/mangas/${id}/cover` : null}
-          ratings={Object.entries(pendingRatings)
-            .filter(([volume]) => ownedVolumes.includes(Number(volume)))
-            .map(([volume, rating]) => ({
-              volume: Number(volume),
-              note: rating,
-            }))}
-          expectedVolumes={ownedVolumes}
-        />
+        {activeTracker === 'volumes' ? (
+          <RatingShareCard
+            name={mangaName || manga.name}
+            author={author || manga.author}
+            coverUrl={manga.coverUrl ? `/api/mangas/${id}/cover` : null}
+            ratings={Object.entries(pendingRatings)
+              .filter(([volume]) => ownedVolumes.includes(Number(volume)))
+              .map(([volume, rating]) => ({ volume: Number(volume), note: rating }))}
+            expectedVolumes={ownedVolumes}
+          />
+        ) : (
+          <RatingShareCard
+            name={mangaName || manga.name}
+            author={author || manga.author}
+            coverUrl={manga.coverUrl ? `/api/mangas/${id}/cover` : null}
+            ratings={Object.entries(pendingChapterRatings)
+              .filter(([chapter]) => readChapters.includes(Number(chapter)))
+              .map(([chapter, rating]) => ({ volume: Number(chapter), note: rating }))}
+            expectedVolumes={readChapters}
+            mode="chapters"
+          />
+        )}
 
         {/* Save */}
         <button

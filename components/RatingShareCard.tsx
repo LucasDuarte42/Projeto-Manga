@@ -9,6 +9,7 @@ interface RatingShareCardProps {
   coverUrl: string | null
   ratings: Array<{ volume: number; note: number }>
   expectedVolumes: number[]
+  mode?: 'volumes' | 'chapters'
 }
 
 type RatingBand = {
@@ -75,7 +76,7 @@ function loadCover(url: string | null) {
   })
 }
 
-async function createRatingImage({ name, author, coverUrl, ratings }: RatingShareCardProps) {
+async function createRatingImage({ name, author, coverUrl, ratings, mode = 'volumes' }: RatingShareCardProps) {
   const canvas = document.createElement('canvas')
   canvas.width = 1600
   canvas.height = 900
@@ -134,7 +135,7 @@ async function createRatingImage({ name, author, coverUrl, ratings }: RatingShar
   context.fillText(average !== null ? average.toFixed(1) : '—', coverX + 43, 765)
   context.fillStyle = '#8d8792'
   context.font = '400 23px Arial'
-  context.fillText('média dos volumes', coverX + 132, 765)
+  context.fillText(`média dos ${mode === 'chapters' ? 'capítulos' : 'volumes'}`, coverX + 132, 765)
 
   const chartX = 455
   const chartY = 72
@@ -158,7 +159,7 @@ async function createRatingImage({ name, author, coverUrl, ratings }: RatingShar
 
   context.fillStyle = '#8d8792'
   context.font = '600 17px Arial'
-  context.fillText('NOTAS POR VOLUME', chartX, chartY + 88)
+  context.fillText(`NOTAS POR ${mode === 'chapters' ? 'CAPÍTULO' : 'VOLUME'}`, chartX, chartY + 88)
 
   ratings.forEach((rating, index) => {
     const column = index % columns
@@ -170,7 +171,7 @@ async function createRatingImage({ name, author, coverUrl, ratings }: RatingShar
     context.fillStyle = '#8d8792'
     context.font = '600 16px Arial'
     context.textAlign = 'center'
-    context.fillText(`V${rating.volume}`, x + cellWidth / 2, y - 10)
+    context.fillText(`${mode === 'chapters' ? 'C' : 'V'}${rating.volume}`, x + cellWidth / 2, y - 10)
     context.fillStyle = band.color
     roundedRect(context, x, y, cellWidth, cellHeight, 12)
     context.fillStyle = band.textColor
@@ -187,6 +188,7 @@ async function createRatingImage({ name, author, coverUrl, ratings }: RatingShar
 }
 
 export default function RatingShareCard(props: RatingShareCardProps) {
+  const mode = props.mode ?? 'volumes'
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -253,18 +255,18 @@ export default function RatingShareCard(props: RatingShareCardProps) {
           </p>
           <h2 className="mt-2 text-2xl font-bold text-white [font-family:var(--font-display)]">Compartilhe suas notas</h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-500">
-            Avalie todos os volumes para gerar uma imagem com a capa, a média geral e a grade colorida das notas.
+            Avalie todos os {mode === 'chapters' ? 'capítulos lidos' : 'volumes que você tem'} para gerar uma imagem com a capa, a média e a grade colorida das notas.
           </p>
         </div>
         <div className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-right">
           <p className="font-mono text-xl font-bold text-white">{sortedRatings.length}</p>
-          <p className="text-[10px] uppercase tracking-wider text-gray-500">volumes avaliados</p>
+          <p className="text-[10px] uppercase tracking-wider text-gray-500">{mode === 'chapters' ? 'capítulos avaliados' : 'volumes avaliados'}</p>
         </div>
       </div>
 
       {!allVolumesRated && (
         <p className="mt-6 rounded-2xl border border-amber-500/20 bg-amber-500/[0.06] px-4 py-3 text-sm text-amber-200">
-          Faltam {unratedVolumes.length} {unratedVolumes.length === 1 ? 'avaliação' : 'avaliações'} para habilitar a imagem. Avalie cada volume listado acima.
+          Faltam {unratedVolumes.length} {unratedVolumes.length === 1 ? 'avaliação' : 'avaliações'} para habilitar a imagem. Avalie cada {mode === 'chapters' ? 'capítulo lido' : 'volume listado'} acima.
         </p>
       )}
 
