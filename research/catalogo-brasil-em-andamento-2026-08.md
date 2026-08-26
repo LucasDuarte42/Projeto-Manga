@@ -48,3 +48,40 @@ Classificar como "em andamento no Brasil" somente quando houver lançamento rece
 A data de disponibilidade e o estoque podem mudar. Para alimentar o Pinakes, guardar sempre `sourceUrl`, `publisher`, `lastVerifiedAt`, `latestVolumeObserved`, `publicationStatus` e `needsReview`. Não copiar sinopses ou capas automaticamente sem verificar os direitos de uso; preferir ISBN, título, autor, editora e edição como metadados iniciais.
 
 A pesquisa deve continuar por páginas oficiais da Panini, NewPOP, JBC, Pipoca & Nanquim, Mythos e Comix Zone antes de importar um lote maior.
+
+## Lote de HQs
+
+### HQs com evidência oficial em 2026
+
+- O Espetacular Homem-Aranha Edição Definitiva Vol. 1 — Panini Marvel — https://panini.com.br/o-espetacular-homem-aranha-edicao-definitiva-vol-1-alizt001r3
+- Os Fabulosos X-Men: Edição Definitiva Vol. 7 — Panini Marvel — https://panini.com.br/os-fabulosos-x-men-edicao-definitiva-vol-7
+- Quarteto Fantástico: Edição Definitiva Vol. 4 — Panini — https://panini.com.br/quarteto-fantastico-edicao-definitiva-vol-4
+- Watchmen — Edição Absoluta — Panini DC — https://panini.com.br/watchmen-edicao-absoluta
+- A Saga do Batman Vol. 11/67 — Panini DC — https://panini.com.br/a-saga-do-batman-vol-11-67
+- A Saga do Flash Vol. 22 — Panini DC — https://panini.com.br/a-saga-do-flash-22
+- A Saga do Superman Vol. 3/46 — Panini DC — https://panini.com.br/a-saga-do-superman-vol-3-46
+- Grandes Heróis DC: Os Novos 52 Vol. 52 — Mulher-Maravilha: Ossos — Panini — https://panini.com.br/grandes-herois-dc-os-novos-52-vol-52-mulher-maravilha-ossos
+- Crise nas Infinitas Terras Vol. 06 — Panini DC — https://panini.com.br/crise-nas-infinitas-terras-vol-06
+- Batman & Robin: Ano Um Vol. 01 — Panini DC — https://panini.com.br/batman-robin-ano-um-vol-01
+- Batgirl (2026) Vol. 01 — Panini DC — https://panini.com.br/batgirl-2026-vol-01
+- Sandman: Teatro do Mistério Vol. 02 — Panini DC — https://panini.com.br/sandman-teatro-do-misterio-vol-02
+- Novos Mutantes: Renovação — Marvel Epic Collection — Panini — https://panini.com.br/novos-mutantes-renovacao-marvel-epic-collection
+- Ultimate Pantera Negra Vol. 1 — Panini Marvel — https://panini.com.br/ultimate-pantera-negra-vol-1
+- A Espada Selvagem de Conan Omnibus Vol. 01 — Mythos — https://www.lojamythos.com.br/hqs-livro/pre-venda-a-espada-selvagem-de-conan-omnibus-vol-01-setembrooutubro-2026
+- Mega-City Sem Lei Vol. 02 — Mythos — https://www.lojamythos.com.br/hqs-livro/pre-venda-mega-city-sem-lei-vol-02-setembrooutubro-2026
+- Júlia Vol. 58 — Mythos — https://www.lojamythos.com.br/hqs-livro/pre-venda-julia-vol-58-agosto2026
+- Tex Graphic Novel Nº 19 — Mythos — https://www.lojamythos.com.br/hqs-livro/pre-venda-tex-graphic-novel-no-19-agosto2026
+- Dragonero Vol. 35 — Mythos — https://www.lojamythos.com.br/hqs-livro/pre-venda-dragonero-vol-35-agosto2026
+- Ken Parker Vol. 38 — Mythos — https://www.lojamythos.com.br/hqs-livro/pre-venda-ken-parker-vol-38-agosto2026
+- Dreadstar Omnibus Vol. 01 — Mythos — https://www.lojamythos.com.br/hqs-livro/pre-venda-dreadstar-omnibus-vol-01-julho2026
+- Mandrake Omnibus Vol. 02 — Mythos — https://www.lojamythos.com.br/hqs-livro/pre-venda-mandrake-omnibus-vol-02-julho2026
+
+### HQs com evidência oficial em 2025
+
+- O Espetacular Homem-Aranha Edição Definitiva Vol. 2 — Panini — https://panini.com.br/o-espetacular-homem-aranha-edicao-definitiva-vol-2-alizt002r2 — ficha oficial: abril de 2025, capa dura.
+- O Espetacular Homem-Aranha Edição Definitiva Vol. 3 — Panini — https://panini.com.br/o-espetacular-homem-aranha-edicao-definitiva-vol-3-alizt003r2 — ficha oficial: maio de 2025, capa dura.
+- Quarteto Fantástico: Edição Definitiva Vol. 2 — Panini — https://panini.com.br/quarteto-fantastico-edicao-definitiva-vol-2 — ficha oficial: novembro de 2025, capa dura.
+- Tex — assinatura janeiro/junho de 2025 — Mythos — https://www.lojamythos.com.br/hqs-livro/assinatura-tex-6-meses-janeirojunho-2025
+- Tex — assinatura julho/dezembro de 2025 — Mythos — https://www.lojamythos.com.br/hqs-livro/assinatura-tex-6-meses-julhodezembro-2025
+
+Critério: HQ em andamento quando a editora ou loja oficial mostrou pré-venda, lançamento recente, assinatura, volume numerado atual ou nova fase. Antologias e edições únicas foram marcadas como especiais/standalone no seed, não como séries regulares sem evidência de continuidade.

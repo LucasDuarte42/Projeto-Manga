@@ -28,6 +28,26 @@ const records = [
   { title: 'The Beginning After the End', edition: 'The Beginning After the End', type: EditionType.STANDARD, publisher: 'NewPOP', latest: 4, year: 2025, url: 'https://www.newpop.com.br/2025-lancamentos-de-abril-mes-4/', evidence: 'Volume 04 no checklist oficial de abril de 2025.' },
   { title: 'Uma Vida Imortal', author: 'Yoshitoki Oima', edition: 'Uma Vida Imortal', type: EditionType.STANDARD, publisher: 'NewPOP', latest: 12, year: 2025, url: 'https://www.newpop.com.br/2025-lancamentos-de-fevereiro-mes-2/', evidence: 'Uma Vida Imortal Volume 12 no checklist oficial de fevereiro de 2025.' },
   { title: 'Cavaleiros do Zodíaco: Episódio G', edition: 'Cavaleiros do Zodíaco: Episódio G', type: EditionType.STANDARD, publisher: 'NewPOP', latest: 4, year: 2025, url: 'https://www.newpop.com.br/2025-lancamentos-de-fevereiro-mes-2/', evidence: 'Volume 04 no checklist oficial de fevereiro de 2025.' },
+  // 2026 — HQs Panini e Mythos
+  { title: 'O Espetacular Homem-Aranha', author: 'Stan Lee e Steve Ditko', edition: 'Edição Definitiva', type: EditionType.DELUXE, workType: CollectionType.HQ, publisher: 'Panini', latest: 7, year: 2026, url: 'https://panini.com.br/home-marvel', evidence: 'Volumes 1 e 7 da Edição Definitiva listados em pré-venda no catálogo Marvel.' },
+  { title: 'Os Fabulosos X-Men', edition: 'Edição Definitiva', type: EditionType.DELUXE, workType: CollectionType.HQ, publisher: 'Panini', latest: 7, year: 2026, url: 'https://panini.com.br/os-fabulosos-x-men-edicao-definitiva-vol-7', evidence: 'Volume 7 da Edição Definitiva listado em pré-venda.' },
+  { title: 'Quarteto Fantástico', author: 'Stan Lee e Jack Kirby', edition: 'Edição Definitiva', type: EditionType.DELUXE, workType: CollectionType.HQ, publisher: 'Panini', latest: 4, year: 2026, url: 'https://panini.com.br/quarteto-fantastico-edicao-definitiva-vol-4', evidence: 'Volume 4 da Edição Definitiva em pré-venda.' },
+  { title: 'A Saga do Batman', edition: 'A Saga do Batman', type: EditionType.STANDARD, workType: CollectionType.HQ, publisher: 'Panini', latest: 11, year: 2026, url: 'https://panini.com.br/a-saga-do-batman-vol-11-67', evidence: 'Volume 11/67 em pré-venda e assinatura disponível.' },
+  { title: 'A Saga do Flash', edition: 'A Saga do Flash', type: EditionType.STANDARD, workType: CollectionType.HQ, publisher: 'Panini', latest: 22, year: 2026, url: 'https://panini.com.br/a-saga-do-flash-22', evidence: 'Volume 22 em pré-venda.' },
+  { title: 'A Saga do Superman', edition: 'A Saga do Superman', type: EditionType.STANDARD, workType: CollectionType.HQ, publisher: 'Panini', latest: 3, year: 2026, url: 'https://panini.com.br/a-saga-do-superman-vol-3-46', evidence: 'Volume 3/46 em pré-venda.' },
+  { title: 'Grandes Heróis DC: Os Novos 52', edition: 'Mulher-Maravilha: Ossos', type: EditionType.STANDARD, workType: CollectionType.HQ, publisher: 'Panini', latest: 52, year: 2026, url: 'https://panini.com.br/grandes-herois-dc-os-novos-52-vol-52-mulher-maravilha-ossos', evidence: 'Volume 52 em pré-venda.' },
+  { title: 'Crise nas Infinitas Terras', edition: 'Grandes Eventos DC', type: EditionType.STANDARD, workType: CollectionType.HQ, publisher: 'Panini', latest: 6, year: 2026, url: 'https://panini.com.br/crise-nas-infinitas-terras-vol-06', evidence: 'Volume 6 em pré-venda e assinatura disponível.' },
+  { title: 'Mega-City Sem Lei', edition: 'Mega-City Sem Lei', type: EditionType.STANDARD, workType: CollectionType.HQ, publisher: 'Mythos', latest: 2, year: 2026, url: 'https://www.lojamythos.com.br/hqs-livro/pre-venda-mega-city-sem-lei-vol-02-setembrooutubro-2026', evidence: 'Volume 2 em pré-venda para setembro/outubro de 2026.' },
+  { title: 'A Espada Selvagem de Conan', edition: 'Omnibus', type: EditionType.OMNIBUS, workType: CollectionType.HQ, publisher: 'Mythos', latest: 1, year: 2026, url: 'https://www.lojamythos.com.br/hqs-livro/pre-venda-a-espada-selvagem-de-conan-omnibus-vol-01-setembrooutubro-2026', evidence: 'Omnibus volume 1 em pré-venda.' },
+  { title: 'Júlia', edition: 'Júlia', type: EditionType.STANDARD, workType: CollectionType.HQ, publisher: 'Mythos', latest: 58, year: 2026, url: 'https://www.lojamythos.com.br/hqs-livro/pre-venda-julia-vol-58-agosto2026', evidence: 'Volume 58 em pré-venda.' },
+  { title: 'Tex', edition: 'Tex Graphic Novel', type: EditionType.SPECIAL, workType: CollectionType.HQ, publisher: 'Mythos', latest: 19, year: 2026, url: 'https://www.lojamythos.com.br/hqs-livro/pre-venda-tex-graphic-novel-no-19-agosto2026', evidence: 'Graphic Novel número 19 listada com código de barras oficial.' },
+  { title: 'Dragonero', edition: 'Dragonero', type: EditionType.STANDARD, workType: CollectionType.HQ, publisher: 'Mythos', latest: 35, year: 2026, url: 'https://www.lojamythos.com.br/hqs-livro/pre-venda-dragonero-vol-35-agosto2026', evidence: 'Volume 35 em lançamento.' },
+  { title: 'Ken Parker', edition: 'Ken Parker', type: EditionType.STANDARD, workType: CollectionType.HQ, publisher: 'Mythos', latest: 38, year: 2026, url: 'https://www.lojamythos.com.br/hqs-livro/pre-venda-ken-parker-vol-38-agosto2026', evidence: 'Volume 38 em pré-venda.' },
+  { title: 'Dreadstar', edition: 'Omnibus', type: EditionType.OMNIBUS, workType: CollectionType.HQ, publisher: 'Mythos', latest: 1, year: 2026, url: 'https://www.lojamythos.com.br/hqs-livro/pre-venda-dreadstar-omnibus-vol-01-julho2026', evidence: 'Omnibus volume 1 em pré-venda.' },
+  // 2025 — HQs com ficha ou assinatura oficial
+  { title: 'O Espetacular Homem-Aranha', author: 'Stan Lee e Steve Ditko', edition: 'Edição Definitiva', type: EditionType.DELUXE, workType: CollectionType.HQ, publisher: 'Panini', latest: 3, year: 2025, url: 'https://panini.com.br/o-espetacular-homem-aranha-edicao-definitiva-vol-3-alizt003r2', evidence: 'Volume 3, ficha oficial de maio de 2025, capa dura.' },
+  { title: 'Quarteto Fantástico', author: 'Stan Lee e Jack Kirby', edition: 'Edição Definitiva', type: EditionType.DELUXE, workType: CollectionType.HQ, publisher: 'Panini', latest: 2, year: 2025, url: 'https://panini.com.br/quarteto-fantastico-edicao-definitiva-vol-2', evidence: 'Volume 2, ficha oficial de novembro de 2025, capa dura.' },
+  { title: 'Tex', edition: 'Assinatura semestral', type: EditionType.STANDARD, workType: CollectionType.HQ, publisher: 'Mythos', latest: null, year: 2025, url: 'https://www.lojamythos.com.br/hqs-livro/assinatura-tex-6-meses-julhodezembro-2025', evidence: 'Assinatura oficial de julho/dezembro de 2025.' },
 ];
 
 function normalizedTitle(title) {
@@ -37,9 +57,9 @@ function normalizedTitle(title) {
 async function main() {
   for (const item of records) {
     const work = await prisma.catalogWork.upsert({
-      where: { normalizedTitle_workType: { normalizedTitle: normalizedTitle(item.title), workType: CollectionType.MANGA } },
+      where: { normalizedTitle_workType: { normalizedTitle: normalizedTitle(item.title), workType: item.workType ?? CollectionType.MANGA } },
       update: { author: item.author ?? undefined },
-      create: { title: item.title, normalizedTitle: normalizedTitle(item.title), author: item.author, workType: CollectionType.MANGA },
+      create: { title: item.title, normalizedTitle: normalizedTitle(item.title), author: item.author, workType: item.workType ?? CollectionType.MANGA },
     });
 
     const editionId = `${normalizedTitle(item.title)}-${normalizedTitle(item.edition)}-${item.publisher.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
