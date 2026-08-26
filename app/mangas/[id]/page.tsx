@@ -1074,40 +1074,6 @@ export default function MangaDetailPage() {
             </p>
         </section>
 
-        {/* General rating */}
-        <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-6 sm:p-8">
-          <div className="flex flex-wrap items-end justify-between gap-5">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">Sua avaliação</p>
-              <h2 className="mt-2 text-2xl font-bold text-white [font-family:var(--font-display)]">Como foi a experiência?</h2>
-              <p className="mt-2 text-sm text-gray-500">Ao adicionar uma nota geral, a obra será marcada automaticamente como lida.</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <input
-                type="number"
-                min="0"
-                max="10"
-                step="0.5"
-                value={note}
-                onChange={(event) => {
-                  const value = event.target.value
-                  if (value === '') {
-                    setNote('')
-                    return
-                  }
-                  const parsed = Number(value)
-                  if (!Number.isNaN(parsed)) setNote(String(Math.min(10, Math.max(0, parsed))))
-                }}
-                placeholder="0"
-                className="w-24 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-center font-mono text-lg font-bold text-white outline-none transition focus:border-purple-500/60"
-                aria-label="Nota geral da obra"
-              />
-              <span className="text-sm text-gray-500">/ 10</span>
-              {note !== '' && <Star size={22} className="fill-amber-400 text-amber-400" />}
-            </div>
-          </div>
-        </section>
-
         <RatingShareCard
           name={mangaName || manga.name}
           author={author || manga.author}
