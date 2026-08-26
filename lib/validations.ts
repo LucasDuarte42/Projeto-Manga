@@ -107,7 +107,12 @@ export const searchQuerySchema = z.object({
 
 export const mangaListQuerySchema = z.object({
   q: z.string().trim().max(100, 'Busca muito longa').optional().default(''),
+  author: z.string().trim().max(100, 'Autor muito longo').optional().default(''),
+  genre: z.string().trim().max(100, 'Gênero muito longo').optional().default(''),
   status: z.enum(['ALL', 'READ', 'READING', 'WANT_TO_READ', 'MISSING']).optional().default('ALL'),
+  collectionType: z.enum(['ALL', 'MANGA', 'HQ']).optional().default('ALL'),
+  progress: z.enum(['ALL', 'NOT_STARTED', 'IN_PROGRESS', 'COMPLETE']).optional().default('ALL'),
+  volumes: z.enum(['ALL', 'MISSING', 'COMPLETE']).optional().default('ALL'),
   sort: z.enum(['RECENT', 'AZ', 'ZA']).optional().default('RECENT'),
   page: z.coerce.number().int().min(1).max(100000).optional().default(1),
   pageSize: z.coerce.number().int().min(1).max(50).optional().default(20),
