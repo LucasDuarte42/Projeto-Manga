@@ -119,29 +119,8 @@ export default async function HomePage() {
           Simples, rápido e feito para colecionadores.
         </p>
 
-        <div className="mt-9 grid grid-cols-3 gap-2 text-left sm:max-w-md sm:gap-3">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3 backdrop-blur-sm">
-            <p className="text-lg font-bold text-white">100%</p>
-            <p className="mt-1 text-[11px] leading-tight text-gray-500">organizado</p>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3 backdrop-blur-sm">
-            <p className="text-lg font-bold text-white">1 só</p>
-            <p className="mt-1 text-[11px] leading-tight text-gray-500">lugar</p>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3 backdrop-blur-sm">
-            <p className="text-lg font-bold text-white">Seu</p>
-            <p className="mt-1 text-[11px] leading-tight text-gray-500">ritmo</p>
-          </div>
-        </div>
         </div>
 
-        <div className="pointer-events-none absolute bottom-6 right-6 hidden items-center gap-3 rounded-2xl border border-white/10 bg-gray-950/70 px-4 py-3 backdrop-blur-md md:flex">
-          <span className="text-xl text-purple-300">✦</span>
-          <div>
-            <p className="text-xs font-semibold text-purple-300">PINAKES MANGA</p>
-            <p className="mt-1 text-sm font-medium text-white">Sua próxima leitura começa aqui.</p>
-          </div>
-        </div>
       </main>
 
       
