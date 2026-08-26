@@ -77,9 +77,15 @@ function loadCover(url: string | null) {
 }
 
 async function createRatingImage({ name, author, coverUrl, ratings, mode = 'volumes' }: RatingShareCardProps) {
+  const columns = Math.min(10, Math.max(1, ratings.length))
+  const rows = Math.ceil(Math.max(1, ratings.length) / columns)
+  const chartY = 72
+  const chartBottom = chartY + 120 + (rows - 1) * 97 + 62
+  const footerY = Math.max(850, chartBottom + 70)
+
   const canvas = document.createElement('canvas')
   canvas.width = 1600
-  canvas.height = 900
+  canvas.height = footerY + 40
   const context = canvas.getContext('2d')
 
   if (!context) throw new Error('Seu navegador não suporta a criação da imagem')
@@ -138,13 +144,9 @@ async function createRatingImage({ name, author, coverUrl, ratings, mode = 'volu
   context.fillText(`média dos ${mode === 'chapters' ? 'capítulos' : 'volumes'}`, coverX + 132, 765)
 
   const chartX = 455
-  const chartY = 72
   const cellWidth = 92
   const cellHeight = 62
   const cellGap = 12
-  const columns = Math.min(10, Math.max(1, ratings.length))
-  const rows = Math.ceil(ratings.length / columns)
-
   context.font = '600 22px Arial'
   let legendX = chartX
   LEGEND.forEach((band) => {
@@ -182,7 +184,7 @@ async function createRatingImage({ name, author, coverUrl, ratings, mode = 'volu
   context.textAlign = 'left'
   context.fillStyle = '#6f6876'
   context.font = '400 16px Arial'
-  context.fillText('Pinakes Manga · minha coleção', chartX, 850)
+  context.fillText(`Pinakes Manga · ${mode === 'chapters' ? 'capítulos' : 'volumes'} avaliados`, chartX, footerY)
 
   return canvas.toDataURL('image/png')
 }
