@@ -187,6 +187,8 @@ export default function RatingShareCard(props: RatingShareCardProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showPreview, setShowPreview] = useState(false)
+  const [shareMessage, setShareMessage] = useState<string | null>(null)
 
   const sortedRatings = useMemo(
     () => [...props.ratings].sort((a, b) => a.volume - b.volume),
@@ -204,6 +206,7 @@ export default function RatingShareCard(props: RatingShareCardProps) {
     try {
       const image = await createRatingImage({ ...props, ratings: sortedRatings })
       setPreviewUrl(image)
+      setShowPreview(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível gerar a imagem')
     } finally {
@@ -217,6 +220,25 @@ export default function RatingShareCard(props: RatingShareCardProps) {
     anchor.href = previewUrl
     anchor.download = `${props.name.toLowerCase().replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'obra'}-notas.png`
     anchor.click()
+  }
+
+  async function handleShare() {
+    if (!previewUrl) return
+    setShareMessage(null)
+    try {
+      const response = await fetch(previewUrl)
+      const blob = await response.blob()
+      const file = new File([blob], 'pinakes-notas.png', { type: 'image/png' })
+      if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
+        await navigator.share({ title: props.name, text: `Minhas notas de ${props.name}`, files: [file] })
+        return
+      }
+      await navigator.clipboard?.writeText(`Minhas notas de ${props.name}`)
+      setShareMessage('Seu navegador não permite compartilhar a imagem diretamente. O texto foi copiado; você também pode baixar o PNG.')
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return
+      setShareMessage('Não foi possível compartilhar automaticamente. Use o botão de baixar PNG.')
+    }
   }
 
   return (
@@ -254,15 +276,28 @@ export default function RatingShareCard(props: RatingShareCardProps) {
           {generating ? 'Gerando imagem...' : 'Gerar imagem das notas'}
         </button>
         {previewUrl && (
-          <button type="button" onClick={handleDownload} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-semibold text-gray-200 transition hover:bg-white/[0.08]">
-            <Download size={17} /> Baixar PNG
-          </button>
+          <>
+            <button type="button" onClick={() => setShowPreview(true)} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-semibold text-gray-200 transition hover:bg-white/[0.08]">
+              <ImageDown size={17} /> Visualizar imagem
+            </button>
+            <button type="button" onClick={handleDownload} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-semibold text-gray-200 transition hover:bg-white/[0.08]">
+              <Download size={17} /> Baixar PNG
+            </button>
+            <button type="button" onClick={handleShare} className="flex items-center gap-2 rounded-xl border border-purple-500/30 bg-purple-500/10 px-5 py-3 text-sm font-semibold text-purple-200 transition hover:bg-purple-500/20">
+              <Share2 size={17} /> Compartilhar
+            </button>
+          </>
         )}
       </div>
 
       {error && <p role="alert" className="mt-4 text-sm text-rose-300">{error}</p>}
-      {previewUrl && (
+      {shareMessage && <p className="mt-4 text-sm text-gray-400">{shareMessage}</p>}
+      {previewUrl && showPreview && (
         <div className="mt-6 overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+          <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+            <p className="text-sm font-semibold text-white">Pré-visualização</p>
+            <button type="button" onClick={() => setShowPreview(false)} className="text-xs text-gray-400 hover:text-white">Fechar</button>
+          </div>
           <img src={previewUrl} alt={`Resumo visual das notas de ${props.name}`} className="h-auto w-full" />
         </div>
       )}

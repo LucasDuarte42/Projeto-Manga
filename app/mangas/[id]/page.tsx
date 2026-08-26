@@ -139,6 +139,8 @@ export default function MangaDetailPage() {
   const [success, setSuccess] = useState<string | null>(null)
 
   const [showDelete, setShowDelete] = useState(false)
+  const [showBulkRatingDialog, setShowBulkRatingDialog] = useState(false)
+  const [bulkNote, setBulkNote] = useState('')
 
   const [mangaName, setMangaName] = useState('')
   const [author, setAuthor] = useState('')
@@ -354,6 +356,23 @@ export default function MangaDetailPage() {
       setDeleting(false)
       setShowDelete(false)
     }
+  }
+
+  function applyRatingToAllVolumes() {
+    if (bulkNote === '' || volumeArray.length === 0) return
+
+    const parsed = Number(bulkNote)
+    if (Number.isNaN(parsed)) return
+
+    const limited = Math.min(10, Math.max(0, parsed))
+    const nextRatings: Record<number, number> = {}
+    volumeArray.forEach((volume) => {
+      nextRatings[volume] = limited
+    })
+
+    setPendingRatings(nextRatings)
+    setShowBulkRatingDialog(false)
+    setSuccess(`Nota ${limited.toFixed(1)} aplicada a todos os volumes. Clique em salvar para confirmar.`)
   }
 
   function toggleVolume(volume: number) {
@@ -1034,83 +1053,53 @@ export default function MangaDetailPage() {
               )}
             </div>
 
+            <div className="mt-8 grid gap-4 border-t border-white/10 pt-6 md:grid-cols-[1fr_auto] md:items-end">
+              <div>
+                <p className="text-sm font-semibold text-white">Nota geral da obra</p>
+                <p className="mt-1 text-xs leading-5 text-gray-500">Essa nota resume sua experiência com a obra e será usada no resumo visual.</p>
+                <div className="mt-3 flex items-center gap-3">
+                  <input
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.5"
+                    value={note}
+                    onChange={(event) => {
+                      const value = event.target.value
+                      if (value === '') {
+                        setNote('')
+                        return
+                      }
+                      const parsed = Number(value)
+                      if (!Number.isNaN(parsed)) setNote(String(Math.min(10, Math.max(0, parsed))))
+                    }}
+                    placeholder="0"
+                    className="w-24 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-center font-mono text-lg font-bold text-white outline-none transition focus:border-purple-500/60"
+                    aria-label="Nota geral da obra"
+                  />
+                  <span className="text-sm text-gray-500">/ 10</span>
+                  {note !== '' && <Star size={21} className="fill-amber-400 text-amber-400" />}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setBulkNote(note)
+                  setShowBulkRatingDialog(true)
+                }}
+                disabled={volumeArray.length === 0}
+                className="flex items-center justify-center gap-2 rounded-xl border border-purple-500/30 bg-purple-500/10 px-4 py-3 text-sm font-semibold text-purple-200 transition hover:bg-purple-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Star size={17} />
+                Dar nota a todos
+              </button>
+            </div>
+
             <p className="mt-6 text-xs text-gray-500">
-              As avaliações individuais serão salvas
-              junto com as alterações da obra.
+              As avaliações individuais e a nota geral serão salvas junto com as alterações da obra.
             </p>
           </section>
         )}
-
-        {/* General rating */}
-        <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-6 sm:p-8">
-          <div className="flex flex-wrap items-end justify-between gap-5">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">
-                Sua avaliação
-              </p>
-
-              <h2 className="mt-2 text-2xl font-bold text-white [font-family:var(--font-display)]">
-                Como foi a experiência?
-              </h2>
-
-              <p className="mt-2 text-sm text-gray-500">
-                Ao adicionar uma nota geral, a obra será
-                marcada automaticamente como lida.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <input
-                type="number"
-                min="0"
-                max="10"
-                step="0.5"
-                value={note}
-                onChange={(event) => {
-                  const value =
-                    event.target.value
-
-                  if (value === '') {
-                    setNote('')
-                    return
-                  }
-
-                  const parsed =
-                    Number(value)
-
-                  if (
-                    !Number.isNaN(parsed)
-                  ) {
-                    setNote(
-                      String(
-                        Math.min(
-                          10,
-                          Math.max(
-                            0,
-                            parsed
-                          )
-                        )
-                      )
-                    )
-                  }
-                }}
-                placeholder="0"
-                className="w-24 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-center font-mono text-lg font-bold text-white outline-none transition focus:border-purple-500/60"
-              />
-
-              <span className="text-sm text-gray-500">
-                / 10
-              </span>
-
-              {note !== '' && (
-                <Star
-                  size={22}
-                  className="fill-amber-400 text-amber-400"
-                />
-              )}
-            </div>
-          </div>
-        </section>
 
         <RatingShareCard
           name={mangaName || manga.name}
@@ -1147,6 +1136,40 @@ export default function MangaDetailPage() {
           )}
         </button>
       </main>
+
+      {/* Bulk rating modal */}
+      {showBulkRatingDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <div role="dialog" aria-modal="true" aria-labelledby="bulk-rating-title" className="w-full max-w-md rounded-3xl border border-white/10 bg-gray-950 p-6 shadow-2xl shadow-black/60">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">Avaliação em massa</p>
+                <h2 id="bulk-rating-title" className="mt-2 text-xl font-bold text-white [font-family:var(--font-display)]">Dar a mesma nota a todos?</h2>
+              </div>
+              <button type="button" onClick={() => setShowBulkRatingDialog(false)} aria-label="Fechar" className="flex h-9 w-9 items-center justify-center rounded-xl text-gray-500 transition hover:bg-white/5 hover:text-white"><X size={19} /></button>
+            </div>
+            <p className="mt-4 text-sm leading-6 text-gray-400">A nota escolhida será aplicada aos {volumeArray.length} volumes desta obra. Você poderá ajustar cada volume individualmente depois.</p>
+            <label className="mt-6 flex items-center gap-3">
+              <span className="text-sm text-gray-400">Nota</span>
+              <input
+                type="number"
+                min="0"
+                max="10"
+                step="0.5"
+                value={bulkNote}
+                onChange={(event) => setBulkNote(event.target.value === '' ? '' : String(Math.min(10, Math.max(0, Number(event.target.value))))) }
+                className="w-24 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-center font-mono text-lg font-bold text-white outline-none focus:border-purple-500/60"
+                autoFocus
+              />
+              <span className="text-sm text-gray-500">/ 10</span>
+            </label>
+            <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button type="button" onClick={() => setShowBulkRatingDialog(false)} className="rounded-xl border border-white/10 bg-white/[0.03] px-5 py-2.5 text-sm font-medium text-gray-300 transition hover:bg-white/[0.06] hover:text-white">Cancelar</button>
+              <button type="button" onClick={applyRatingToAllVolumes} disabled={bulkNote === '' || Number.isNaN(Number(bulkNote))} className="rounded-xl bg-purple-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-40">Aplicar nota</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete modal */}
       {showDelete && (
