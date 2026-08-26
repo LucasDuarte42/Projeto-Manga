@@ -9,6 +9,10 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Pinakes Mangá',
   description: 'Gerencie sua coleção de mangás',
+  icons: {
+    icon: '/brand/favicon.png',
+    apple: '/brand/favicon.png',
+  },
 }
 
 export default function RootLayout({
