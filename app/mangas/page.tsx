@@ -527,9 +527,10 @@ export default function MangasPage() {
 
           </div>
 
-          <button
-            type="button"
-            onClick={() => setShowAdvancedFilters((current) => !current)}
+          <div className="flex shrink-0 items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setShowAdvancedFilters((current) => !current)}
             aria-expanded={showAdvancedFilters}
             className={`flex shrink-0 items-center justify-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-medium transition ${showAdvancedFilters || authorFilter || genreFilter || collectionTypeFilter !== 'ALL' || progressFilter !== 'ALL' || volumesFilter !== 'ALL' ? 'border-purple-500/40 bg-purple-500/10 text-purple-300' : 'border-gray-800 bg-gray-900/50 text-gray-400 hover:border-gray-700 hover:text-gray-200'}`}
           >
@@ -572,6 +573,7 @@ export default function MangasPage() {
               className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
             />
 
+            </div>
           </div>
 
         </div>
