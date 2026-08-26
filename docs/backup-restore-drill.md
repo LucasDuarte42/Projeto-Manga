@@ -94,3 +94,21 @@ Get-ScheduledTaskInfo -TaskName "Pinakes - Teste de Restauracao PostgreSQL"
 O script mantém somente relatórios e logs locais. O dump descriptografado é excluído ao final por padrão. Os artefatos criptografados permanecem sujeitos à retenção configurada no GitHub Actions. Depois de validar um novo backup, remova artefatos antigos que não sejam mais necessários.
 
 Em ambiente de equipe, é preferível executar este teste em um runner dedicado ou em uma rotina de CI manual, usando secrets do GitHub e um banco Neon de restauração efêmero. O banco de teste deve ser descartado ou recriado após o teste, conforme a política de retenção da equipe.
+
+## Restore drill automático no GitHub Actions
+
+O workflow `.github/workflows/postgres-restore-drill.yml` executa automaticamente depois de cada execução bem-sucedida do workflow `PostgreSQL backup`. Ele também pode ser iniciado manualmente em **Actions → PostgreSQL restore drill → Run workflow**.
+
+Configure no repositório os seguintes Actions secrets:
+
+| Secret | Conteúdo | Uso |
+|---|---|---|
+| `BACKUP_DATABASE_URL` | URL somente para leitura do banco de origem | Mantida para impedir que o destino seja confundido com a origem. |
+| `RESTORE_DATABASE_URL` | URL exclusiva do banco Neon de teste | Destino destrutivo e isolado do restore drill. |
+| `BACKUP_ENCRYPTION_KEY` | A mesma chave usada no workflow de backup | Descriptografa o artefato `.dump.enc`. |
+
+O banco definido em `RESTORE_DATABASE_URL` deve ser descartável ou dedicado ao teste, pois o workflow usa `pg_restore --clean --if-exists` e substitui o conteúdo dele. O workflow falha se a URL do destino for exatamente igual à URL do backup.
+
+A execução seleciona automaticamente o artefato da execução que acabou de gerar o backup. Em uma execução manual, é possível informar um `run_id` específico; se o campo ficar vazio, o workflow procura a última execução bem-sucedida do backup.
+
+Ao final, o workflow valida a conexão, a existência de tabelas públicas e a tabela `_prisma_migrations`. Ele publica somente um relatório JSON por 90 dias; o dump descriptografado não é enviado como artefato. Uma falha aparece na aba **Actions** e pode ser encaminhada pelas notificações padrão do GitHub.
