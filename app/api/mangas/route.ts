@@ -16,6 +16,33 @@ export async function GET(req: NextRequest) {
   }
 
   const { q, status, sort, page, pageSize } = parsed.data
+  const now = new Date()
+  const weekStart = new Date(now)
+  weekStart.setDate(now.getDate() - 7)
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  const volumeReadInclude = {
+    volumes: {
+      select: {
+        history: {
+          where: {
+            toStatus: 'READ' as const,
+            changedAt: { gte: monthStart },
+          },
+          select: { changedAt: true },
+        },
+      },
+    },
+  }
+  const withReadStats = (items: Array<{ volumes: Array<{ history: Array<{ changedAt: Date }> }> }>) => items.map((item) => {
+    const readDates = item.volumes.flatMap((volume) => volume.history.map((entry) => entry.changedAt))
+    return {
+      ...item,
+      readThisWeek: readDates.filter((date) => date >= weekStart).length,
+      readThisMonth: readDates.length,
+      volumes: undefined,
+    }
+  })
+
   const baseWhere = {
     userId: session.user.id,
     ...(q
@@ -38,13 +65,14 @@ export async function GET(req: NextRequest) {
     const candidates = await prisma.manga.findMany({
       where: { ...baseWhere, totalVolumes: { gt: 0 } },
       orderBy,
+      include: volumeReadInclude,
     })
     const missing = candidates.filter((manga) => manga.ownedVolumes.length < (manga.totalVolumes ?? 0))
     const totalItems = missing.length
     const items = missing.slice((page - 1) * pageSize, page * pageSize)
 
     return NextResponse.json({
-      items,
+      items: withReadStats(items),
       pagination: { page, pageSize, totalItems, totalPages: Math.max(1, Math.ceil(totalItems / pageSize)) },
     })
   }
@@ -52,11 +80,11 @@ export async function GET(req: NextRequest) {
   const where = status === 'ALL' ? baseWhere : { ...baseWhere, status }
   const [totalItems, items] = await Promise.all([
     prisma.manga.count({ where }),
-    prisma.manga.findMany({ where, orderBy, skip: (page - 1) * pageSize, take: pageSize }),
+    prisma.manga.findMany({ where, orderBy, skip: (page - 1) * pageSize, take: pageSize, include: volumeReadInclude }),
   ])
 
   return NextResponse.json({
-    items,
+    items: withReadStats(items),
     pagination: { page, pageSize, totalItems, totalPages: Math.max(1, Math.ceil(totalItems / pageSize)) },
   })
 }
