@@ -1,0 +1,147 @@
+name: PostgreSQL restore drill
+
+on:
+  workflow_run:
+    workflows: ["PostgreSQL backup"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "ID da execução do backup; vazio usa o último backup bem-sucedido"
+        required: false
+        type: string
+
+concurrency:
+  group: postgres-restore-drill
+  cancel-in-progress: false
+
+jobs:
+  restore:
+    name: Restore backup into isolated database
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: read
+
+    env:
+      BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+      RESTORE_DATABASE_URL: ${{ secrets.RESTORE_DATABASE_URL }}
+      BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Validate secrets and destination
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$BACKUP_DATABASE_URL"
+          test -n "$RESTORE_DATABASE_URL"
+          test -n "$BACKUP_ENCRYPTION_KEY"
+          if [ "$BACKUP_DATABASE_URL" = "$RESTORE_DATABASE_URL" ]; then
+            echo "RESTORE_DATABASE_URL must never be the production/backup database" >&2
+            exit 1
+          fi
+
+      - name: Install PostgreSQL 17 client
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo install -d /etc/apt/keyrings
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+            | sudo tee /etc/apt/keyrings/postgresql.asc >/dev/null
+          echo "deb [signed-by=/etc/apt/keyrings/postgresql.asc] http://apt.postgresql.org/pub/repos/apt $(. /etc/os-release && echo $VERSION_CODENAME)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+
+      - name: Select backup run
+        id: backup
+        shell: bash
+        env:
+          EVENT_RUN_ID: ${{ github.event.workflow_run.id }}
+          INPUT_RUN_ID: ${{ inputs.run_id }}
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_EVENT_NAME" = "workflow_run" ]; then
+            run_id="$EVENT_RUN_ID"
+          elif [ -n "$INPUT_RUN_ID" ]; then
+            run_id="$INPUT_RUN_ID"
+          else
+            run_id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow postgres-backup.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId')"
+          fi
+          case "$run_id" in
+            ''|*[!0-9]*) echo "Invalid backup run ID" >&2; exit 1 ;;
+          esac
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "Selected backup run $run_id"
+
+      - name: Download encrypted backup artifact
+        shell: bash
+        env:
+          RUN_ID: ${{ steps.backup.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p restore/artifact
+          gh run download "$RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "postgres-backup-$RUN_ID" \
+            --dir restore/artifact
+          encrypted_dump="$(find restore/artifact -type f -name '*.dump.enc' -print -quit)"
+          test -n "$encrypted_dump"
+          echo "encrypted_dump=$encrypted_dump" >> "$GITHUB_ENV"
+
+      - name: Decrypt and restore dump
+        shell: bash
+        run: |
+          set -euo pipefail
+          openssl enc -d -aes-256-cbc -pbkdf2 -salt \
+            -in "$encrypted_dump" \
+            -out restore/restore.dump \
+            -pass env:BACKUP_ENCRYPTION_KEY
+          test -s restore/restore.dump
+          /usr/lib/postgresql/17/bin/pg_restore \
+            --dbname="$RESTORE_DATABASE_URL" \
+            --clean \
+            --if-exists \
+            --no-owner \
+            --no-acl \
+            restore/restore.dump
+
+      - name: Validate restored database
+        shell: bash
+        env:
+          RUN_ID: ${{ steps.backup.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          psql_args=("$RESTORE_DATABASE_URL" --no-psqlrc --tuples-only --no-align)
+          database_name="$(psql "${psql_args[@]}" -c 'SELECT current_database();' | xargs)"
+          table_count="$(psql "${psql_args[@]}" -c "SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'public';" | xargs)"
+          migration_count="$(psql "${psql_args[@]}" -c "SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'public' AND tablename = '_prisma_migrations';" | xargs)"
+          test "$table_count" -gt 0
+          test "$migration_count" -eq 1
+          mkdir -p restore/report
+          cat > restore/report/restore-report.json <<EOF
+          {
+            "status": "success",
+            "repository": "$GITHUB_REPOSITORY",
+            "backupRunId": "$RUN_ID",
+            "database": "$database_name",
+            "publicTableCount": $table_count,
+            "prismaMigrationTableFound": true,
+            "validatedAtUtc": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          EOF
+          cat restore/report/restore-report.json
+
+      - name: Upload restore report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: postgres-restore-report-${{ github.run_id }}
+          path: restore/report/
+          if-no-files-found: warn
+          retention-days: 90
