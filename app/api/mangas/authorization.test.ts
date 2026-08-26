@@ -73,17 +73,12 @@ describe('autorização das APIs de mangás', () => {
     expect(prismaMock.manga.count).toHaveBeenCalledWith({
       where: { userId: 'user-a' },
     })
-    expect(prismaMock.manga.findMany).toHaveBeenCalledWith(expect.objectContaining({
+    expect(prismaMock.manga.findMany).toHaveBeenCalledWith({
       where: { userId: 'user-a' },
       orderBy: { createdAt: 'desc' },
       skip: 0,
       take: 20,
-      include: expect.objectContaining({
-        volumes: expect.objectContaining({
-          select: expect.objectContaining({ history: expect.anything() }),
-        }),
-      }),
-    }))
+    })
     expect(await response.json()).toEqual({
       items: [],
       pagination: { page: 1, pageSize: 20, totalItems: 0, totalPages: 1 },

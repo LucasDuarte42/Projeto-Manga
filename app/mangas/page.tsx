@@ -44,8 +44,6 @@ interface Manga {
   genre?: string | null
   collectionType: CollectionType
   createdAt: string
-  readThisWeek?: number
-  readThisMonth?: number
 }
 
 interface MangaResult {
@@ -892,6 +890,10 @@ export default function MangasPage() {
 
       {showShareModal && (
         <ShareCollectionModal
+          username={session?.user?.name}
+          totalItems={totalItems}
+          page={page}
+          totalPages={totalPages}
           items={mangas}
           onClose={() => setShowShareModal(false)}
         />
