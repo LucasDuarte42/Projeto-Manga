@@ -896,7 +896,7 @@ export default function MangaDetailPage() {
         </section>
 
         {/* Volume ratings */}
-        {ownedVolumes.length > 0 && (
+        {totalVolsNum > 0 && (
           <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-6 sm:p-8">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
@@ -928,7 +928,7 @@ export default function MangaDetailPage() {
             </div>
 
             <div className="mt-8 grid grid-cols-3 gap-3 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
-              {ownedVolumes.map(
+              {volumeArray.map(
                 (volume) => {
                   const rating =
                     pendingRatings[volume]
@@ -1120,7 +1120,7 @@ export default function MangaDetailPage() {
             volume: Number(volume),
             note: rating,
           }))}
-          expectedVolumes={ownedVolumes}
+          expectedVolumes={volumeArray}
           generalNote={note === '' ? null : Number(note)}
         />
 
