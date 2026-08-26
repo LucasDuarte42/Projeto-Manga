@@ -727,10 +727,24 @@ export default function MangaDetailPage() {
           </div>
         </section>
 
+        {/* Tracking mode */}
+        <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">Forma de acompanhar</p>
+              <p className="mt-1 text-sm text-gray-400">Escolha se deseja controlar volumes ou capítulos.</p>
+            </div>
+            <div className="flex rounded-xl border border-white/10 bg-white/[0.03] p-1">
+              <button type="button" onClick={() => setActiveTracker('volumes')} className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${activeTracker === 'volumes' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>Volumes</button>
+              <button type="button" onClick={() => setActiveTracker('chapters')} className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${activeTracker === 'chapters' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>Capítulos</button>
+            </div>
+          </div>
+        </section>
+
         {/* Collection + Info */}
         <section className="grid gap-6 lg:grid-cols-[1.4fr_.6fr]">
           {/* Volumes */}
-          <div className="rounded-3xl border border-white/10 bg-white/[0.025] p-6 sm:p-8">
+          <div className={`${activeTracker === 'volumes' ? '' : 'hidden'} rounded-3xl border border-white/10 bg-white/[0.025] p-6 sm:p-8`}>
             <div className="mb-7 flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">
@@ -878,6 +892,41 @@ export default function MangaDetailPage() {
             )}
           </div>
 
+          {/* Chapters */}
+          <div className={`${activeTracker === 'chapters' ? '' : 'hidden'} rounded-3xl border border-white/10 bg-white/[0.025] p-6 sm:p-8`}>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">Coleção</p>
+                <h2 className="mt-2 text-2xl font-bold text-white [font-family:var(--font-display)]">Capítulos lidos</h2>
+                <p className="mt-2 text-sm text-gray-500">Selecione os capítulos lidos e depois atribua uma nota individual a cada um.</p>
+              </div>
+              <span className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 font-mono text-xs text-gray-400">{chaptersRead} / {totalChaptersNum}</span>
+            </div>
+
+            <label className="mt-7 flex max-w-xs flex-col gap-2">
+              <span className="text-sm text-gray-400">Total de capítulos</span>
+              <input type="number" min="1" value={totalChapters} onChange={(event) => {
+                const value = event.target.value
+                setTotalChapters(value)
+                const nextTotal = value === '' ? 0 : Math.max(1, Number(value))
+                setReadChapters((current) => current.filter((chapter) => chapter <= nextTotal))
+                setPendingChapterRatings((current) => Object.fromEntries(Object.entries(current).filter(([chapter]) => Number(chapter) <= nextTotal)))
+              }} className="rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-3 text-sm text-white outline-none focus:border-purple-500/60" />
+            </label>
+
+            {chapterArray.length > 0 ? (
+              <>
+                <div className="mt-7 grid grid-cols-5 gap-2 sm:grid-cols-8 md:grid-cols-10">
+                  {chapterArray.map((chapter) => {
+                    const isRead = readChapters.includes(chapter)
+                    return <button key={chapter} type="button" onClick={() => toggleChapter(chapter)} aria-pressed={isRead} className={`aspect-square rounded-xl border text-xs font-semibold transition ${isRead ? 'border-emerald-400/30 bg-emerald-500 text-gray-950' : 'border-white/10 bg-white/[0.025] text-gray-500 hover:border-purple-500/40 hover:text-white'}`}>C{chapter}</button>
+                  })}
+                </div>
+                {readChapters.length > 0 && <div className="mt-8 border-t border-white/10 pt-6"><h3 className="text-lg font-semibold text-white">Notas dos capítulos lidos</h3><div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-6"><>{readChapters.map((chapter) => { const rating = pendingChapterRatings[chapter]; const config = rating !== undefined ? getRatingConfig(rating) : null; return <label key={chapter} className="flex flex-col gap-2"><span className="font-mono text-xs text-gray-500">Cap. {chapter}</span><div className={`rounded-xl border p-2 ${config ? `${config.color} border-transparent` : 'border-white/10 bg-white/[0.04]'}`}><input type="number" min="0" max="10" step="0.5" value={rating ?? ''} placeholder="—" onChange={(event) => { const value = event.target.value; setPendingChapterRatings((current) => { const next = { ...current }; if (value === '') delete next[chapter]; else { const parsed = Number(value); if (!Number.isNaN(parsed)) next[chapter] = Math.min(10, Math.max(0, parsed)) }; return next }) }} className="w-full bg-transparent text-center text-sm font-bold text-white outline-none placeholder:text-white/40" aria-label={`Nota do capítulo ${chapter}`} /></div>{config && <span className="text-center text-[10px] text-gray-500">{config.label}</span>}</label> })}</></div></div>}
+              </>
+            ) : <div className="mt-7 rounded-2xl border border-dashed border-white/10 py-10 text-center text-sm text-gray-500">Defina o total de capítulos para começar.</div>}
+          </div>
+
           {/* Information */}
           <div
             id="informacoes"
@@ -964,70 +1013,6 @@ export default function MangaDetailPage() {
             </div>
           </div>
         </section>
-
-        <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-4 sm:p-5">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">Forma de acompanhar</p>
-              <p className="mt-1 text-sm text-gray-400">Escolha se deseja controlar volumes ou capítulos.</p>
-            </div>
-            <div className="flex rounded-xl border border-white/10 bg-white/[0.03] p-1">
-              <button type="button" onClick={() => setActiveTracker('volumes')} className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${activeTracker === 'volumes' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>Volumes</button>
-              <button type="button" onClick={() => setActiveTracker('chapters')} className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${activeTracker === 'chapters' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>Capítulos</button>
-            </div>
-          </div>
-        </section>
-
-        {activeTracker === 'chapters' && (
-          <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-6 sm:p-8">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">Capítulos</p>
-                <h2 className="mt-2 text-2xl font-bold text-white [font-family:var(--font-display)]">Capítulos lidos</h2>
-                <p className="mt-2 text-sm text-gray-500">Defina o total e selecione os capítulos que você já leu para avaliá-los individualmente.</p>
-              </div>
-              <span className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 font-mono text-sm text-purple-200">{chaptersRead} lidos</span>
-            </div>
-
-            <label className="mt-7 flex max-w-xs flex-col gap-2">
-              <span className="text-sm text-gray-400">Total de capítulos</span>
-              <input type="number" min="1" value={totalChapters} onChange={(event) => {
-                const value = event.target.value
-                setTotalChapters(value)
-                const nextTotal = value === '' ? 0 : Math.max(1, Number(value))
-                setReadChapters((current) => current.filter((chapter) => chapter <= nextTotal))
-                setPendingChapterRatings((current) => Object.fromEntries(Object.entries(current).filter(([chapter]) => Number(chapter) <= nextTotal)))
-              }} className="rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-3 text-sm text-white outline-none focus:border-purple-500/60" />
-            </label>
-
-            {chapterArray.length > 0 ? (
-              <>
-                <div className="mt-7 grid grid-cols-5 gap-2 sm:grid-cols-8 md:grid-cols-10">
-                  {chapterArray.map((chapter) => {
-                    const isRead = readChapters.includes(chapter)
-                    return <button key={chapter} type="button" onClick={() => toggleChapter(chapter)} aria-pressed={isRead} className={`aspect-square rounded-xl border text-xs font-semibold transition ${isRead ? 'border-emerald-400/30 bg-emerald-500 text-gray-950' : 'border-white/10 bg-white/[0.025] text-gray-500 hover:border-purple-500/40 hover:text-white'}`}>C{chapter}</button>
-                  })}
-                </div>
-
-                {readChapters.length > 0 && (
-                  <div className="mt-8 border-t border-white/10 pt-6">
-                    <div className="flex items-center justify-between gap-3">
-                      <h3 className="text-lg font-semibold text-white">Notas dos capítulos lidos</h3>
-                      <span className="text-xs text-gray-500">{Object.keys(pendingChapterRatings).length} avaliados</span>
-                    </div>
-                    <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
-                      {readChapters.map((chapter) => {
-                        const rating = pendingChapterRatings[chapter]
-                        const config = rating !== undefined ? getRatingConfig(rating) : null
-                        return <label key={chapter} className="flex flex-col gap-2"><span className="font-mono text-xs text-gray-500">Cap. {chapter}</span><div className={`rounded-xl border p-2 ${config ? `${config.color} border-transparent` : 'border-white/10 bg-white/[0.04]'}`}><input type="number" min="0" max="10" step="0.5" value={rating ?? ''} placeholder="—" onChange={(event) => { const value = event.target.value; setPendingChapterRatings((current) => { const next = { ...current }; if (value === '') delete next[chapter]; else { const parsed = Number(value); if (!Number.isNaN(parsed)) next[chapter] = Math.min(10, Math.max(0, parsed)) }; return next }) }} className="w-full bg-transparent text-center text-sm font-bold text-white outline-none placeholder:text-white/40" aria-label={`Nota do capítulo ${chapter}`} /></div>{config && <span className="text-center text-[10px] text-gray-500">{config.label}</span>}</label>
-                      })}
-                    </div>
-                  </div>
-                )}
-              </>
-            ) : <div className="mt-7 rounded-2xl border border-dashed border-white/10 py-10 text-center text-sm text-gray-500">Defina o total de capítulos para começar.</div>}
-          </section>
-        )}
 
         {/* Volume ratings */}
         {activeTracker === 'volumes' && (
