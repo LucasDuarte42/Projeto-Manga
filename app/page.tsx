@@ -59,8 +59,22 @@ export default async function HomePage() {
       </nav>
 
       {/* Hero */}
-      <main className="relative z-10 mx-auto grid max-w-7xl items-center gap-12 px-6 pb-24 pt-16 md:grid-cols-2 md:gap-16 md:pt-24">
-        <div className="text-center md:text-left">
+      <main className="relative z-10 mx-6 min-h-[620px] overflow-hidden rounded-[2rem] border border-white/10 bg-gray-950/60 px-6 pb-16 pt-16 shadow-2xl shadow-purple-950/20 sm:mx-auto sm:max-w-7xl md:px-12 md:pb-20 md:pt-24">
+        <div className="absolute inset-0">
+          <Image
+            src="/hero-cat-reading.png"
+            alt="Gato lendo um livro cercado por sua coleção de mangás"
+            fill
+            sizes="(max-width: 768px) 100vw, 1200px"
+            className="object-cover object-[68%_center] opacity-75 md:object-[72%_center]"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-gray-950 via-gray-950/90 to-gray-950/20" />
+          <div className="absolute inset-0 bg-gradient-to-t from-gray-950/80 via-transparent to-gray-950/10" />
+          <div className="absolute -right-24 top-1/2 h-96 w-96 -translate-y-1/2 rounded-full bg-purple-600/20 blur-[100px]" />
+        </div>
+
+        <div className="relative z-10 max-w-2xl text-center md:text-left">
 
         {/* Badge */}
         <div className="mb-8 flex items-center gap-2 rounded-full border border-purple-500/20 bg-purple-500/10 px-4 py-2 text-sm text-purple-300">
@@ -121,24 +135,11 @@ export default async function HomePage() {
         </div>
         </div>
 
-        <div className="relative mx-auto w-full max-w-xl">
-          <div className="pointer-events-none absolute -inset-6 rounded-[2.5rem] bg-purple-600/20 blur-3xl" />
-          <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gray-900/60 p-2 shadow-2xl shadow-purple-950/50">
-            <Image
-              src="/hero-cat-reading.png"
-              alt="Gato lendo um livro cercado por sua coleção de mangás"
-              width={1536}
-              height={1024}
-              className="h-auto w-full rounded-2xl object-cover"
-              priority
-            />
-            <div className="absolute bottom-5 left-5 right-5 flex items-center justify-between rounded-2xl border border-white/10 bg-gray-950/80 px-4 py-3 backdrop-blur-md">
-              <div>
-                <p className="text-xs font-semibold text-purple-300">PINAKES MANGA</p>
-                <p className="mt-1 text-sm font-medium text-white">Sua próxima leitura começa aqui.</p>
-              </div>
-              <span className="ml-3 text-xl text-purple-300">✦</span>
-            </div>
+        <div className="pointer-events-none absolute bottom-6 right-6 hidden items-center gap-3 rounded-2xl border border-white/10 bg-gray-950/70 px-4 py-3 backdrop-blur-md md:flex">
+          <span className="text-xl text-purple-300">✦</span>
+          <div>
+            <p className="text-xs font-semibold text-purple-300">PINAKES MANGA</p>
+            <p className="mt-1 text-sm font-medium text-white">Sua próxima leitura começa aqui.</p>
           </div>
         </div>
       </main>
