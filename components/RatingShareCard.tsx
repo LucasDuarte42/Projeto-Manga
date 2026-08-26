@@ -232,19 +232,36 @@ export default function RatingShareCard(props: RatingShareCardProps) {
   async function handleShare() {
     if (!previewUrl) return
     setShareMessage(null)
+
     try {
       const response = await fetch(previewUrl)
       const blob = await response.blob()
       const file = new File([blob], 'pinakes-notas.png', { type: 'image/png' })
-      if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
-        await navigator.share({ title: props.name, text: `Minhas notas de ${props.name}`, files: [file] })
+
+      if (typeof navigator.share === 'function' && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
+        await navigator.share({
+          title: props.name,
+          text: `Minhas notas de ${props.name}`,
+          files: [file],
+        })
+        setShareMessage('Imagem compartilhada com sucesso.')
         return
       }
-      await navigator.clipboard?.writeText(`Minhas notas de ${props.name}`)
-      setShareMessage('Seu navegador não permite compartilhar a imagem diretamente. O texto foi copiado; você também pode baixar o PNG.')
+
+      if (typeof navigator.clipboard?.write === 'function' && typeof ClipboardItem !== 'undefined') {
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': blob }),
+        ])
+        setShareMessage('Imagem copiada. Agora você pode colá-la em uma conversa ou rede social.')
+        return
+      }
+
+      handleDownload()
+      setShareMessage('Seu navegador não oferece compartilhamento direto. A imagem foi baixada; anexe o PNG onde quiser compartilhar.')
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return
-      setShareMessage('Não foi possível compartilhar automaticamente. Use o botão de baixar PNG.')
+      handleDownload()
+      setShareMessage('O compartilhamento foi bloqueado pelo navegador. A imagem foi baixada para você anexar manualmente.')
     }
   }
 
