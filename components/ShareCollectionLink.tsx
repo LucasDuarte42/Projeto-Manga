@@ -9,17 +9,30 @@ export default function ShareCollectionLink() {
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
+  async function readResponse(response: Response) {
+    const text = await response.text()
+    if (!text.trim()) {
+      throw new Error(`O servidor retornou uma resposta vazia (HTTP ${response.status}). Verifique o terminal do npm run dev.`)
+    }
+    try {
+      return JSON.parse(text) as { id?: string; token?: string; error?: string }
+    } catch {
+      throw new Error(`O servidor retornou uma resposta inválida (HTTP ${response.status}). Verifique o terminal do npm run dev.`)
+    }
+  }
+
   async function createLink() {
     setBusy(true)
     setMessage(null)
     try {
       const response = await fetch('/api/collection/share', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ expiresInDays: 30 }),
       })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Não foi possível criar o link')
+      const data = await readResponse(response)
+      if (!response.ok) throw new Error(data.error || `Não foi possível criar o link (HTTP ${response.status})`)
+      if (!data.id || !data.token) throw new Error('A API não retornou os dados necessários para criar o link.')
       setShareId(data.id)
       setLink(`${window.location.origin}/share/${data.token}`)
       setMessage('Link criado. Copie e envie para seu amigo.')
@@ -55,10 +68,13 @@ export default function ShareCollectionLink() {
     try {
       const response = await fetch('/api/collection/share', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ id: shareId }),
       })
-      if (!response.ok) throw new Error('Não foi possível revogar o link')
+      if (!response.ok) {
+        const data = await readResponse(response)
+        throw new Error(data.error || `Não foi possível revogar o link (HTTP ${response.status})`)
+      }
       setLink(null)
       setShareId(null)
       setMessage('Link revogado com sucesso.')
