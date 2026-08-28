@@ -29,6 +29,13 @@ const securityHeaders = [
 ]
 
 const nextConfig = {
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: 's4.anilist.co', pathname: '/file/anilistcdn.net/**' },
+      { protocol: 'https', hostname: 's3.anilist.co', pathname: '/file/anilistcdn.net/**' },
+      { protocol: 'https', hostname: 'covers.openlibrary.org', pathname: '/**' },
+    ],
+  },
   async headers() {
     return [
       {
