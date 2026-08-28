@@ -57,6 +57,10 @@ export default async function SharedCollectionPage({ params }: { params: { token
             {share.user.mangas.map((manga) => {
               const volumeProgress = manga.totalVolumes ? `${manga.ownedVolumes.length}/${manga.totalVolumes} volumes` : `${manga.ownedVolumes.length} volumes`
               const chapterProgress = manga.totalChapters ? `${manga.readChapters.length}/${manga.totalChapters} capítulos` : null
+              const ownedVolumeNumbers = new Set(manga.ownedVolumes.filter((number) => Number.isInteger(number) && number > 0))
+              const missingVolumes = manga.totalVolumes
+                ? Array.from({ length: manga.totalVolumes }, (_, index) => index + 1).filter((number) => !ownedVolumeNumbers.has(number))
+                : []
               return (
                 <article key={`${manga.name}-${manga.collectionType}`} className="flex gap-4 rounded-2xl border border-white/10 bg-gray-900/60 p-4 shadow-xl shadow-black/10">
                   <div className="relative h-28 w-20 shrink-0 overflow-hidden rounded-xl bg-gray-800">
@@ -67,6 +71,8 @@ export default async function SharedCollectionPage({ params }: { params: { token
                     {manga.author && <p className="mt-1 truncate text-sm text-gray-400">{manga.author}</p>}
                     <p className="mt-3 text-xs text-purple-300">{manga.collectionType === 'HQ' ? 'HQ' : 'Mangá'}</p>
                     <p className="mt-1 text-xs text-gray-400">{volumeProgress}</p>
+                    {missingVolumes.length > 0 && <p className="mt-1 text-xs leading-5 text-amber-300">Faltantes: {missingVolumes.join(', ')}</p>}
+                    {manga.totalVolumes && missingVolumes.length === 0 && <p className="mt-1 text-xs text-emerald-300">Coleção completa</p>}
                     {chapterProgress && <p className="mt-1 text-xs text-gray-400">{chapterProgress}</p>}
                     <p className="mt-1 text-xs text-gray-500">{manga.status === 'READ' ? 'Lido' : manga.status === 'READING' ? 'Lendo' : 'Quero ler'}</p>
                   </div>
