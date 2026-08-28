@@ -8,16 +8,17 @@ datasource db {
 }
 
 model User {
-  id                  String               @id @default(cuid())
-  email               String               @unique
-  password            String
-  name                String?
+  id       String  @id @default(cuid())
+  email    String  @unique
+  password String
+  name     String?
 
   mangas              Manga[]
   passwordResetTokens PasswordResetToken[]
+  collectionShares    CollectionShare[]
 
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model PasswordResetToken {
@@ -27,9 +28,23 @@ model PasswordResetToken {
   expiresAt DateTime
   createdAt DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model CollectionShare {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  expiresAt DateTime?
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
 }
 
 enum CollectionType {
@@ -65,69 +80,69 @@ model Manga {
   genre          String?
   coverUrl       String?
 
-  userId         String
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   volumeRatings  VolumeRating[]
   chapterRatings ChapterRating[]
   volumes        MangaVolume[]
 
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([userId, name, volume])
 }
 
 model MangaVolume {
-  id        String          @id @default(cuid())
+  id        String       @id @default(cuid())
   mangaId   String
   number    Int
-  status    VolumeStatus    @default(MISSING)
+  status    VolumeStatus @default(MISSING)
   loanedTo  String?
   loanedAt  DateTime?
   dueDate   DateTime?
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 
-  manga     Manga           @relation(fields: [mangaId], references: [id], onDelete: Cascade)
-  history   VolumeHistory[]
+  manga   Manga           @relation(fields: [mangaId], references: [id], onDelete: Cascade)
+  history VolumeHistory[]
 
   @@unique([mangaId, number])
   @@index([mangaId, status])
 }
 
 model VolumeHistory {
-  id        String       @id @default(cuid())
-  volumeId  String
+  id         String        @id @default(cuid())
+  volumeId   String
   fromStatus VolumeStatus?
-  toStatus VolumeStatus
-  loanedTo  String?
-  dueDate   DateTime?
-  changedAt DateTime     @default(now())
+  toStatus   VolumeStatus
+  loanedTo   String?
+  dueDate    DateTime?
+  changedAt  DateTime      @default(now())
 
-  volume    MangaVolume  @relation(fields: [volumeId], references: [id], onDelete: Cascade)
+  volume MangaVolume @relation(fields: [volumeId], references: [id], onDelete: Cascade)
 
   @@index([volumeId, changedAt])
 }
 
 model VolumeRating {
-  id        String   @id @default(cuid())
-  mangaId   String
-  volume    Int
-  note      Float
+  id      String @id @default(cuid())
+  mangaId String
+  volume  Int
+  note    Float
 
-  manga     Manga    @relation(fields: [mangaId], references: [id], onDelete: Cascade)
+  manga Manga @relation(fields: [mangaId], references: [id], onDelete: Cascade)
 
   @@unique([mangaId, volume])
 }
 
 model ChapterRating {
-  id        String   @id @default(cuid())
-  mangaId   String
-  chapter   Int
-  note      Float
+  id      String @id @default(cuid())
+  mangaId String
+  chapter Int
+  note    Float
 
-  manga     Manga    @relation(fields: [mangaId], references: [id], onDelete: Cascade)
+  manga Manga @relation(fields: [mangaId], references: [id], onDelete: Cascade)
 
   @@unique([mangaId, chapter])
 }
