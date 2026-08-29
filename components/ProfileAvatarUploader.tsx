@@ -87,9 +87,12 @@ export default function ProfileAvatarUploader({ initialAvatarUrl }: { initialAva
     if (!selectedImage || !cropAreaRef.current) return { x: 0, y: 0 }
     const size = cropAreaRef.current.clientWidth
     const baseScale = Math.min(size / selectedImage.width, size / selectedImage.height)
+    const renderedWidth = selectedImage.width * baseScale * nextZoom
+    const renderedHeight = selectedImage.height * baseScale * nextZoom
+    const cropFrameSize = Math.min(size, renderedWidth, renderedHeight)
     return {
-      x: Math.max(0, (selectedImage.width * baseScale * nextZoom - size) / 2),
-      y: Math.max(0, (selectedImage.height * baseScale * nextZoom - size) / 2),
+      x: Math.max(0, (renderedWidth - cropFrameSize) / 2),
+      y: Math.max(0, (renderedHeight - cropFrameSize) / 2),
     }
   }
 
@@ -187,6 +190,7 @@ export default function ProfileAvatarUploader({ initialAvatarUrl }: { initialAva
   const initials = ' '
   const previewSize = cropAreaRef.current?.clientWidth || 320
   const previewScale = selectedImage ? Math.min(previewSize / selectedImage.width, previewSize / selectedImage.height) : 1
+  const cropFrameSize = selectedImage ? Math.min(previewSize, selectedImage.width * previewScale * zoom, selectedImage.height * previewScale * zoom) : previewSize
   const previewStyle = selectedImage
     ? {
         position: 'absolute' as const,
@@ -231,7 +235,7 @@ export default function ProfileAvatarUploader({ initialAvatarUrl }: { initialAva
 
             <div ref={cropAreaRef} className="relative mx-auto aspect-square w-full max-w-[320px] cursor-grab touch-none overflow-hidden rounded-3xl bg-gray-900 ring-1 ring-white/10 active:cursor-grabbing" onPointerDown={startDragging} onPointerMove={dragImage} onPointerUp={stopDragging} onPointerCancel={stopDragging}>
               <img src={selectedImage.dataUrl} alt="Prévia completa da foto selecionada" className="pointer-events-none select-none transition-[width,height,transform] duration-150" style={previewStyle} draggable={false} />
-              <div className="pointer-events-none absolute inset-0 z-10 rounded-3xl shadow-[0_0_0_9999px_rgba(0,0,0,0.48)] ring-2 ring-white/90 ring-offset-2 ring-offset-gray-900" />
+              <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 rounded-3xl ring-2 ring-white/95 shadow-[0_0_0_9999px_rgba(0,0,0,0.48)]" style={{ width: `${cropFrameSize}px`, height: `${cropFrameSize}px` }} />
               <span className="pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2 rounded-full bg-black/65 px-3 py-1 text-[10px] text-white/90">Arraste a imagem para cortar</span>
             </div>
 
