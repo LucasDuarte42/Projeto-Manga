@@ -1,6 +1,6 @@
 'use client'
 
-import { ChangeEvent, DragEvent, useEffect, useRef, useState } from 'react'
+import { ChangeEvent, DragEvent, PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from 'react'
 import { Camera, Check, ImagePlus, Loader2, Trash2, Upload, X } from 'lucide-react'
 
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
@@ -15,9 +15,12 @@ type ImageSource = {
 
 export default function ProfileAvatarUploader({ initialAvatarUrl }: { initialAvatarUrl: string | null }) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const cropAreaRef = useRef<HTMLDivElement>(null)
+  const dragRef = useRef<{ pointerId: number; startX: number; startY: number; originX: number; originY: number } | null>(null)
   const [avatarUrl, setAvatarUrl] = useState(initialAvatarUrl)
   const [selectedImage, setSelectedImage] = useState<ImageSource | null>(null)
   const [zoom, setZoom] = useState(1)
+  const [position, setPosition] = useState({ x: 0, y: 0 })
   const [busy, setBusy] = useState(false)
   const [dragging, setDragging] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
@@ -62,6 +65,7 @@ export default function ProfileAvatarUploader({ initialAvatarUrl }: { initialAva
       image.onload = () => {
         setSelectedImage({ dataUrl: reader.result as string, width: image.naturalWidth, height: image.naturalHeight })
         setZoom(1)
+        setPosition({ x: 0, y: 0 })
       }
       image.src = reader.result as string
     }
@@ -79,6 +83,42 @@ export default function ProfileAvatarUploader({ initialAvatarUrl }: { initialAva
     if (!busy) setSelectedImage(null)
   }
 
+  function getDragLimits(nextZoom = zoom) {
+    if (!selectedImage || !cropAreaRef.current) return { x: 0, y: 0 }
+    const size = cropAreaRef.current.clientWidth
+    const baseScale = Math.max(size / selectedImage.width, size / selectedImage.height)
+    return {
+      x: Math.max(0, (selectedImage.width * baseScale * nextZoom - size) / 2),
+      y: Math.max(0, (selectedImage.height * baseScale * nextZoom - size) / 2),
+    }
+  }
+
+  function updateZoom(nextZoom: number) {
+    const limits = getDragLimits(nextZoom)
+    setZoom(nextZoom)
+    setPosition((current) => ({ x: Math.max(-limits.x, Math.min(limits.x, current.x)), y: Math.max(-limits.y, Math.min(limits.y, current.y)) }))
+  }
+
+  function startDragging(event: ReactPointerEvent<HTMLDivElement>) {
+    if (busy) return
+    event.currentTarget.setPointerCapture(event.pointerId)
+    dragRef.current = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, originX: position.x, originY: position.y }
+  }
+
+  function dragImage(event: ReactPointerEvent<HTMLDivElement>) {
+    const drag = dragRef.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+    const limits = getDragLimits()
+    setPosition({
+      x: Math.max(-limits.x, Math.min(limits.x, drag.originX + event.clientX - drag.startX)),
+      y: Math.max(-limits.y, Math.min(limits.y, drag.originY + event.clientY - drag.startY)),
+    })
+  }
+
+  function stopDragging(event: ReactPointerEvent<HTMLDivElement>) {
+    if (dragRef.current?.pointerId === event.pointerId) dragRef.current = null
+  }
+
   async function createCroppedAvatar() {
     if (!selectedImage) return null
     const image = new Image()
@@ -93,8 +133,9 @@ export default function ProfileAvatarUploader({ initialAvatarUrl }: { initialAva
 
     const shortestSide = Math.min(selectedImage.width, selectedImage.height)
     const cropSize = shortestSide / zoom
-    const sourceX = (selectedImage.width - cropSize) / 2
-    const sourceY = (selectedImage.height - cropSize) / 2
+    const previewSize = cropAreaRef.current?.clientWidth || 320
+    const sourceX = (selectedImage.width - cropSize) / 2 - (position.x / previewSize) * cropSize
+    const sourceY = (selectedImage.height - cropSize) / 2 - (position.y / previewSize) * cropSize
     context.imageSmoothingEnabled = true
     context.imageSmoothingQuality = 'high'
     context.drawImage(image, sourceX, sourceY, cropSize, cropSize, 0, 0, 512, 512)
@@ -144,7 +185,7 @@ export default function ProfileAvatarUploader({ initialAvatarUrl }: { initialAva
 
   const initials = ' '
   const previewStyle = selectedImage
-    ? { transform: `scale(${zoom})`, transformOrigin: 'center center' }
+    ? { transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`, transformOrigin: 'center center' }
     : undefined
 
   return (
@@ -177,13 +218,14 @@ export default function ProfileAvatarUploader({ initialAvatarUrl }: { initialAva
               <button type="button" onClick={closeEditor} disabled={busy} className="rounded-lg p-2 text-gray-400 transition hover:bg-white/10 hover:text-white disabled:opacity-50" aria-label="Fechar editor"><X size={18} /></button>
             </div>
 
-            <div className="relative mx-auto aspect-square w-full max-w-[320px] overflow-hidden rounded-3xl bg-gray-900 ring-1 ring-white/10">
+            <div ref={cropAreaRef} className="relative mx-auto aspect-square w-full max-w-[320px] cursor-grab touch-none overflow-hidden rounded-3xl bg-gray-900 ring-1 ring-white/10 active:cursor-grabbing" onPointerDown={startDragging} onPointerMove={dragImage} onPointerUp={stopDragging} onPointerCancel={stopDragging}>
               <div className="pointer-events-none absolute inset-0 z-10 rounded-3xl ring-2 ring-white/80 ring-offset-2 ring-offset-gray-900" />
-              <img src={selectedImage.dataUrl} alt="Prévia da foto selecionada" className="h-full w-full object-cover transition-transform duration-150" style={previewStyle} />
+              <img src={selectedImage.dataUrl} alt="Prévia da foto selecionada" className="pointer-events-none h-full w-full select-none object-cover transition-transform duration-150" style={previewStyle} draggable={false} />
+              <span className="pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-[10px] text-white/80">Arraste para enquadrar</span>
             </div>
 
             <label className="mt-5 block text-xs font-medium text-gray-300" htmlFor="avatar-zoom">Zoom</label>
-            <input id="avatar-zoom" type="range" min="1" max="3" step="0.05" value={zoom} onChange={(event) => setZoom(Number(event.target.value))} className="mt-2 w-full accent-purple-500" aria-valuetext={`${zoom.toFixed(1)}x`} />
+            <input id="avatar-zoom" type="range" min="1" max="3" step="0.05" value={zoom} onChange={(event) => updateZoom(Number(event.target.value))} className="mt-2 w-full accent-purple-500" aria-valuetext={`${zoom.toFixed(1)}x`} />
             <div className="mt-1 flex justify-between text-[11px] text-gray-500"><span>Enquadramento completo</span><span>{zoom.toFixed(1)}x</span></div>
 
             <button type="button" onClick={(event) => void (async () => { const button = event.currentTarget; button.blur(); await confirmCrop() })()} disabled={busy} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-300 disabled:cursor-not-allowed disabled:opacity-60">
