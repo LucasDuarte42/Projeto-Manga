@@ -26,6 +26,7 @@ import QuickEditModal from '@/components/QuickEditModal'
 import ExportTextModal from '@/components/ExportTextModal'
 import { downloadText } from '@/utils/exportCollection'
 import LogoutButton from '@/components/LogoutButton'
+import ShareCollectionLink from '@/components/ShareCollectionLink'
 
 
 type CollectionType = 'MANGA' | 'HQ'
@@ -438,6 +439,8 @@ export default function MangasPage() {
       </header>
 
       <main className="relative z-10 mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
+
+        <ShareCollectionLink />
 
         {/* Top */}
 
