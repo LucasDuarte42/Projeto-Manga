@@ -39,6 +39,7 @@ interface Manga {
   totalVolumes?: number | null
   ownedVolumes: number[]
   status: 'READ' | 'READING' | 'WANT_TO_READ'
+  isInWishlist: boolean
   note?: number | null
   coverUrl?: string | null
   genre?: string | null
@@ -200,6 +201,21 @@ export default function MangasPage() {
     }
 
     fetchMangas()
+  }
+
+  async function handleWishlistToggle(manga: Manga) {
+    const isInWishlist = !manga.isInWishlist
+    try {
+      const response = await fetch(`/api/mangas/${manga.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...manga, isInWishlist }),
+      })
+      if (!response.ok) throw new Error('Não foi possível atualizar a lista de desejos.')
+      setMangas((current) => current.map((item) => item.id === manga.id ? { ...item, isInWishlist } : item))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao atualizar a lista de desejos.')
+    }
   }
 
   async function handleQuickUpdate(
@@ -418,6 +434,15 @@ export default function MangasPage() {
                 Exportar
               </span>
             </button>
+
+            <Link
+              href="/perfil"
+              className="flex items-center gap-2 rounded-xl border border-gray-800 bg-gray-900/50 px-3 py-2.5 text-sm font-semibold text-gray-300 transition hover:border-purple-500/40 hover:bg-purple-500/10 hover:text-white sm:px-4"
+              title="Abrir meu perfil"
+            >
+              <span className="hidden sm:inline">Perfil</span>
+              <span className="text-purple-400 sm:hidden">◎</span>
+            </Link>
 
             <ShareCollectionLink />
 
@@ -734,8 +759,20 @@ export default function MangasPage() {
                   className="group relative"
                 >
 
+                                    {/* Wishlist */}
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      void handleWishlistToggle(manga)
+                    }}
+                    className={`absolute left-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-black/60 backdrop-blur-md transition hover:bg-purple-600 ${manga.isInWishlist ? 'text-purple-300 opacity-100' : 'text-white opacity-0 group-hover:opacity-100'}`}
+                    title={manga.isInWishlist ? 'Remover da lista de desejos' : 'Adicionar à lista de desejos'}
+                    aria-label={manga.isInWishlist ? 'Remover da lista de desejos' : 'Adicionar à lista de desejos'}
+                  >
+                    <Heart size={15} fill={manga.isInWishlist ? 'currentColor' : 'none'} />
+                  </button>
                   {/* Edit */}
-
                   <button
                     onClick={(e) => {
                       e.preventDefault()

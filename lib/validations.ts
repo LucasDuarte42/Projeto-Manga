@@ -66,6 +66,7 @@ export const mangaCreateSchema = z.object({
   totalVolumes: positiveInt.nullable().optional(),
   totalChapters: positiveInt.nullable().optional(),
   status: z.enum(['READ', 'READING', 'WANT_TO_READ']).optional().default('WANT_TO_READ'),
+  isInWishlist: z.boolean().optional().default(false),
   note: z.number().min(0).max(10).nullable().optional(),
   genre: optionalText(100),
   collectionType: z.enum(['MANGA', 'HQ']).optional().default('MANGA'),
@@ -81,6 +82,7 @@ export const mangaUpdateSchema = z.object({
   readChapters: z.array(z.number().int().min(1).max(100000)).max(100000).optional(),
   ownedVolumes: z.array(z.number().int().min(1).max(100000)).max(10000).optional(),
   status: z.enum(['READ', 'READING', 'WANT_TO_READ']).optional(),
+  isInWishlist: z.boolean().optional(),
   note: z.number().min(0).max(10).nullable().optional(),
   genre: optionalText(100),
 })
@@ -111,6 +113,15 @@ export const volumeStatusSchema = z.object({
 
 export const searchQuerySchema = z.object({
   q: z.string().trim().min(1, 'Query obrigatória').max(100, 'Query muito longa'),
+})
+
+export const featuredMangaSchema = z.object({
+  mangaIds: z.array(z.string().trim().min(1).max(50)).max(3, 'Escolha no máximo três obras')
+    .refine((ids) => new Set(ids).size === ids.length, 'Não repita obras nos destaques'),
+})
+
+export const profileAvatarSchema = z.object({
+  avatarUrl: z.string().regex(/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/, 'Formato de imagem inválido').max(700_000, 'A imagem deve ter no máximo 512 KB').nullable(),
 })
 
 export const mangaListQuerySchema = z.object({

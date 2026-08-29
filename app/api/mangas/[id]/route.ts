@@ -15,6 +15,7 @@ interface UpdateMangaBody {
   readChapters?: unknown
   ownedVolumes?: unknown
   status?: unknown
+  isInWishlist?: unknown
   note?: unknown
   genre?: unknown
   coverUrl?: unknown
@@ -239,6 +240,7 @@ export async function PUT(
         totalChapters,
         readChapters,
         status,
+        isInWishlist: body.isInWishlist ?? manga.isInWishlist,
         note,
         genre,
         coverUrl,
