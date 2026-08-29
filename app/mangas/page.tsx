@@ -211,10 +211,10 @@ export default function MangasPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...manga, isInWishlist }),
       })
-      if (!response.ok) throw new Error('Não foi possível atualizar a lista de desejos.')
+      if (!response.ok) throw new Error('Não foi possível atualizar os favoritos.')
       setMangas((current) => current.map((item) => item.id === manga.id ? { ...item, isInWishlist } : item))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao atualizar a lista de desejos.')
+      setError(err instanceof Error ? err.message : 'Erro ao atualizar os favoritos.')
     }
   }
 
@@ -759,7 +759,7 @@ export default function MangasPage() {
                   className="group relative"
                 >
 
-                                    {/* Wishlist */}
+                  {/* Favoritos */}
                   <button
                     onClick={(e) => {
                       e.preventDefault()
@@ -767,8 +767,8 @@ export default function MangasPage() {
                       void handleWishlistToggle(manga)
                     }}
                     className={`absolute left-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-black/60 backdrop-blur-md transition hover:bg-purple-600 ${manga.isInWishlist ? 'text-purple-300 opacity-100' : 'text-white opacity-0 group-hover:opacity-100'}`}
-                    title={manga.isInWishlist ? 'Remover da lista de desejos' : 'Adicionar à lista de desejos'}
-                    aria-label={manga.isInWishlist ? 'Remover da lista de desejos' : 'Adicionar à lista de desejos'}
+                    title={manga.isInWishlist ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+                    aria-label={manga.isInWishlist ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
                   >
                     <Heart size={15} fill={manga.isInWishlist ? 'currentColor' : 'none'} />
                   </button>
@@ -820,6 +820,12 @@ export default function MangasPage() {
                         {/* Gradient */}
 
                         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/80 to-transparent" />
+
+                        {manga.isInWishlist && (
+                          <span className="absolute left-3 top-14 rounded-full border border-purple-300/30 bg-purple-950/85 px-2.5 py-1 text-[10px] font-semibold text-purple-200 shadow-lg backdrop-blur-md">
+                            Lista de desejos
+                          </span>
+                        )}
 
                         {/* Status */}
 
