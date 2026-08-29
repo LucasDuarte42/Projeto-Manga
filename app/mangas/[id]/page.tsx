@@ -46,7 +46,7 @@ interface Manga {
   ownedVolumes: number[]
   totalChapters: number | null
   readChapters: number[]
-  status: MangaStatus
+  status: MangaStatus | null
   isInWishlist: boolean
   note: number | null
   coverUrl: string | null
@@ -161,7 +161,7 @@ export default function MangaDetailPage() {
   const [activeTracker, setActiveTracker] = useState<'volumes' | 'chapters'>('volumes')
 
   const [mangaStatus, setMangaStatus] =
-    useState<MangaStatus>('WANT_TO_READ')
+    useState<MangaStatus | null>(null)
 
   const [note, setNote] = useState('')
 
@@ -269,7 +269,7 @@ export default function MangaDetailPage() {
     setSuccess(null)
 
     try {
-      const finalStatus: MangaStatus = mangaStatus
+      const finalStatus: MangaStatus | null = mangaStatus
 
       const total =
         totalVolumes !== ''
@@ -629,8 +629,14 @@ export default function MangaDetailPage() {
     )
   }
 
-  const currentStatus =
-    STATUS_CONFIG[mangaStatus]
+  const currentStatus = mangaStatus
+    ? STATUS_CONFIG[mangaStatus]
+    : {
+        label: 'Sem status',
+        icon: Clock3,
+        badge: 'border-white/10 bg-white/[0.04] text-gray-400',
+        button: 'border-white/10 bg-white/[0.025] text-gray-500',
+      }
 
   const StatusIcon = currentStatus.icon
 

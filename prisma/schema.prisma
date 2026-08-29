@@ -76,7 +76,7 @@ model Manga {
   ownedVolumes   Int[]          @default([])
   totalChapters  Int?
   readChapters   Int[]          @default([])
-  status         MangaStatus    @default(WANT_TO_READ)
+  status         MangaStatus?
   isInWishlist   Boolean        @default(false)
   isFavorite     Boolean        @default(false)
   collectionType CollectionType @default(MANGA)

@@ -38,7 +38,7 @@ interface Manga {
   volume: number
   totalVolumes?: number | null
   ownedVolumes: number[]
-  status: 'READ' | 'READING' | 'WANT_TO_READ'
+  status: 'READ' | 'READING' | 'WANT_TO_READ' | null
   isInWishlist: boolean
   isFavorite: boolean
   note?: number | null
@@ -158,7 +158,6 @@ export default function MangasPage() {
         coverUrl: manga.image,
         totalVolumes: manga.volumes,
         volume: 1,
-        status: 'WANT_TO_READ',
         genre: manga.genre,
         collectionType,
       }),
@@ -189,7 +188,6 @@ export default function MangasPage() {
           ? parseInt(form.volumes)
           : null,
         volume: 1,
-        status: 'WANT_TO_READ',
         genre: form.genre || null,
         collectionType: form.type,
       }),
@@ -280,7 +278,7 @@ export default function MangasPage() {
 
   const filteredMangas = mangas
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string | null) => {
     const map: Record<
       string,
       {
@@ -308,8 +306,8 @@ export default function MangasPage() {
     }
 
     return (
-      map[status] ?? {
-        label: status,
+      (status ? map[status] : undefined) ?? {
+        label: status || 'Sem status',
         color:
           'bg-gray-500/10 text-gray-400 border-gray-500/20',
       }

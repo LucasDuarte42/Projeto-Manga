@@ -7,12 +7,12 @@ function hasMissingVolumes(manga: { totalVolumes: number | null; ownedVolumes: n
   return Boolean(manga.totalVolumes && manga.totalVolumes > manga.ownedVolumes.length)
 }
 
-function matchesProgress(manga: { status: string; totalVolumes: number | null; ownedVolumes: number[] }, progress: string) {
+function matchesProgress(manga: { status: string | null; totalVolumes: number | null; ownedVolumes: number[] }, progress: string) {
   if (progress === 'ALL') return true
   const owned = manga.ownedVolumes.length
   const total = manga.totalVolumes
   if (progress === 'COMPLETE') return manga.status === 'READ' || Boolean(total && owned >= total)
-  if (progress === 'NOT_STARTED') return owned === 0 && manga.status === 'WANT_TO_READ'
+  if (progress === 'NOT_STARTED') return owned === 0 && (manga.status === null || manga.status === 'WANT_TO_READ')
   return manga.status === 'READING' || (owned > 0 && Boolean(total && owned < total))
 }
 
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
       coverUrl: coverUrl ?? null,
       volume: volume ?? 1,
       totalVolumes: totalVolumes ?? null,
-      status: status ?? 'WANT_TO_READ',
+      status: status ?? null,
       isInWishlist: isInWishlist ?? false,
       isFavorite: isFavorite ?? false,
       note: note ?? null,
