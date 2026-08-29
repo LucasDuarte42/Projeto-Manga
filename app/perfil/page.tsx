@@ -6,6 +6,7 @@ import { ArrowLeft, BookOpen, Check, Clock3, Library, Star, UserRound } from 'lu
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import ProfileHighlightsSelector from '@/components/ProfileHighlightsSelector'
+import ProfileAvatarUploader from '@/components/ProfileAvatarUploader'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,7 +26,7 @@ export default async function ProfilePage() {
 
   const profile = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { featuredMangaIds: true },
+    select: { featuredMangaIds: true, avatarUrl: true },
   })
 
   const mangas = await prisma.manga.findMany({
@@ -48,13 +49,11 @@ export default async function ProfilePage() {
     },
   })
 
-  const fallbackTopWorks = [...mangas]
-    .sort((a, b) => (b.note ?? -1) - (a.note ?? -1) || b.updatedAt.getTime() - a.updatedAt.getTime())
-    .slice(0, 3)
   const selectedTopWorks = (profile?.featuredMangaIds ?? [])
     .map((id) => mangas.find((manga) => manga.id === id))
     .filter((manga): manga is (typeof mangas)[number] => Boolean(manga))
-  const topWorks = selectedTopWorks.length > 0 ? selectedTopWorks : fallbackTopWorks
+  const hasSelectedTopWorks = selectedTopWorks.length > 0
+  const topWorks = selectedTopWorks
   const wishlist = mangas.filter((manga) => manga.status === 'WANT_TO_READ')
   const totalOwned = mangas.reduce((total, manga) => total + manga.ownedVolumes.length, 0)
   const totalRead = mangas.reduce((total, manga) => total + manga.readChapters.length, 0)
@@ -82,7 +81,7 @@ export default async function ProfilePage() {
           <div className="absolute -right-16 -top-24 h-64 w-64 rounded-full bg-purple-500/10 blur-3xl" />
           <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-purple-500/20 text-2xl font-bold text-purple-200 ring-1 ring-purple-400/30">{displayName.charAt(0).toUpperCase()}</div>
+              <ProfileAvatarUploader initialAvatarUrl={profile?.avatarUrl ?? null} />
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-purple-400">Perfil do colecionador</p>
                 <h1 className="mt-1 text-2xl font-bold sm:text-3xl">{displayName}</h1>
@@ -103,7 +102,7 @@ export default async function ProfilePage() {
               <span className="text-sm text-gray-500">{reading} em andamento</span>
             </div>
             <ProfileHighlightsSelector options={mangas.map((manga) => ({ id: manga.id, name: manga.name, coverUrl: manga.coverUrl }))} initialSelected={profile?.featuredMangaIds ?? []} />
-            {topWorks.length === 0 ? <EmptyState text="Adicione obras para montar seus destaques." /> : <div className="grid gap-4 sm:grid-cols-3">{topWorks.map((manga, index) => <WorkCard key={manga.id} manga={manga} rank={index + 1} />)}</div>}
+            {!hasSelectedTopWorks ? <EmptyState text="Escolha até três obras acima para exibir seus destaques." /> : <div className="grid gap-4 sm:grid-cols-3">{topWorks.map((manga, index) => <WorkCard key={manga.id} manga={manga} rank={index + 1} />)}</div>}
 
             <div className="mb-4 mt-10 flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">Acervo</p><h2 className="mt-1 text-2xl font-bold">Minha coleção</h2></div><Link href="/mangas" className="text-sm font-medium text-purple-400 hover:text-purple-300">Ver detalhes</Link></div>
             {mangas.length === 0 ? <EmptyState text="Sua coleção ainda está vazia." /> : <div className="grid gap-3 sm:grid-cols-2">{mangas.map((manga) => <CollectionRow key={manga.id} manga={manga} />)}</div>}

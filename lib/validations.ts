@@ -118,6 +118,10 @@ export const featuredMangaSchema = z.object({
     .refine((ids) => new Set(ids).size === ids.length, 'Não repita obras nos destaques'),
 })
 
+export const profileAvatarSchema = z.object({
+  avatarUrl: z.string().regex(/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/, 'Formato de imagem inválido').max(700_000, 'A imagem deve ter no máximo 512 KB').nullable(),
+})
+
 export const mangaListQuerySchema = z.object({
   q: z.string().trim().max(100, 'Busca muito longa').optional().default(''),
   author: z.string().trim().max(100, 'Autor muito longo').optional().default(''),
