@@ -1,14 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Check, Copy, Link2, Share2, Trash2, X } from 'lucide-react'
 
 export default function ShareCollectionLink() {
   const [open, setOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const [link, setLink] = useState<string | null>(null)
   const [shareId, setShareId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   async function readResponse(response: Response) {
     const text = await response.text()
@@ -105,9 +111,9 @@ export default function ShareCollectionLink() {
         <span className="hidden sm:inline">Compartilhar</span>
       </button>
 
-      {open && (
+      {open && mounted && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[100] flex min-h-screen items-center justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm"
           role="presentation"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setOpen(false)
@@ -149,7 +155,7 @@ export default function ShareCollectionLink() {
             {message && <p role="status" className="mt-4 flex items-start gap-2 text-sm text-purple-200"><Check size={15} className="mt-0.5 shrink-0" />{message}</p>}
           </section>
         </div>
-      )}
+      , document.body)}
     </>
   )
 }
