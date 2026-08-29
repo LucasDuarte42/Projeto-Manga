@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { searchQuerySchema } from '@/lib/validations'
+import { consumeRateLimit, getClientIp } from '@/lib/security'
 
 const ANILIST_API = 'https://graphql.anilist.co'
 
@@ -31,24 +32,46 @@ const query = `
   }
 `
 export const dynamic = 'force-dynamic'
+
+const UPSTREAM_TIMEOUT_MS = 8_000
+const SEARCH_LIMIT = 30
+const SEARCH_WINDOW_MS = 10 * 60 * 1000
+
 export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url)
+  const parsedQuery = searchQuerySchema.safeParse({
+    q: searchParams.get('q') ?? '',
+  })
+
+  if (!parsedQuery.success) {
+    return NextResponse.json(
+      { error: parsedQuery.error.issues[0].message },
+      { status: 400 }
+    )
+  }
+
+  const clientIp = getClientIp(req.headers)
+  const allowed = await consumeRateLimit(
+    `external-search:mangas:${clientIp}`,
+    SEARCH_LIMIT,
+    SEARCH_WINDOW_MS
+  )
+
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Limite de buscas atingido. Tente novamente em alguns minutos.' },
+      { status: 429, headers: { 'Retry-After': String(SEARCH_WINDOW_MS / 1000) } }
+    )
+  }
+
+  const search = parsedQuery.data.q
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS)
+
   try {
-    const { searchParams } = new URL(req.url)
-    const parsedQuery = searchQuerySchema.safeParse({
-      q: searchParams.get('q') ?? '',
-    })
-
-    if (!parsedQuery.success) {
-      return NextResponse.json(
-        { error: parsedQuery.error.issues[0].message },
-        { status: 400 }
-      )
-    }
-
-    const search = parsedQuery.data.q
-
     const response = await fetch(ANILIST_API, {
       method: 'POST',
+      signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
@@ -65,12 +88,7 @@ export async function GET(req: NextRequest) {
     })
 
     if (!response.ok) {
-      console.error(
-        'Erro AniList:',
-        response.status,
-        await response.text()
-      )
-
+      console.error('AniList retornou status HTTP', response.status)
       return NextResponse.json(
         { error: 'Erro ao buscar na API AniList' },
         { status: 502 }
@@ -117,11 +135,19 @@ export async function GET(req: NextRequest) {
       mangas: formattedMangas,
     })
   } catch (error) {
-    console.error('Erro /api/manga-search:', error)
+    if (error instanceof Error && error.name === 'AbortError') {
+      return NextResponse.json(
+        { error: 'A busca demorou demais. Tente novamente.' },
+        { status: 504 }
+      )
+    }
 
+    console.error('Erro /api/mangas/search:', error instanceof Error ? error.message : 'erro desconhecido')
     return NextResponse.json(
-      { error: 'Erro interno ao buscar mangás' },
-      { status: 500 }
+      { error: 'Não foi possível buscar mangás no momento' },
+      { status: 503 }
     )
+  } finally {
+    clearTimeout(timeout)
   }
 }
