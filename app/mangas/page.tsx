@@ -419,6 +419,15 @@ export default function MangasPage() {
               </span>
             </button>
 
+            <Link
+              href="/perfil"
+              className="flex items-center gap-2 rounded-xl border border-gray-800 bg-gray-900/50 px-3 py-2.5 text-sm font-semibold text-gray-300 transition hover:border-purple-500/40 hover:bg-purple-500/10 hover:text-white sm:px-4"
+              title="Abrir meu perfil"
+            >
+              <span className="hidden sm:inline">Perfil</span>
+              <span className="text-purple-400 sm:hidden">◎</span>
+            </Link>
+
             <ShareCollectionLink />
 
             <button
