@@ -419,6 +419,8 @@ export default function MangasPage() {
               </span>
             </button>
 
+            <ShareCollectionLink />
+
             <button
               onClick={() => setShowModal(true)}
               className="flex items-center gap-2 rounded-xl bg-purple-600 px-3 py-2.5 text-sm font-semibold shadow-lg shadow-purple-900/20 transition hover:bg-purple-700 hover:shadow-purple-700/20 sm:px-4"
@@ -439,8 +441,6 @@ export default function MangasPage() {
       </header>
 
       <main className="relative z-10 mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
-
-        <ShareCollectionLink />
 
         {/* Top */}
 

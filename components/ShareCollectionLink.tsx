@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { Link2, Copy, Check, Share2, Trash2 } from 'lucide-react'
+import { Check, Copy, Link2, Share2, Trash2, X } from 'lucide-react'
 
 export default function ShareCollectionLink() {
+  const [open, setOpen] = useState(false)
   const [link, setLink] = useState<string | null>(null)
   const [shareId, setShareId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -12,12 +13,12 @@ export default function ShareCollectionLink() {
   async function readResponse(response: Response) {
     const text = await response.text()
     if (!text.trim()) {
-      throw new Error(`O servidor retornou uma resposta vazia (HTTP ${response.status}). Verifique o terminal do npm run dev.`)
+      throw new Error(`O servidor retornou uma resposta vazia (HTTP ${response.status}).`)
     }
     try {
       return JSON.parse(text) as { id?: string; token?: string; error?: string }
     } catch {
-      throw new Error(`O servidor retornou uma resposta inválida (HTTP ${response.status}). Verifique o terminal do npm run dev.`)
+      throw new Error(`O servidor retornou uma resposta inválida (HTTP ${response.status}).`)
     }
   }
 
@@ -56,7 +57,11 @@ export default function ShareCollectionLink() {
   async function shareLink() {
     if (!link) return
     if (navigator.share) {
-      await navigator.share({ title: 'Minha coleção no Pinakes Manga', text: 'Veja minha coleção de mangás e HQs.', url: link }).catch(() => undefined)
+      await navigator.share({
+        title: 'Minha coleção no Pinakes Manga',
+        text: 'Veja minha coleção de mangás e HQs.',
+        url: link,
+      }).catch(() => undefined)
     } else {
       await copyLink()
     }
@@ -86,17 +91,65 @@ export default function ShareCollectionLink() {
   }
 
   return (
-    <section className="mb-8 rounded-2xl border border-purple-500/20 bg-purple-950/20 p-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">Compartilhe sua coleção</p>
-          <h2 className="mt-1 text-lg font-semibold text-white">Mostre suas obras para um amigo</h2>
-          <p className="mt-1 text-sm text-gray-400">O link não exibe seu e-mail, senha ou dados de outras contas.</p>
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          setOpen(true)
+          setMessage(null)
+        }}
+        className="flex items-center gap-2 rounded-xl border border-purple-500/30 bg-purple-500/10 px-3 py-2.5 text-sm font-semibold text-purple-200 transition hover:border-purple-400/50 hover:bg-purple-500/20 sm:px-4"
+        title="Compartilhar minha coleção"
+      >
+        <Share2 size={17} />
+        <span className="hidden sm:inline">Compartilhar</span>
+      </button>
+
+      {open && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setOpen(false)
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="share-collection-title"
+            className="w-full max-w-lg rounded-2xl border border-purple-500/20 bg-gray-950 p-5 shadow-2xl shadow-black/40 sm:p-6"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">Compartilhe sua coleção</p>
+                <h2 id="share-collection-title" className="mt-1 text-lg font-semibold text-white">Mostre suas obras para um amigo</h2>
+                <p className="mt-1 text-sm text-gray-400">O link não exibe seu e-mail, senha ou dados de outras contas.</p>
+              </div>
+              <button type="button" onClick={() => setOpen(false)} className="rounded-lg p-1.5 text-gray-400 transition hover:bg-white/10 hover:text-white" aria-label="Fechar diálogo">
+                <X size={19} />
+              </button>
+            </div>
+
+            {!link ? (
+              <button type="button" onClick={createLink} disabled={busy} className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50">
+                <Link2 size={17} />
+                {busy ? 'Criando...' : 'Criar link'}
+              </button>
+            ) : (
+              <div className="mt-5 space-y-3">
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <input readOnly value={link} aria-label="Link da coleção compartilhada" className="min-w-0 flex-1 rounded-xl border border-white/10 bg-gray-900 px-3 py-2.5 text-sm text-gray-300 outline-none" />
+                  <button type="button" onClick={copyLink} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-3 py-2.5 text-sm font-semibold text-gray-200 hover:bg-white/5"><Copy size={16} />Copiar</button>
+                  <button type="button" onClick={shareLink} className="inline-flex items-center justify-center gap-2 rounded-xl border border-purple-400/30 px-3 py-2.5 text-sm font-semibold text-purple-200 hover:bg-purple-500/10"><Share2 size={16} />Compartilhar</button>
+                </div>
+                <button type="button" onClick={revokeLink} disabled={busy} className="inline-flex items-center gap-2 text-sm text-red-300 hover:text-red-200 disabled:opacity-50"><Trash2 size={15} />Revogar link</button>
+              </div>
+            )}
+
+            {message && <p role="status" className="mt-4 flex items-start gap-2 text-sm text-purple-200"><Check size={15} className="mt-0.5 shrink-0" />{message}</p>}
+          </section>
         </div>
-        {!link && <button type="button" onClick={createLink} disabled={busy} className="inline-flex items-center justify-center gap-2 rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-700 disabled:opacity-50"><Link2 size={17} />{busy ? 'Criando...' : 'Criar link'}</button>}
-      </div>
-      {link && <div className="mt-4 space-y-3"><div className="flex flex-col gap-2 sm:flex-row"><input readOnly value={link} aria-label="Link da coleção compartilhada" className="min-w-0 flex-1 rounded-xl border border-white/10 bg-gray-950/70 px-3 py-2.5 text-sm text-gray-300 outline-none" /><button type="button" onClick={copyLink} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-3 py-2.5 text-sm font-semibold text-gray-200 hover:bg-white/5"><Copy size={16} />Copiar</button><button type="button" onClick={shareLink} className="inline-flex items-center justify-center gap-2 rounded-xl border border-purple-400/30 px-3 py-2.5 text-sm font-semibold text-purple-200 hover:bg-purple-500/10"><Share2 size={16} />Compartilhar</button></div><button type="button" onClick={revokeLink} disabled={busy} className="inline-flex items-center gap-2 text-sm text-red-300 hover:text-red-200 disabled:opacity-50"><Trash2 size={15} />Revogar link</button></div>}
-      {message && <p role="status" className="mt-3 inline-flex items-center gap-2 text-sm text-purple-200"><Check size={15} />{message}</p>}
-    </section>
+      )}
+    </>
   )
 }
