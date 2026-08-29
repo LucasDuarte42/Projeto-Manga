@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { ArrowLeft, BookOpen, Check, Clock3, Library, Star, UserRound } from 'lucide-react'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import ProfileHighlightsSelector from '@/components/ProfileHighlightsSelector'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,6 +22,11 @@ function formatDate(date: Date) {
 export default async function ProfilePage() {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) redirect('/login')
+
+  const profile = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { featuredMangaIds: true },
+  })
 
   const mangas = await prisma.manga.findMany({
     where: { userId: session.user.id },
@@ -42,9 +48,14 @@ export default async function ProfilePage() {
     },
   })
 
-  const topWorks = [...mangas]
+  const fallbackTopWorks = [...mangas]
     .sort((a, b) => (b.note ?? -1) - (a.note ?? -1) || b.updatedAt.getTime() - a.updatedAt.getTime())
     .slice(0, 3)
+  const selectedTopWorks = (profile?.featuredMangaIds ?? [])
+    .map((id) => mangas.find((manga) => manga.id === id))
+    .filter((manga): manga is (typeof mangas)[number] => Boolean(manga))
+  const topWorks = selectedTopWorks.length > 0 ? selectedTopWorks : fallbackTopWorks
+  const wishlist = mangas.filter((manga) => manga.status === 'WANT_TO_READ')
   const totalOwned = mangas.reduce((total, manga) => total + manga.ownedVolumes.length, 0)
   const totalRead = mangas.reduce((total, manga) => total + manga.readChapters.length, 0)
   const reading = mangas.filter((manga) => manga.status === 'READING').length
@@ -75,7 +86,6 @@ export default async function ProfilePage() {
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-purple-400">Perfil do colecionador</p>
                 <h1 className="mt-1 text-2xl font-bold sm:text-3xl">{displayName}</h1>
-                <p className="mt-1 text-sm text-gray-400">{session.user.email}</p>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-3 sm:min-w-[330px]">
@@ -92,10 +102,14 @@ export default async function ProfilePage() {
               <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">Destaques</p><h2 className="mt-1 text-2xl font-bold">Top 3 obras</h2></div>
               <span className="text-sm text-gray-500">{reading} em andamento</span>
             </div>
+            <ProfileHighlightsSelector options={mangas.map((manga) => ({ id: manga.id, name: manga.name, coverUrl: manga.coverUrl }))} initialSelected={profile?.featuredMangaIds ?? []} />
             {topWorks.length === 0 ? <EmptyState text="Adicione obras para montar seus destaques." /> : <div className="grid gap-4 sm:grid-cols-3">{topWorks.map((manga, index) => <WorkCard key={manga.id} manga={manga} rank={index + 1} />)}</div>}
 
             <div className="mb-4 mt-10 flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">Acervo</p><h2 className="mt-1 text-2xl font-bold">Minha coleção</h2></div><Link href="/mangas" className="text-sm font-medium text-purple-400 hover:text-purple-300">Ver detalhes</Link></div>
             {mangas.length === 0 ? <EmptyState text="Sua coleção ainda está vazia." /> : <div className="grid gap-3 sm:grid-cols-2">{mangas.map((manga) => <CollectionRow key={manga.id} manga={manga} />)}</div>}
+
+            <div className="mb-4 mt-10 flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">Planejamento</p><h2 className="mt-1 text-2xl font-bold">Lista de desejos</h2></div><span className="text-sm text-gray-500">{wishlist.length} {wishlist.length === 1 ? 'obra' : 'obras'}</span></div>
+            {wishlist.length === 0 ? <EmptyState text="As obras marcadas como 'Quero ler' aparecerão aqui." /> : <div className="grid gap-3 sm:grid-cols-2">{wishlist.map((manga) => <CollectionRow key={`wish-${manga.id}`} manga={manga} />)}</div>}
           </section>
 
           <aside className="h-fit rounded-3xl border border-white/10 bg-gray-900/50 p-5 sm:p-6">

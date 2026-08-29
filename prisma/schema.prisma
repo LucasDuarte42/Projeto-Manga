@@ -12,6 +12,7 @@ model User {
   email    String  @unique
   password String
   name     String?
+  featuredMangaIds String[] @default([])
 
   mangas              Manga[]
   passwordResetTokens PasswordResetToken[]

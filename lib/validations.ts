@@ -113,6 +113,11 @@ export const searchQuerySchema = z.object({
   q: z.string().trim().min(1, 'Query obrigatória').max(100, 'Query muito longa'),
 })
 
+export const featuredMangaSchema = z.object({
+  mangaIds: z.array(z.string().trim().min(1).max(50)).max(3, 'Escolha no máximo três obras')
+    .refine((ids) => new Set(ids).size === ids.length, 'Não repita obras nos destaques'),
+})
+
 export const mangaListQuerySchema = z.object({
   q: z.string().trim().max(100, 'Busca muito longa').optional().default(''),
   author: z.string().trim().max(100, 'Autor muito longo').optional().default(''),
