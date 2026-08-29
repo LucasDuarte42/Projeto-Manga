@@ -1099,11 +1099,12 @@ export default function MangaDetailPage() {
                       <button
                         key={statusKey}
                         type="button"
-                        onClick={() =>
-                          setMangaStatus(
-                            statusKey
-                          )
-                        }
+                        onClick={() => {
+                          setMangaStatus(statusKey)
+                          if (statusKey === 'WANT_TO_READ' && !manga.isInWishlist) {
+                            void handleWishlistToggle()
+                          }
+                        }}
                         className={`rounded-xl border px-3 py-2 text-xs font-medium transition ${
                           mangaStatus ===
                           statusKey
