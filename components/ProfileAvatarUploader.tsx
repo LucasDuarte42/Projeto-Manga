@@ -86,7 +86,7 @@ export default function ProfileAvatarUploader({ initialAvatarUrl }: { initialAva
   function getDragLimits(nextZoom = zoom) {
     if (!selectedImage || !cropAreaRef.current) return { x: 0, y: 0 }
     const size = cropAreaRef.current.clientWidth
-    const baseScale = Math.max(size / selectedImage.width, size / selectedImage.height)
+    const baseScale = Math.min(size / selectedImage.width, size / selectedImage.height)
     return {
       x: Math.max(0, (selectedImage.width * baseScale * nextZoom - size) / 2),
       y: Math.max(0, (selectedImage.height * baseScale * nextZoom - size) / 2),
@@ -134,8 +134,9 @@ export default function ProfileAvatarUploader({ initialAvatarUrl }: { initialAva
     const shortestSide = Math.min(selectedImage.width, selectedImage.height)
     const cropSize = shortestSide / zoom
     const previewSize = cropAreaRef.current?.clientWidth || 320
-    const sourceX = (selectedImage.width - cropSize) / 2 - (position.x / previewSize) * cropSize
-    const sourceY = (selectedImage.height - cropSize) / 2 - (position.y / previewSize) * cropSize
+    const baseScale = Math.min(previewSize / selectedImage.width, previewSize / selectedImage.height)
+    const sourceX = (selectedImage.width - cropSize) / 2 - position.x / (baseScale * zoom)
+    const sourceY = (selectedImage.height - cropSize) / 2 - position.y / (baseScale * zoom)
     context.imageSmoothingEnabled = true
     context.imageSmoothingQuality = 'high'
     context.drawImage(image, sourceX, sourceY, cropSize, cropSize, 0, 0, 512, 512)
@@ -219,9 +220,9 @@ export default function ProfileAvatarUploader({ initialAvatarUrl }: { initialAva
             </div>
 
             <div ref={cropAreaRef} className="relative mx-auto aspect-square w-full max-w-[320px] cursor-grab touch-none overflow-hidden rounded-3xl bg-gray-900 ring-1 ring-white/10 active:cursor-grabbing" onPointerDown={startDragging} onPointerMove={dragImage} onPointerUp={stopDragging} onPointerCancel={stopDragging}>
-              <div className="pointer-events-none absolute inset-0 z-10 rounded-3xl ring-2 ring-white/80 ring-offset-2 ring-offset-gray-900" />
-              <img src={selectedImage.dataUrl} alt="Prévia da foto selecionada" className="pointer-events-none h-full w-full select-none object-cover transition-transform duration-150" style={previewStyle} draggable={false} />
-              <span className="pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-[10px] text-white/80">Arraste para enquadrar</span>
+              <img src={selectedImage.dataUrl} alt="Prévia completa da foto selecionada" className="pointer-events-none h-full w-full select-none object-contain transition-transform duration-150" style={previewStyle} draggable={false} />
+              <div className="pointer-events-none absolute inset-0 z-10 rounded-3xl shadow-[0_0_0_9999px_rgba(0,0,0,0.48)] ring-2 ring-white/90 ring-offset-2 ring-offset-gray-900" />
+              <span className="pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2 rounded-full bg-black/65 px-3 py-1 text-[10px] text-white/90">Arraste a imagem para cortar</span>
             </div>
 
             <label className="mt-5 block text-xs font-medium text-gray-300" htmlFor="avatar-zoom">Zoom</label>
