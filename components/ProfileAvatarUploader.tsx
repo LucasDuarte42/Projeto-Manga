@@ -185,8 +185,18 @@ export default function ProfileAvatarUploader({ initialAvatarUrl }: { initialAva
   }
 
   const initials = ' '
+  const previewSize = cropAreaRef.current?.clientWidth || 320
+  const previewScale = selectedImage ? Math.min(previewSize / selectedImage.width, previewSize / selectedImage.height) : 1
   const previewStyle = selectedImage
-    ? { transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`, transformOrigin: 'center center' }
+    ? {
+        position: 'absolute' as const,
+        left: '50%',
+        top: '50%',
+        width: `${selectedImage.width * previewScale * zoom}px`,
+        height: `${selectedImage.height * previewScale * zoom}px`,
+        maxWidth: 'none',
+        transform: `translate(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px))`,
+      }
     : undefined
 
   return (
@@ -220,7 +230,7 @@ export default function ProfileAvatarUploader({ initialAvatarUrl }: { initialAva
             </div>
 
             <div ref={cropAreaRef} className="relative mx-auto aspect-square w-full max-w-[320px] cursor-grab touch-none overflow-hidden rounded-3xl bg-gray-900 ring-1 ring-white/10 active:cursor-grabbing" onPointerDown={startDragging} onPointerMove={dragImage} onPointerUp={stopDragging} onPointerCancel={stopDragging}>
-              <img src={selectedImage.dataUrl} alt="Prévia completa da foto selecionada" className="pointer-events-none h-full w-full select-none object-contain transition-transform duration-150" style={previewStyle} draggable={false} />
+              <img src={selectedImage.dataUrl} alt="Prévia completa da foto selecionada" className="pointer-events-none select-none transition-[width,height,transform] duration-150" style={previewStyle} draggable={false} />
               <div className="pointer-events-none absolute inset-0 z-10 rounded-3xl shadow-[0_0_0_9999px_rgba(0,0,0,0.48)] ring-2 ring-white/90 ring-offset-2 ring-offset-gray-900" />
               <span className="pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2 rounded-full bg-black/65 px-3 py-1 text-[10px] text-white/90">Arraste a imagem para cortar</span>
             </div>
