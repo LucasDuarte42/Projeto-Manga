@@ -91,7 +91,7 @@ const STATUS_CONFIG: Record<
   },
 
   WANT_TO_READ: {
-    label: 'Quero ler',
+    label: 'Lista de desejos',
     icon: Clock3,
     badge:
       'border-purple-500/20 bg-purple-500/10 text-purple-300',

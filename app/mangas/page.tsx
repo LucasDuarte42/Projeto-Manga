@@ -300,7 +300,7 @@ export default function MangasPage() {
       },
 
       WANT_TO_READ: {
-        label: 'Quero ler',
+        label: 'Lista de desejos',
         color:
           'bg-blue-500/10 text-blue-400 border-blue-500/20',
       },
@@ -343,7 +343,7 @@ export default function MangasPage() {
 
     {
       key: 'WANT_TO_READ',
-      label: 'Quero ler',
+      label: 'Lista de desejos',
       icon: Heart,
       count: mangas.filter(
         (m) => m.status === 'WANT_TO_READ'

@@ -141,7 +141,7 @@ export default function QuickEditModal({ manga, onClose, onSave }: Props) {
             >
               <option value="READING">Lendo</option>
               <option value="READ">Lido</option>
-              <option value="WANT_TO_READ">Quero Ler</option>
+              <option value="WANT_TO_READ">Lista de desejos</option>
             </select>
           </div>
 
