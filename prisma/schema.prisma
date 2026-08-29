@@ -77,6 +77,7 @@ model Manga {
   totalChapters  Int?
   readChapters   Int[]          @default([])
   status         MangaStatus    @default(WANT_TO_READ)
+  isInWishlist   Boolean        @default(false)
   collectionType CollectionType @default(MANGA)
   note           Float?         @map("rating")
   genre          String?

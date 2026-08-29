@@ -38,6 +38,7 @@ export default async function ProfilePage() {
       author: true,
       coverUrl: true,
       status: true,
+      isInWishlist: true,
       collectionType: true,
       volume: true,
       totalVolumes: true,
@@ -54,7 +55,7 @@ export default async function ProfilePage() {
     .filter((manga): manga is (typeof mangas)[number] => Boolean(manga))
   const hasSelectedTopWorks = selectedTopWorks.length > 0
   const topWorks = selectedTopWorks
-  const wishlist = mangas.filter((manga) => manga.status === 'WANT_TO_READ')
+  const wishlist = mangas.filter((manga) => manga.isInWishlist)
   const totalOwned = mangas.reduce((total, manga) => total + manga.ownedVolumes.length, 0)
   const totalRead = mangas.reduce((total, manga) => total + manga.readChapters.length, 0)
   const reading = mangas.filter((manga) => manga.status === 'READING').length
@@ -129,7 +130,7 @@ function WorkCard({ manga, rank }: { manga: { id: string; name: string; author: 
   return <Link href={`/mangas/${manga.id}`} className="group overflow-hidden rounded-2xl border border-white/10 bg-gray-900/60 transition hover:-translate-y-1 hover:border-purple-500/40"><div className="relative aspect-[3/4] bg-gray-800">{manga.coverUrl ? <Image src={manga.coverUrl} alt={`Capa de ${manga.name}`} fill sizes="(max-width: 640px) 33vw, 220px" className="object-cover transition duration-300 group-hover:scale-105" /> : <div className="flex h-full items-center justify-center text-sm text-gray-500">Sem capa</div>}<span className="absolute left-2 top-2 rounded-lg bg-gray-950/80 px-2 py-1 text-xs font-bold text-purple-300">#{rank}</span></div><div className="p-3"><h3 className="truncate font-semibold text-white">{manga.name}</h3><p className="mt-1 truncate text-xs text-gray-500">{manga.author || 'Autor não informado'}</p><div className="mt-3 flex items-center justify-between text-xs"><span className="text-gray-400">{manga.ownedVolumes.length}{manga.totalVolumes ? `/${manga.totalVolumes}` : ''} vol.</span>{manga.note !== null && <span className="flex items-center gap-1 text-amber-300"><Star size={12} fill="currentColor" />{manga.note.toFixed(1)}</span>}</div></div></Link>
 }
 
-function CollectionRow({ manga }: { manga: { id: string; name: string; coverUrl: string | null; status: string; collectionType: string; ownedVolumes: number[]; totalVolumes: number | null; updatedAt: Date } }) {
+function CollectionRow({ manga }: { manga: { id: string; name: string; coverUrl: string | null; status: string; isInWishlist: boolean; collectionType: string; ownedVolumes: number[]; totalVolumes: number | null; updatedAt: Date } }) {
   const progress = manga.totalVolumes ? Math.min(100, Math.round((manga.ownedVolumes.length / manga.totalVolumes) * 100)) : null
   return <Link href={`/mangas/${manga.id}`} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-gray-900/40 p-3 transition hover:border-purple-500/30 hover:bg-gray-900/70"><div className="relative h-14 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-800">{manga.coverUrl ? <Image src={manga.coverUrl} alt="" fill sizes="40px" className="object-cover" /> : null}</div><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><h3 className="truncate text-sm font-semibold text-white">{manga.name}</h3><span className="shrink-0 text-[11px] text-purple-300">{manga.collectionType === 'HQ' ? 'HQ' : 'Mangá'}</span></div><p className="mt-1 text-xs text-gray-500">{statusLabel(manga.status)} · {manga.ownedVolumes.length}{manga.totalVolumes ? `/${manga.totalVolumes}` : ''} volumes</p>{progress !== null && <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-800"><div className="h-full rounded-full bg-purple-500" style={{ width: `${progress}%` }} /></div>}</div></Link>
 }
