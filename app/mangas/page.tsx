@@ -40,6 +40,7 @@ interface Manga {
   ownedVolumes: number[]
   status: 'READ' | 'READING' | 'WANT_TO_READ'
   isInWishlist: boolean
+  isFavorite: boolean
   note?: number | null
   coverUrl?: string | null
   genre?: string | null
@@ -203,16 +204,16 @@ export default function MangasPage() {
     fetchMangas()
   }
 
-  async function handleWishlistToggle(manga: Manga) {
-    const isInWishlist = !manga.isInWishlist
+  async function handleFavoriteToggle(manga: Manga) {
+    const isFavorite = !manga.isFavorite
     try {
       const response = await fetch(`/api/mangas/${manga.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...manga, isInWishlist }),
+        body: JSON.stringify({ isFavorite }),
       })
       if (!response.ok) throw new Error('Não foi possível atualizar os favoritos.')
-      setMangas((current) => current.map((item) => item.id === manga.id ? { ...item, isInWishlist } : item))
+      setMangas((current) => current.map((item) => item.id === manga.id ? { ...item, isFavorite } : item))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao atualizar os favoritos.')
     }
@@ -764,13 +765,13 @@ export default function MangasPage() {
                     onClick={(e) => {
                       e.preventDefault()
                       e.stopPropagation()
-                      void handleWishlistToggle(manga)
+                      void handleFavoriteToggle(manga)
                     }}
-                    className={`absolute left-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-black/60 backdrop-blur-md transition hover:bg-purple-600 ${manga.isInWishlist ? 'text-purple-300 opacity-100' : 'text-white opacity-0 group-hover:opacity-100'}`}
-                    title={manga.isInWishlist ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
-                    aria-label={manga.isInWishlist ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+                    className={`absolute left-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-black/60 backdrop-blur-md transition hover:bg-purple-600 ${manga.isFavorite ? 'text-purple-300 opacity-100' : 'text-white opacity-0 group-hover:opacity-100'}`}
+                    title={manga.isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+                    aria-label={manga.isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
                   >
-                    <Heart size={15} fill={manga.isInWishlist ? 'currentColor' : 'none'} />
+                    <Heart size={15} fill={manga.isFavorite ? 'currentColor' : 'none'} />
                   </button>
                   {/* Edit */}
                   <button

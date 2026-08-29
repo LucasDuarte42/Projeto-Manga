@@ -67,6 +67,7 @@ export const mangaCreateSchema = z.object({
   totalChapters: positiveInt.nullable().optional(),
   status: z.enum(['READ', 'READING', 'WANT_TO_READ']).optional().default('WANT_TO_READ'),
   isInWishlist: z.boolean().optional().default(false),
+  isFavorite: z.boolean().optional().default(false),
   note: z.number().min(0).max(10).nullable().optional(),
   genre: optionalText(100),
   collectionType: z.enum(['MANGA', 'HQ']).optional().default('MANGA'),
@@ -83,6 +84,7 @@ export const mangaUpdateSchema = z.object({
   ownedVolumes: z.array(z.number().int().min(1).max(100000)).max(10000).optional(),
   status: z.enum(['READ', 'READING', 'WANT_TO_READ']).optional(),
   isInWishlist: z.boolean().optional(),
+  isFavorite: z.boolean().optional(),
   note: z.number().min(0).max(10).nullable().optional(),
   genre: optionalText(100),
 })

@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
 
-  const { name, author, coverUrl, volume, totalVolumes, status, isInWishlist, note, genre, collectionType } = parsed.data
+  const { name, author, coverUrl, volume, totalVolumes, status, isInWishlist, isFavorite, note, genre, collectionType } = parsed.data
   const existing = await prisma.manga.findUnique({
     where: { userId_name_volume: { userId: session.user.id, name, volume: volume ?? 1 } },
   })
@@ -103,6 +103,7 @@ export async function POST(req: NextRequest) {
       totalVolumes: totalVolumes ?? null,
       status: status ?? 'WANT_TO_READ',
       isInWishlist: isInWishlist ?? false,
+      isFavorite: isFavorite ?? false,
       note: note ?? null,
       genre: genre ?? null,
       collectionType: collectionType ?? 'MANGA',
