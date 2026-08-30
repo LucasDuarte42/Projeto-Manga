@@ -16,6 +16,7 @@ model User {
   featuredMangaIds String[] @default([])
 
   mangas              Manga[]
+  mangaRequests       MangaRequest[]
   passwordResetTokens PasswordResetToken[]
   collectionShares    CollectionShare[]
 
@@ -60,6 +61,12 @@ enum MangaStatus {
   WANT_TO_READ
 }
 
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum VolumeStatus {
   MISSING
   OWNED
@@ -95,6 +102,22 @@ model Manga {
   updatedAt DateTime @updatedAt
 
   @@unique([userId, name, volume])
+}
+
+model MangaRequest {
+  id             String         @id @default(cuid())
+  title          String
+  author         String?
+  totalVolumes   Int?
+  collectionType CollectionType @default(MANGA)
+  coverUrl       String?
+  status         RequestStatus  @default(PENDING)
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([userId, status])
 }
 
 model MangaVolume {

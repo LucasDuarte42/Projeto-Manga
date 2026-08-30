@@ -48,6 +48,16 @@ interface Manga {
   createdAt: string
 }
 
+interface MangaRequest {
+  id: string
+  title: string
+  author: string | null
+  totalVolumes: number | null
+  collectionType: CollectionType
+  coverUrl: string | null
+  createdAt: string
+}
+
 interface MangaResult {
   mal_id: number
   title: string
@@ -84,6 +94,9 @@ export default function MangasPage() {
 
   const [showModal, setShowModal] = useState(false)
   const [editingManga, setEditingManga] = useState<Manga | null>(null)
+  const [requests, setRequests] = useState<MangaRequest[]>([])
+  const [requestCovers, setRequestCovers] = useState<Record<string, string>>({})
+  const [requestSaving, setRequestSaving] = useState<string | null>(null)
 
   const [showExportModal, setShowExportModal] = useState(false)
   const [exportContent, setExportContent] = useState('')
@@ -97,6 +110,7 @@ export default function MangasPage() {
   useEffect(() => {
     if (status === 'authenticated') {
       fetchMangas()
+      fetchRequests()
     }
   }, [status, page, search, filterStatus, authorFilter, genreFilter, collectionTypeFilter, progressFilter, volumesFilter, sortOrder])
 
@@ -172,34 +186,45 @@ export default function MangasPage() {
     fetchMangas()
   }
 
-  async function handleAddManual(form: any) {
-    const res = await fetch('/api/mangas', {
+    async function fetchRequests() {
+    const res = await fetch('/api/manga-requests')
+    if (res.ok) setRequests(await res.json())
+  }
+
+  async function handleAddManual(form: { title: string; author: string; volumes: string; type: CollectionType }) {
+    const res = await fetch('/api/manga-requests', {
       method: 'POST',
-
-      headers: {
-        'Content-Type': 'application/json',
-      },
-
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name: form.title,
+        title: form.title,
         author: form.author || null,
-        coverUrl: form.image || null,
-        totalVolumes: form.volumes
-          ? parseInt(form.volumes)
-          : null,
-        volume: 1,
-        genre: form.genre || null,
+        totalVolumes: form.volumes ? parseInt(form.volumes, 10) : null,
         collectionType: form.type,
       }),
     })
+    if (!res.ok) throw new Error('Não foi possível enviar a solicitação.')
+    await fetchRequests()
+  }
 
-    if (res.status === 409) return
-
-    if (!res.ok) {
-      throw new Error('Erro ao adicionar')
+  async function handleConfirmRequest(request: MangaRequest) {
+    setRequestSaving(request.id)
+    setError(null)
+    try {
+      const res = await fetch(`/api/manga-requests/${request.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ coverUrl: requestCovers[request.id] || null }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Não foi possível confirmar a solicitação.')
+      setRequests((current) => current.filter((item) => item.id !== request.id))
+      setRequestCovers((current) => { const next = { ...current }; delete next[request.id]; return next })
+      await fetchMangas()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao confirmar a solicitação.')
+    } finally {
+      setRequestSaving(null)
     }
-
-    fetchMangas()
   }
 
   async function handleFavoriteToggle(manga: Manga) {
@@ -481,6 +506,32 @@ export default function MangasPage() {
             </h2>
 
           </div>
+
+          {requests.length > 0 && (
+            <section className="mb-8 rounded-2xl border border-amber-500/20 bg-amber-500/[0.05] p-4 sm:p-5" aria-labelledby="pending-requests-title">
+              <div className="mb-4">
+                <h2 id="pending-requests-title" className="text-base font-semibold text-amber-200">Solicitações aguardando revisão</h2>
+                <p className="mt-1 text-sm text-gray-400">Adicione a capa, revise os dados e confirme para incluir a obra no banco.</p>
+              </div>
+              <div className="space-y-3">
+                {requests.map((request) => (
+                  <div key={request.id} className="rounded-xl border border-white/10 bg-gray-950/60 p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-semibold text-white">{request.title}</p>
+                        <p className="mt-1 text-xs text-gray-500">{request.author || 'Autor não informado'} · {request.collectionType === 'MANGA' ? 'Mangá' : 'HQ'} · {request.totalVolumes ? `${request.totalVolumes} volumes` : 'Volumes não informados'}</p>
+                      </div>
+                      <label className="min-w-0 flex-1">
+                        <span className="mb-1 block text-xs font-medium text-gray-400">URL HTTPS da capa</span>
+                        <input type="url" value={requestCovers[request.id] || ''} onChange={(event) => setRequestCovers((current) => ({ ...current, [request.id]: event.target.value }))} placeholder="https://..." className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white outline-none focus:border-purple-500" required />
+                      </label>
+                      <button type="button" onClick={() => void handleConfirmRequest(request)} disabled={requestSaving === request.id || !requestCovers[request.id]?.trim()} className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-50">{requestSaving === request.id ? 'Confirmando...' : 'Confirmar obra'}</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Search */}
 

@@ -41,7 +41,7 @@ export const resetPasswordSchema = z.object({
 const optionalText = (max: number) =>
   z.string().trim().max(max).nullable().optional()
 
-const coverUrlSchema = z
+export const coverUrlSchema = z
   .string()
   .trim()
   .url('URL da capa inválida')
@@ -124,6 +124,13 @@ export const featuredMangaSchema = z.object({
 
 export const profileAvatarSchema = z.object({
   avatarUrl: z.string().regex(/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/, 'Formato de imagem inválido').max(700_000, 'A imagem deve ter no máximo 512 KB').nullable(),
+})
+
+export const mangaRequestSchema = z.object({
+  title: boundedText(200).min(1, 'Título obrigatório'),
+  author: optionalText(200),
+  totalVolumes: positiveInt.nullable().optional(),
+  collectionType: z.enum(['MANGA', 'HQ']).default('MANGA'),
 })
 
 export const mangaListQuerySchema = z.object({
