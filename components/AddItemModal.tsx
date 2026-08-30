@@ -20,8 +20,6 @@ interface ManualForm {
   title:   string
   author:  string
   volumes: string
-  genre:   string
-  image:   string
   type:    CollectionType
 }
 
@@ -48,7 +46,7 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
   const [error,   setError]   = useState<string | null>(null)
 
   const [manual, setManual] = useState<ManualForm>({
-    title: '', author: '', volumes: '', genre: '', image: '', type: 'MANGA'
+    title: '', author: '', volumes: '', type: 'MANGA'
   })
   const [savingManual, setSavingManual] = useState(false)
   const [manualSuccess, setManualSuccess] = useState(false)
@@ -116,7 +114,7 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
     try {
       await onAddManual(pendingManual)
       setManualSuccess(true)
-      setManual({ title: '', author: '', volumes: '', genre: '', image: '', type: 'MANGA' })
+      setManual({ title: '', author: '', volumes: '', type: 'MANGA' })
       setPendingManual(null)
       setReviewingManual(false)
       setTimeout(() => setManualSuccess(false), 3000)
@@ -266,13 +264,11 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
               </div>
               <div className="rounded-xl border border-gray-700 bg-gray-800/70 p-4">
                 <div className="flex gap-4">
-                  {pendingManual.image ? <img src={pendingManual.image} alt="Prévia da capa" className="h-32 w-20 rounded-lg object-cover" /> : <div className="flex h-32 w-20 items-center justify-center rounded-lg bg-gray-700 text-xs text-gray-500">Sem capa</div>}
                   <div className="min-w-0 flex-1 space-y-2">
                     <h3 className="text-lg font-bold text-white">{pendingManual.title}</h3>
                     <p className="text-sm text-gray-400">{pendingManual.author || 'Autor não informado'}</p>
                     <p className="text-xs text-purple-300">{pendingManual.type === 'MANGA' ? 'Mangá' : 'HQ'}</p>
                     <p className="text-xs text-gray-500">{pendingManual.volumes ? `${pendingManual.volumes} volumes` : 'Total de volumes não informado'}</p>
-                    {pendingManual.genre && <p className="text-xs text-gray-500">Gênero: {pendingManual.genre}</p>}
                   </div>
                 </div>
               </div>
@@ -313,16 +309,6 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
               />
             </div>
 
-            <div>
-              <label className="text-sm text-gray-400 mb-1 block">Gênero</label>
-              <input
-                type="text"
-                value={manual.genre}
-                onChange={e => setManual({ ...manual, genre: e.target.value })}
-                className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 border border-gray-700 focus:outline-none focus:border-purple-500"
-                placeholder="Ex: Ação, Super-herói, Drama..."
-              />
-            </div>
 
             <div>
               <label className="text-sm text-gray-400 mb-1 block">Total de Volumes</label>
@@ -336,24 +322,6 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
               />
             </div>
 
-            <div>
-              <label className="text-sm text-gray-400 mb-1 block">URL da Capa</label>
-              <input
-                type="url"
-                value={manual.image}
-                onChange={e => setManual({ ...manual, image: e.target.value })}
-                className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 border border-gray-700 focus:outline-none focus:border-purple-500"
-                placeholder="https://..."
-              />
-              {manual.image && (
-                <img
-                  src={manual.image}
-                  alt="Preview"
-                  className="mt-2 h-24 rounded-lg object-cover"
-                  onError={e => (e.currentTarget.style.display = 'none')}
-                />
-              )}
-            </div>
 
             {error && <p className="text-red-400 text-sm">{error}</p>}
 
