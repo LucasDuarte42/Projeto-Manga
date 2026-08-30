@@ -38,6 +38,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   try {
     const manga = await prisma.$transaction(async (tx) => {
+      const normalizedName = editedRequest.title.trim().toLocaleLowerCase('pt-BR')
+      const catalog = await tx.catalogManga.upsert({
+        where: { normalizedName_collectionType: { normalizedName, collectionType: editedRequest.collectionType } },
+        update: { author: editedRequest.author, coverUrl: parsedCover.data, totalVolumes: editedRequest.totalVolumes },
+        create: { name: editedRequest.title, normalizedName, author: editedRequest.author, coverUrl: parsedCover.data, totalVolumes: editedRequest.totalVolumes, collectionType: editedRequest.collectionType },
+      })
       const created = await tx.manga.create({
         data: {
           name: editedRequest.title,
@@ -50,6 +56,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
           isFavorite: false,
           collectionType: editedRequest.collectionType,
           userId: request.userId,
+          catalogId: catalog.id,
         },
       })
       await tx.mangaRequest.update({ where: { id: request.id }, data: { coverUrl: parsedCover.data, status: 'APPROVED' } })

@@ -94,21 +94,45 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Manga já está na coleção' }, { status: 409 })
   }
 
-  const manga = await prisma.manga.create({
-    data: {
-      name,
-      author: author ?? null,
-      coverUrl: coverUrl ?? null,
-      volume: volume ?? 1,
-      totalVolumes: totalVolumes ?? null,
-      status: status ?? null,
-      isInWishlist: isInWishlist ?? false,
-      isFavorite: isFavorite ?? false,
-      note: note ?? null,
-      genre: genre ?? null,
-      collectionType: collectionType ?? 'MANGA',
-      userId: session.user.id,
-    },
+  const selectedType = collectionType ?? 'MANGA'
+  const normalizedName = name.trim().toLocaleLowerCase('pt-BR')
+  const manga = await prisma.$transaction(async (tx) => {
+    const catalog = await tx.catalogManga.upsert({
+      where: { normalizedName_collectionType: { normalizedName, collectionType: selectedType } },
+      update: {
+        author: author ?? undefined,
+        coverUrl: coverUrl ?? undefined,
+        totalVolumes: totalVolumes ?? undefined,
+        genre: genre ?? undefined,
+      },
+      create: {
+        name,
+        normalizedName,
+        author: author ?? null,
+        coverUrl: coverUrl ?? null,
+        totalVolumes: totalVolumes ?? null,
+        genre: genre ?? null,
+        collectionType: selectedType,
+      },
+    })
+
+    return tx.manga.create({
+      data: {
+        name,
+        author: author ?? null,
+        coverUrl: coverUrl ?? null,
+        volume: volume ?? 1,
+        totalVolumes: totalVolumes ?? null,
+        status: status ?? null,
+        isInWishlist: isInWishlist ?? false,
+        isFavorite: isFavorite ?? false,
+        note: note ?? null,
+        genre: genre ?? null,
+        collectionType: selectedType,
+        userId: session.user.id,
+        catalogId: catalog.id,
+      },
+    })
   })
 
   return NextResponse.json(manga, { status: 201 })

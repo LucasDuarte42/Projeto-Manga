@@ -74,6 +74,24 @@ enum VolumeStatus {
   LOANED
 }
 
+model CatalogManga {
+  id             String         @id @default(cuid())
+  name           String
+  normalizedName  String
+  author         String?
+  totalVolumes   Int?
+  totalChapters  Int?
+  genre          String?
+  coverUrl       String?
+  collectionType CollectionType @default(MANGA)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  mangas         Manga[]
+
+  @@unique([normalizedName, collectionType])
+  @@index([name])
+}
+
 model Manga {
   id             String         @id @default(cuid())
   name           String
@@ -92,7 +110,9 @@ model Manga {
   coverUrl       String?
 
   userId String
+  catalogId String?
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  catalog CatalogManga? @relation(fields: [catalogId], references: [id], onDelete: SetNull)
 
   volumeRatings  VolumeRating[]
   chapterRatings ChapterRating[]
@@ -102,6 +122,7 @@ model Manga {
   updatedAt DateTime @updatedAt
 
   @@unique([userId, name, volume])
+  @@index([catalogId])
 }
 
 model MangaRequest {

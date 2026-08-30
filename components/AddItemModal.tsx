@@ -72,7 +72,7 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
     try {
       const encodedQuery = encodeURIComponent(searchTerm.trim())
       const [localResult, externalResult] = await Promise.allSettled([
-        fetch(`/api/mangas?q=${encodedQuery}&collectionType=ALL&pageSize=50`),
+        fetch(`/api/catalog/mangas?q=${encodedQuery}&collectionType=${type}`),
         fetch(`${endpoint}?q=${encodedQuery}`),
       ])
 
@@ -81,18 +81,7 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
 
       if (localResult.status === 'fulfilled' && localResult.value.ok) {
         const localData = await localResult.value.json()
-        localItems = (localData.items ?? []).map((item: any) => ({
-          mal_id: `local-${item.id}`,
-          title: item.name,
-          image: item.coverUrl ?? null,
-          volumes: item.totalVolumes ?? null,
-          status: item.status ?? '',
-          score: item.note ?? null,
-          genre: item.genre ?? null,
-          author: item.author ?? null,
-          inCollection: true,
-          collectionType: item.collectionType,
-        }))
+        localItems = localData.items ?? []
       }
 
       if (externalResult.status === 'fulfilled' && externalResult.value.ok) {
