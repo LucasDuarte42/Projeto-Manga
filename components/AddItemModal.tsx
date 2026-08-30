@@ -52,6 +52,8 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
   })
   const [savingManual, setSavingManual] = useState(false)
   const [manualSuccess, setManualSuccess] = useState(false)
+  const [reviewingManual, setReviewingManual] = useState(false)
+  const [pendingManual, setPendingManual] = useState<ManualForm | null>(null)
 
   const currentTypeInfo = COLLECTION_TYPES.find(t => t.value === type)
 
@@ -99,17 +101,27 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
     }
   }
 
-  async function handleManualSubmit(e: React.FormEvent) {
+  function handleManualSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!manual.title) return
+    if (!manual.title.trim()) return
+    setError(null)
+    setPendingManual({ ...manual, title: manual.title.trim() })
+    setReviewingManual(true)
+  }
+
+  async function handleConfirmManual() {
+    if (!pendingManual) return
     setSavingManual(true)
+    setError(null)
     try {
-      await onAddManual(manual)
+      await onAddManual(pendingManual)
       setManualSuccess(true)
       setManual({ title: '', author: '', volumes: '', genre: '', image: '', type: 'MANGA' })
+      setPendingManual(null)
+      setReviewingManual(false)
       setTimeout(() => setManualSuccess(false), 3000)
     } catch {
-      setError('Erro ao adicionar.')
+      setError('Não foi possível enviar a solicitação para a coleção.')
     } finally {
       setSavingManual(false)
     }
@@ -166,7 +178,7 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
                 : 'text-gray-400 hover:text-white'
             }`}
           >
-            ✏️ Adicionar Manualmente
+            ✉️ Solicitar adição de obra
           </button>
         </div>
 
@@ -246,10 +258,35 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
 
         {/* Aba manual */}
         {tab === 'manual' && (
+          reviewingManual && pendingManual ? (
+            <div className="flex flex-col gap-5 overflow-y-auto">
+              <div className="rounded-xl border border-purple-500/30 bg-purple-950/20 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-purple-300">Solicitação pronta para confirmação</p>
+                <p className="mt-1 text-sm text-gray-400">Confira os dados abaixo antes de incluir esta obra na sua coleção.</p>
+              </div>
+              <div className="rounded-xl border border-gray-700 bg-gray-800/70 p-4">
+                <div className="flex gap-4">
+                  {pendingManual.image ? <img src={pendingManual.image} alt="Prévia da capa" className="h-32 w-20 rounded-lg object-cover" /> : <div className="flex h-32 w-20 items-center justify-center rounded-lg bg-gray-700 text-xs text-gray-500">Sem capa</div>}
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <h3 className="text-lg font-bold text-white">{pendingManual.title}</h3>
+                    <p className="text-sm text-gray-400">{pendingManual.author || 'Autor não informado'}</p>
+                    <p className="text-xs text-purple-300">{pendingManual.type === 'MANGA' ? 'Mangá' : 'HQ'}</p>
+                    <p className="text-xs text-gray-500">{pendingManual.volumes ? `${pendingManual.volumes} volumes` : 'Total de volumes não informado'}</p>
+                    {pendingManual.genre && <p className="text-xs text-gray-500">Gênero: {pendingManual.genre}</p>}
+                  </div>
+                </div>
+              </div>
+              {error && <p className="text-sm text-red-400">{error}</p>}
+              <div className="flex gap-3">
+                <button type="button" onClick={() => { setReviewingManual(false); setError(null) }} className="flex-1 rounded-lg border border-gray-700 px-4 py-3 text-sm font-semibold text-gray-300 transition hover:border-gray-500 hover:text-white">Voltar e editar</button>
+                <button type="button" onClick={() => void handleConfirmManual()} disabled={savingManual} className="flex-1 rounded-lg bg-purple-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-purple-500 disabled:opacity-50">{savingManual ? 'Enviando...' : 'Confirmar e adicionar'}</button>
+              </div>
+            </div>
+          ) : (
           <form onSubmit={handleManualSubmit} className="flex flex-col gap-4 overflow-y-auto">
             {manualSuccess && (
               <div className="bg-green-900 border border-green-700 text-green-200 text-sm px-4 py-3 rounded-lg">
-                ✓ Adicionado com sucesso!
+                ✓ Solicitação confirmada e obra adicionada!
               </div>
             )}
 
@@ -325,9 +362,10 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
               disabled={savingManual || !manual.title}
               className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-lg transition disabled:opacity-50"
             >
-              {savingManual ? 'Adicionando...' : 'Adicionar à Coleção'}
+              {savingManual ? 'Enviando solicitação...' : 'Enviar solicitação'}
             </button>
           </form>
+          )
         )}
       </div>
     </div>
