@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { mangaUpdateSchema } from '@/lib/validations'
 
 type MangaStatus = 'READ' | 'READING' | 'WANT_TO_READ'
+type NullableMangaStatus = MangaStatus | null
 
 interface UpdateMangaBody {
   name?: unknown
@@ -16,6 +17,7 @@ interface UpdateMangaBody {
   ownedVolumes?: unknown
   status?: unknown
   isInWishlist?: unknown
+  isFavorite?: unknown
   note?: unknown
   genre?: unknown
   coverUrl?: unknown
@@ -66,7 +68,7 @@ function parseOwnedVolumes(value: unknown): number[] {
     .sort((a, b) => a - b)
 }
 
-function parseStatus(value: unknown): MangaStatus {
+function parseStatus(value: unknown): NullableMangaStatus {
   if (
     value === 'READ' ||
     value === 'READING' ||
@@ -75,7 +77,7 @@ function parseStatus(value: unknown): MangaStatus {
     return value
   }
 
-  return 'WANT_TO_READ'
+  return null
 }
 
 export async function GET(
@@ -202,9 +204,9 @@ export async function PUT(
           ? Math.max(...ownedVolumes)
           : manga.volume
 
-    let status = parseStatus(
-      body.status ?? manga.status
-    )
+    const status: NullableMangaStatus = body.status === null
+      ? null
+      : parseStatus(body.status ?? manga.status)
 
     const name =
       typeof body.name === 'string' &&
@@ -241,6 +243,7 @@ export async function PUT(
         readChapters,
         status,
         isInWishlist: body.isInWishlist ?? manga.isInWishlist,
+        isFavorite: body.isFavorite ?? manga.isFavorite,
         note,
         genre,
         coverUrl,

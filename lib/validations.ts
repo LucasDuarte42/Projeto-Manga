@@ -41,7 +41,7 @@ export const resetPasswordSchema = z.object({
 const optionalText = (max: number) =>
   z.string().trim().max(max).nullable().optional()
 
-const coverUrlSchema = z
+export const coverUrlSchema = z
   .string()
   .trim()
   .url('URL da capa inválida')
@@ -65,8 +65,9 @@ export const mangaCreateSchema = z.object({
   volume: positiveInt.optional().default(1),
   totalVolumes: positiveInt.nullable().optional(),
   totalChapters: positiveInt.nullable().optional(),
-  status: z.enum(['READ', 'READING', 'WANT_TO_READ']).optional().default('WANT_TO_READ'),
+  status: z.enum(['READ', 'READING', 'WANT_TO_READ']).nullable().optional(),
   isInWishlist: z.boolean().optional().default(false),
+  isFavorite: z.boolean().optional().default(false),
   note: z.number().min(0).max(10).nullable().optional(),
   genre: optionalText(100),
   collectionType: z.enum(['MANGA', 'HQ']).optional().default('MANGA'),
@@ -81,8 +82,9 @@ export const mangaUpdateSchema = z.object({
   totalChapters: positiveInt.nullable().optional(),
   readChapters: z.array(z.number().int().min(1).max(100000)).max(100000).optional(),
   ownedVolumes: z.array(z.number().int().min(1).max(100000)).max(10000).optional(),
-  status: z.enum(['READ', 'READING', 'WANT_TO_READ']).optional(),
+  status: z.enum(['READ', 'READING', 'WANT_TO_READ']).nullable().optional(),
   isInWishlist: z.boolean().optional(),
+  isFavorite: z.boolean().optional(),
   note: z.number().min(0).max(10).nullable().optional(),
   genre: optionalText(100),
 })
@@ -122,6 +124,13 @@ export const featuredMangaSchema = z.object({
 
 export const profileAvatarSchema = z.object({
   avatarUrl: z.string().regex(/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/, 'Formato de imagem inválido').max(700_000, 'A imagem deve ter no máximo 512 KB').nullable(),
+})
+
+export const mangaRequestSchema = z.object({
+  title: boundedText(200).min(1, 'Título obrigatório'),
+  author: optionalText(200),
+  totalVolumes: positiveInt.nullable().optional(),
+  collectionType: z.enum(['MANGA', 'HQ']).default('MANGA'),
 })
 
 export const mangaListQuerySchema = z.object({

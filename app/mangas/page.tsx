@@ -38,8 +38,9 @@ interface Manga {
   volume: number
   totalVolumes?: number | null
   ownedVolumes: number[]
-  status: 'READ' | 'READING' | 'WANT_TO_READ'
+  status: 'READ' | 'READING' | 'WANT_TO_READ' | null
   isInWishlist: boolean
+  isFavorite: boolean
   note?: number | null
   coverUrl?: string | null
   genre?: string | null
@@ -47,8 +48,19 @@ interface Manga {
   createdAt: string
 }
 
+interface MangaRequest {
+  id: string
+  title: string
+  author: string | null
+  totalVolumes: number | null
+  collectionType: CollectionType
+  coverUrl: string | null
+  status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  createdAt: string
+}
+
 interface MangaResult {
-  mal_id: number
+  mal_id: number | string
   title: string
   image: string | null
   volumes: number | null
@@ -83,6 +95,7 @@ export default function MangasPage() {
 
   const [showModal, setShowModal] = useState(false)
   const [editingManga, setEditingManga] = useState<Manga | null>(null)
+  const [requests, setRequests] = useState<MangaRequest[]>([])
 
   const [showExportModal, setShowExportModal] = useState(false)
   const [exportContent, setExportContent] = useState('')
@@ -96,6 +109,7 @@ export default function MangasPage() {
   useEffect(() => {
     if (status === 'authenticated') {
       fetchMangas()
+      fetchRequests()
     }
   }, [status, page, search, filterStatus, authorFilter, genreFilter, collectionTypeFilter, progressFilter, volumesFilter, sortOrder])
 
@@ -157,7 +171,6 @@ export default function MangasPage() {
         coverUrl: manga.image,
         totalVolumes: manga.volumes,
         volume: 1,
-        status: 'WANT_TO_READ',
         genre: manga.genre,
         collectionType,
       }),
@@ -172,49 +185,39 @@ export default function MangasPage() {
     fetchMangas()
   }
 
-  async function handleAddManual(form: any) {
-    const res = await fetch('/api/mangas', {
+    async function fetchRequests() {
+    const res = await fetch('/api/manga-requests')
+    if (res.ok) setRequests(await res.json())
+  }
+
+  async function handleAddManual(form: { title: string; author: string; volumes: string; type: CollectionType }) {
+    const res = await fetch('/api/manga-requests', {
       method: 'POST',
-
-      headers: {
-        'Content-Type': 'application/json',
-      },
-
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name: form.title,
+        title: form.title,
         author: form.author || null,
-        coverUrl: form.image || null,
-        totalVolumes: form.volumes
-          ? parseInt(form.volumes)
-          : null,
-        volume: 1,
-        status: 'WANT_TO_READ',
-        genre: form.genre || null,
+        totalVolumes: form.volumes ? parseInt(form.volumes, 10) : null,
         collectionType: form.type,
       }),
     })
-
-    if (res.status === 409) return
-
-    if (!res.ok) {
-      throw new Error('Erro ao adicionar')
-    }
-
-    fetchMangas()
+    if (!res.ok) throw new Error('Não foi possível enviar a solicitação.')
+    await fetchRequests()
   }
 
-  async function handleWishlistToggle(manga: Manga) {
-    const isInWishlist = !manga.isInWishlist
+
+  async function handleFavoriteToggle(manga: Manga) {
+    const isFavorite = !manga.isFavorite
     try {
       const response = await fetch(`/api/mangas/${manga.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...manga, isInWishlist }),
+        body: JSON.stringify({ isFavorite }),
       })
-      if (!response.ok) throw new Error('Não foi possível atualizar a lista de desejos.')
-      setMangas((current) => current.map((item) => item.id === manga.id ? { ...item, isInWishlist } : item))
+      if (!response.ok) throw new Error('Não foi possível atualizar os favoritos.')
+      setMangas((current) => current.map((item) => item.id === manga.id ? { ...item, isFavorite } : item))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao atualizar a lista de desejos.')
+      setError(err instanceof Error ? err.message : 'Erro ao atualizar os favoritos.')
     }
   }
 
@@ -279,7 +282,7 @@ export default function MangasPage() {
 
   const filteredMangas = mangas
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string | null) => {
     const map: Record<
       string,
       {
@@ -300,15 +303,15 @@ export default function MangasPage() {
       },
 
       WANT_TO_READ: {
-        label: 'Quero ler',
+        label: 'Lista de desejos',
         color:
           'bg-blue-500/10 text-blue-400 border-blue-500/20',
       },
     }
 
     return (
-      map[status] ?? {
-        label: status,
+      (status ? map[status] : undefined) ?? {
+        label: status || 'Sem status',
         color:
           'bg-gray-500/10 text-gray-400 border-gray-500/20',
       }
@@ -343,7 +346,7 @@ export default function MangasPage() {
 
     {
       key: 'WANT_TO_READ',
-      label: 'Quero ler',
+      label: 'Lista de desejos',
       icon: Heart,
       count: mangas.filter(
         (m) => m.status === 'WANT_TO_READ'
@@ -482,6 +485,22 @@ export default function MangasPage() {
             </h2>
 
           </div>
+
+          {requests.length > 0 && (
+            <section className="mb-8 rounded-2xl border border-white/10 bg-gray-900/50 p-4 sm:p-5" aria-labelledby="requests-title">
+              <div className="mb-4">
+                <h2 id="requests-title" className="text-base font-semibold text-white">Minhas solicitações</h2>
+                <p className="mt-1 text-sm text-gray-400">Acompanhe apenas o andamento das obras solicitadas.</p>
+              </div>
+              <div className="space-y-2">
+                {requests.map((request) => {
+                  const statusLabel = request.status === 'PENDING' ? 'Pendente' : request.status === 'APPROVED' ? 'Confirmada' : 'Rejeitada'
+                  const statusStyle = request.status === 'PENDING' ? 'bg-amber-500/15 text-amber-300' : request.status === 'APPROVED' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-red-500/15 text-red-300'
+                  return <div key={request.id} className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-gray-950/50 p-3"><div className="min-w-0"><p className="truncate text-sm font-semibold text-white">{request.title}</p><p className="mt-1 text-xs text-gray-500">Solicitada em {new Date(request.createdAt).toLocaleDateString('pt-BR')}</p></div><span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${statusStyle}`}>{statusLabel}</span></div>
+                })}
+              </div>
+            </section>
+          )}
 
           {/* Search */}
 
@@ -759,18 +778,18 @@ export default function MangasPage() {
                   className="group relative"
                 >
 
-                                    {/* Wishlist */}
+                  {/* Favoritos */}
                   <button
                     onClick={(e) => {
                       e.preventDefault()
                       e.stopPropagation()
-                      void handleWishlistToggle(manga)
+                      void handleFavoriteToggle(manga)
                     }}
-                    className={`absolute left-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-black/60 backdrop-blur-md transition hover:bg-purple-600 ${manga.isInWishlist ? 'text-purple-300 opacity-100' : 'text-white opacity-0 group-hover:opacity-100'}`}
-                    title={manga.isInWishlist ? 'Remover da lista de desejos' : 'Adicionar à lista de desejos'}
-                    aria-label={manga.isInWishlist ? 'Remover da lista de desejos' : 'Adicionar à lista de desejos'}
+                    className={`absolute left-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-black/60 backdrop-blur-md transition hover:bg-purple-600 ${manga.isFavorite ? 'text-purple-300 opacity-100' : 'text-white opacity-0 group-hover:opacity-100'}`}
+                    title={manga.isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+                    aria-label={manga.isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
                   >
-                    <Heart size={15} fill={manga.isInWishlist ? 'currentColor' : 'none'} />
+                    <Heart size={15} fill={manga.isFavorite ? 'currentColor' : 'none'} />
                   </button>
                   {/* Edit */}
                   <button
@@ -820,6 +839,12 @@ export default function MangasPage() {
                         {/* Gradient */}
 
                         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/80 to-transparent" />
+
+                        {manga.isInWishlist && (
+                          <span className="absolute left-3 top-14 rounded-full border border-purple-300/30 bg-purple-950/85 px-2.5 py-1 text-[10px] font-semibold text-purple-200 shadow-lg backdrop-blur-md">
+                            Lista de desejos
+                          </span>
+                        )}
 
                         {/* Status */}
 

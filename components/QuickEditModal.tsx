@@ -9,7 +9,7 @@ interface Manga {
   volume:       number
   totalVolumes?: number | null
   ownedVolumes:  number[]
-  status:       'READ' | 'READING' | 'WANT_TO_READ'
+  status:       'READ' | 'READING' | 'WANT_TO_READ' | null
   note?:        number | null
 }
 
@@ -135,13 +135,13 @@ export default function QuickEditModal({ manga, onClose, onSave }: Props) {
           <div>
             <label className="text-xs text-gray-400 mb-1 block">Status</label>
             <select
-              value={status}
+              value={status ?? ''}
               onChange={e => setStatus(e.target.value as any)}
               className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 border border-gray-700 focus:border-purple-500 outline-none"
             >
               <option value="READING">Lendo</option>
               <option value="READ">Lido</option>
-              <option value="WANT_TO_READ">Quero Ler</option>
+              <option value="WANT_TO_READ">Lista de desejos</option>
             </select>
           </div>
 

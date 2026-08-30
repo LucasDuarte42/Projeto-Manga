@@ -10,10 +10,11 @@ import ProfileAvatarUploader from '@/components/ProfileAvatarUploader'
 
 export const dynamic = 'force-dynamic'
 
-function statusLabel(status: string) {
+function statusLabel(status: string | null) {
   if (status === 'READ') return 'Lido'
   if (status === 'READING') return 'Lendo'
-  return 'Quero ler'
+  if (status === 'WANT_TO_READ') return 'Lista de desejos'
+  return 'Sem status'
 }
 
 function formatDate(date: Date) {
@@ -109,7 +110,7 @@ export default async function ProfilePage() {
             {mangas.length === 0 ? <EmptyState text="Sua coleção ainda está vazia." /> : <div className="grid gap-3 sm:grid-cols-2">{mangas.map((manga) => <CollectionRow key={manga.id} manga={manga} />)}</div>}
 
             <div className="mb-4 mt-10 flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-400">Planejamento</p><h2 className="mt-1 text-2xl font-bold">Lista de desejos</h2></div><span className="text-sm text-gray-500">{wishlist.length} {wishlist.length === 1 ? 'obra' : 'obras'}</span></div>
-            {wishlist.length === 0 ? <EmptyState text="As obras marcadas como 'Quero ler' aparecerão aqui." /> : <div className="grid gap-3 sm:grid-cols-2">{wishlist.map((manga) => <CollectionRow key={`wish-${manga.id}`} manga={manga} />)}</div>}
+            {wishlist.length === 0 ? <EmptyState text="As obras marcadas como 'Lista de desejos' aparecerão aqui." /> : <div className="grid gap-3 sm:grid-cols-2">{wishlist.map((manga) => <CollectionRow key={`wish-${manga.id}`} manga={manga} showMissingVolumes />)}</div>}
           </section>
 
           <aside className="h-fit rounded-3xl border border-white/10 bg-gray-900/50 p-5 sm:p-6">
@@ -126,13 +127,20 @@ function ProfileStat({ icon, value, label }: { icon: React.ReactNode; value: num
   return <div className="rounded-2xl border border-white/10 bg-black/20 p-3 text-center"><div className="mx-auto flex w-fit text-purple-400">{icon}</div><p className="mt-1 text-xl font-bold text-white">{value}</p><p className="text-[11px] text-gray-500">{label}</p></div>
 }
 
-function WorkCard({ manga, rank }: { manga: { id: string; name: string; author: string | null; coverUrl: string | null; note: number | null; status: string; totalVolumes: number | null; ownedVolumes: number[] }; rank: number }) {
+function WorkCard({ manga, rank }: { manga: { id: string; name: string; author: string | null; coverUrl: string | null; note: number | null; status: string | null; totalVolumes: number | null; ownedVolumes: number[] }; rank: number }) {
   return <Link href={`/mangas/${manga.id}`} className="group overflow-hidden rounded-2xl border border-white/10 bg-gray-900/60 transition hover:-translate-y-1 hover:border-purple-500/40"><div className="relative aspect-[3/4] bg-gray-800">{manga.coverUrl ? <Image src={manga.coverUrl} alt={`Capa de ${manga.name}`} fill sizes="(max-width: 640px) 33vw, 220px" className="object-cover transition duration-300 group-hover:scale-105" /> : <div className="flex h-full items-center justify-center text-sm text-gray-500">Sem capa</div>}<span className="absolute left-2 top-2 rounded-lg bg-gray-950/80 px-2 py-1 text-xs font-bold text-purple-300">#{rank}</span></div><div className="p-3"><h3 className="truncate font-semibold text-white">{manga.name}</h3><p className="mt-1 truncate text-xs text-gray-500">{manga.author || 'Autor não informado'}</p><div className="mt-3 flex items-center justify-between text-xs"><span className="text-gray-400">{manga.ownedVolumes.length}{manga.totalVolumes ? `/${manga.totalVolumes}` : ''} vol.</span>{manga.note !== null && <span className="flex items-center gap-1 text-amber-300"><Star size={12} fill="currentColor" />{manga.note.toFixed(1)}</span>}</div></div></Link>
 }
 
-function CollectionRow({ manga }: { manga: { id: string; name: string; coverUrl: string | null; status: string; isInWishlist: boolean; collectionType: string; ownedVolumes: number[]; totalVolumes: number | null; updatedAt: Date } }) {
+function getMissingVolumes(totalVolumes: number | null, ownedVolumes: number[]) {
+  if (!totalVolumes || totalVolumes < 1) return null
+  const owned = new Set(ownedVolumes.filter((volume) => Number.isInteger(volume) && volume > 0))
+  return Array.from({ length: totalVolumes }, (_, index) => index + 1).filter((volume) => !owned.has(volume))
+}
+
+function CollectionRow({ manga, showMissingVolumes = false }: { manga: { id: string; name: string; coverUrl: string | null; status: string | null; isInWishlist: boolean; collectionType: string; ownedVolumes: number[]; totalVolumes: number | null; updatedAt: Date }; showMissingVolumes?: boolean }) {
   const progress = manga.totalVolumes ? Math.min(100, Math.round((manga.ownedVolumes.length / manga.totalVolumes) * 100)) : null
-  return <Link href={`/mangas/${manga.id}`} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-gray-900/40 p-3 transition hover:border-purple-500/30 hover:bg-gray-900/70"><div className="relative h-14 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-800">{manga.coverUrl ? <Image src={manga.coverUrl} alt="" fill sizes="40px" className="object-cover" /> : null}</div><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><h3 className="truncate text-sm font-semibold text-white">{manga.name}</h3><span className="shrink-0 text-[11px] text-purple-300">{manga.collectionType === 'HQ' ? 'HQ' : 'Mangá'}</span></div><p className="mt-1 text-xs text-gray-500">{statusLabel(manga.status)} · {manga.ownedVolumes.length}{manga.totalVolumes ? `/${manga.totalVolumes}` : ''} volumes</p>{progress !== null && <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-800"><div className="h-full rounded-full bg-purple-500" style={{ width: `${progress}%` }} /></div>}</div></Link>
+  const missingVolumes = showMissingVolumes ? getMissingVolumes(manga.totalVolumes, manga.ownedVolumes) : null
+  return <div className="rounded-2xl border border-white/10 bg-gray-900/40 p-3 transition hover:border-purple-500/30 hover:bg-gray-900/70"><Link href={`/mangas/${manga.id}`} className="flex items-center gap-3"><div className="relative h-14 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-800">{manga.coverUrl ? <Image src={manga.coverUrl} alt="" fill sizes="40px" className="object-cover" /> : null}</div><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><h3 className="truncate text-sm font-semibold text-white">{manga.name}</h3><span className="shrink-0 text-[11px] text-purple-300">{manga.collectionType === 'HQ' ? 'HQ' : 'Mangá'}</span></div><p className="mt-1 text-xs text-gray-500">{statusLabel(manga.status)} · {manga.ownedVolumes.length}{manga.totalVolumes ? `/${manga.totalVolumes}` : ''} volumes</p>{progress !== null && <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-800"><div className="h-full rounded-full bg-purple-500" style={{ width: `${progress}%` }} /></div>}</div></Link>{showMissingVolumes && <div className="mt-2 border-t border-white/5 pt-2">{missingVolumes === null ? <p className="text-[11px] text-gray-500">Total de volumes não informado</p> : missingVolumes.length === 0 ? <p className="text-[11px] text-emerald-300">Coleção completa</p> : <details><summary className="cursor-pointer list-none text-[11px] font-medium text-amber-300">Faltam {missingVolumes.length} {missingVolumes.length === 1 ? 'volume' : 'volumes'}</summary><p className="mt-1 text-[11px] leading-5 text-gray-400">Volumes: {missingVolumes.join(', ')}</p></details>}</div>}</div>
 }
 
 function EmptyState({ text }: { text: string }) { return <div className="rounded-2xl border border-dashed border-gray-800 bg-gray-900/20 p-8 text-center text-sm text-gray-500">{text}</div> }

@@ -74,7 +74,7 @@ export default async function SharedCollectionPage({ params }: { params: { token
                     {missingVolumes.length > 0 && <p className="mt-1 text-xs leading-5 text-amber-300">Faltantes: {missingVolumes.join(', ')}</p>}
                     {manga.totalVolumes && missingVolumes.length === 0 && <p className="mt-1 text-xs text-emerald-300">Coleção completa</p>}
                     {chapterProgress && <p className="mt-1 text-xs text-gray-400">{chapterProgress}</p>}
-                    <p className="mt-1 text-xs text-gray-500">{manga.status === 'READ' ? 'Lido' : manga.status === 'READING' ? 'Lendo' : 'Quero ler'}</p>
+                    <p className="mt-1 text-xs text-gray-500">{manga.status === 'READ' ? 'Lido' : manga.status === 'READING' ? 'Lendo' : 'Lista de desejos'}</p>
                   </div>
                 </article>
               )
