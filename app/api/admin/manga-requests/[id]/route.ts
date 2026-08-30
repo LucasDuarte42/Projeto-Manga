@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { forbiddenAdminResponse, requireAdminSession } from '@/lib/admin'
-import { coverUrlSchema } from '@/lib/validations'
+import { coverUrlSchema, mangaRequestSchema } from '@/lib/validations'
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await requireAdminSession()
@@ -14,6 +14,19 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const body = await req.json()
   const action = body.action === 'APPROVE' || body.action === 'REJECT' ? body.action : null
   if (!action) return NextResponse.json({ error: 'Ação inválida.' }, { status: 400 })
+
+  const parsedRequest = mangaRequestSchema.safeParse({
+    title: body.title ?? request.title,
+    author: body.author === undefined ? request.author : body.author,
+    totalVolumes: body.totalVolumes === undefined ? request.totalVolumes : body.totalVolumes,
+    collectionType: body.collectionType ?? request.collectionType,
+  })
+  if (!parsedRequest.success) return NextResponse.json({ error: parsedRequest.error.issues[0].message }, { status: 400 })
+
+  const editedRequest = await prisma.mangaRequest.update({
+    where: { id: request.id },
+    data: { ...parsedRequest.data, author: parsedRequest.data.author ?? null, totalVolumes: parsedRequest.data.totalVolumes ?? null },
+  })
 
   if (action === 'REJECT') {
     const updated = await prisma.mangaRequest.update({ where: { id: request.id }, data: { status: 'REJECTED' } })
@@ -27,15 +40,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const manga = await prisma.$transaction(async (tx) => {
       const created = await tx.manga.create({
         data: {
-          name: request.title,
-          author: request.author,
+          name: editedRequest.title,
+          author: editedRequest.author,
           coverUrl: parsedCover.data,
-          totalVolumes: request.totalVolumes,
+          totalVolumes: editedRequest.totalVolumes,
           volume: 1,
           status: null,
           isInWishlist: false,
           isFavorite: false,
-          collectionType: request.collectionType,
+          collectionType: editedRequest.collectionType,
           userId: request.userId,
         },
       })

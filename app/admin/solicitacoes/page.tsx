@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react'
 
 type RequestStatus = 'PENDING' | 'REJECTED'
 
+type RequestDraft = { title: string; author: string; totalVolumes: string; collectionType: 'MANGA' | 'HQ' }
+
 type MangaRequest = {
   id: string
   title: string
@@ -20,6 +22,7 @@ export default function AdminRequestsPage() {
   const [requests, setRequests] = useState<MangaRequest[]>([])
   const [filter, setFilter] = useState<'ALL' | RequestStatus>('ALL')
   const [covers, setCovers] = useState<Record<string, string>>({})
+  const [drafts, setDrafts] = useState<Record<string, RequestDraft>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -34,6 +37,7 @@ export default function AdminRequestsPage() {
       if (!response.ok) throw new Error(data.error || 'Não foi possível carregar as solicitações.')
       setRequests(data)
       setCovers((current) => Object.fromEntries(data.map((request: MangaRequest) => [request.id, current[request.id] || request.coverUrl || ''])))
+      setDrafts((current) => Object.fromEntries(data.map((request: MangaRequest) => [request.id, current[request.id] || { title: request.title, author: request.author || '', totalVolumes: request.totalVolumes?.toString() || '', collectionType: request.collectionType }])))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao carregar solicitações.')
     } finally {
@@ -51,7 +55,7 @@ export default function AdminRequestsPage() {
       const response = await fetch(`/api/admin/manga-requests/${request.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, coverUrl: covers[request.id] || null }),
+        body: JSON.stringify({ ...drafts[request.id], totalVolumes: drafts[request.id]?.totalVolumes ? Number(drafts[request.id].totalVolumes) : null, action, coverUrl: covers[request.id] || null }),
       })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Não foi possível atualizar a solicitação.')
@@ -97,10 +101,10 @@ export default function AdminRequestsPage() {
             <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
               <div>
                 <div className="flex flex-wrap items-center gap-2"><h2 className="text-xl font-semibold">{request.title}</h2><span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${request.status === 'PENDING' ? 'bg-amber-500/15 text-amber-300' : 'bg-red-500/15 text-red-300'}`}>{request.status === 'PENDING' ? 'Pendente' : 'Rejeitada'}</span></div>
-                <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2"><div><dt className="text-xs text-gray-500">Autor</dt><dd className="text-gray-200">{request.author || 'Não informado'}</dd></div><div><dt className="text-xs text-gray-500">Tipo</dt><dd className="text-gray-200">{request.collectionType === 'MANGA' ? 'Mangá' : 'HQ'}</dd></div><div><dt className="text-xs text-gray-500">Volumes</dt><dd className="text-gray-200">{request.totalVolumes ?? 'Não informado'}</dd></div><div><dt className="text-xs text-gray-500">Solicitante</dt><dd className="truncate text-gray-200">{request.user.name || request.user.email}<span className="block text-xs text-gray-500">{request.user.email}</span></dd></div></dl>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2"><label className="sm:col-span-2"><span className="mb-1 block text-xs text-gray-500">Título</span><input value={drafts[request.id]?.title || ''} onChange={(event) => setDrafts((current) => ({ ...current, [request.id]: { ...current[request.id], title: event.target.value } }))} className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white outline-none focus:border-purple-500" /></label><label><span className="mb-1 block text-xs text-gray-500">Autor</span><input value={drafts[request.id]?.author || ''} onChange={(event) => setDrafts((current) => ({ ...current, [request.id]: { ...current[request.id], author: event.target.value } }))} className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white outline-none focus:border-purple-500" /></label><label><span className="mb-1 block text-xs text-gray-500">Total de volumes</span><input type="number" min="1" value={drafts[request.id]?.totalVolumes || ''} onChange={(event) => setDrafts((current) => ({ ...current, [request.id]: { ...current[request.id], totalVolumes: event.target.value } }))} className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white outline-none focus:border-purple-500" /></label><label><span className="mb-1 block text-xs text-gray-500">Tipo</span><select value={drafts[request.id]?.collectionType || request.collectionType} onChange={(event) => setDrafts((current) => ({ ...current, [request.id]: { ...current[request.id], collectionType: event.target.value as 'MANGA' | 'HQ' } }))} className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white outline-none focus:border-purple-500"><option value="MANGA">Mangá</option><option value="HQ">HQ</option></select></label><div><p className="text-xs text-gray-500">Solicitante</p><p className="mt-1 truncate text-sm text-gray-200">{request.user.name || request.user.email}</p><p className="text-xs text-gray-500">{request.user.email}</p></div></div>
                 <p className="mt-4 text-xs text-gray-500">Enviada em {new Date(request.createdAt).toLocaleString('pt-BR')}</p>
               </div>
-              <div className="space-y-3"><label className="block"><span className="mb-1 block text-xs font-medium text-gray-400">URL HTTPS da capa</span><input type="url" value={covers[request.id] || ''} onChange={(event) => setCovers((current) => ({ ...current, [request.id]: event.target.value }))} placeholder="https://..." className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2.5 text-sm text-white outline-none focus:border-purple-500" /></label><div className="flex gap-2"><button type="button" onClick={() => void updateRequest(request, 'REJECT')} disabled={saving === request.id} className="flex-1 rounded-lg border border-red-500/30 px-3 py-2.5 text-sm font-semibold text-red-300 transition hover:bg-red-500/10 disabled:opacity-50">Rejeitar</button><button type="button" onClick={() => void updateRequest(request, 'APPROVE')} disabled={saving === request.id || !covers[request.id]?.trim()} className="flex-1 rounded-lg bg-purple-600 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-500 disabled:opacity-50">{saving === request.id ? 'Salvando...' : 'Aprovar e incluir'}</button></div></div>
+              <div className="space-y-3"><label className="block"><span className="mb-1 block text-xs font-medium text-gray-400">URL HTTPS da capa</span><input aria-label="URL HTTPS da capa" type="url" value={covers[request.id] || ''} onChange={(event) => setCovers((current) => ({ ...current, [request.id]: event.target.value }))} placeholder="https://..." className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2.5 text-sm text-white outline-none focus:border-purple-500" /></label><div className="flex gap-2"><button type="button" onClick={() => void updateRequest(request, 'REJECT')} disabled={saving === request.id} className="flex-1 rounded-lg border border-red-500/30 px-3 py-2.5 text-sm font-semibold text-red-300 transition hover:bg-red-500/10 disabled:opacity-50">Rejeitar</button><button type="button" onClick={() => void updateRequest(request, 'APPROVE')} disabled={saving === request.id || !covers[request.id]?.trim()} className="flex-1 rounded-lg bg-purple-600 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-500 disabled:opacity-50">{saving === request.id ? 'Salvando...' : 'Aprovar e incluir'}</button></div></div>
             </div>
           </article>
         ))}</div>}

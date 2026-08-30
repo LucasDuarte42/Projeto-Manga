@@ -55,6 +55,7 @@ interface MangaRequest {
   totalVolumes: number | null
   collectionType: CollectionType
   coverUrl: string | null
+  status: 'PENDING' | 'APPROVED' | 'REJECTED'
   createdAt: string
 }
 
@@ -95,8 +96,6 @@ export default function MangasPage() {
   const [showModal, setShowModal] = useState(false)
   const [editingManga, setEditingManga] = useState<Manga | null>(null)
   const [requests, setRequests] = useState<MangaRequest[]>([])
-  const [requestCovers, setRequestCovers] = useState<Record<string, string>>({})
-  const [requestSaving, setRequestSaving] = useState<string | null>(null)
 
   const [showExportModal, setShowExportModal] = useState(false)
   const [exportContent, setExportContent] = useState('')
@@ -206,26 +205,6 @@ export default function MangasPage() {
     await fetchRequests()
   }
 
-  async function handleConfirmRequest(request: MangaRequest) {
-    setRequestSaving(request.id)
-    setError(null)
-    try {
-      const res = await fetch(`/api/manga-requests/${request.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ coverUrl: requestCovers[request.id] || null }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Não foi possível confirmar a solicitação.')
-      setRequests((current) => current.filter((item) => item.id !== request.id))
-      setRequestCovers((current) => { const next = { ...current }; delete next[request.id]; return next })
-      await fetchMangas()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao confirmar a solicitação.')
-    } finally {
-      setRequestSaving(null)
-    }
-  }
 
   async function handleFavoriteToggle(manga: Manga) {
     const isFavorite = !manga.isFavorite
@@ -508,27 +487,17 @@ export default function MangasPage() {
           </div>
 
           {requests.length > 0 && (
-            <section className="mb-8 rounded-2xl border border-amber-500/20 bg-amber-500/[0.05] p-4 sm:p-5" aria-labelledby="pending-requests-title">
+            <section className="mb-8 rounded-2xl border border-white/10 bg-gray-900/50 p-4 sm:p-5" aria-labelledby="requests-title">
               <div className="mb-4">
-                <h2 id="pending-requests-title" className="text-base font-semibold text-amber-200">Solicitações aguardando revisão</h2>
-                <p className="mt-1 text-sm text-gray-400">Adicione a capa, revise os dados e confirme para incluir a obra no banco.</p>
+                <h2 id="requests-title" className="text-base font-semibold text-white">Minhas solicitações</h2>
+                <p className="mt-1 text-sm text-gray-400">Acompanhe apenas o andamento das obras solicitadas.</p>
               </div>
-              <div className="space-y-3">
-                {requests.map((request) => (
-                  <div key={request.id} className="rounded-xl border border-white/10 bg-gray-950/60 p-4">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate font-semibold text-white">{request.title}</p>
-                        <p className="mt-1 text-xs text-gray-500">{request.author || 'Autor não informado'} · {request.collectionType === 'MANGA' ? 'Mangá' : 'HQ'} · {request.totalVolumes ? `${request.totalVolumes} volumes` : 'Volumes não informados'}</p>
-                      </div>
-                      <label className="min-w-0 flex-1">
-                        <span className="mb-1 block text-xs font-medium text-gray-400">URL HTTPS da capa</span>
-                        <input type="url" value={requestCovers[request.id] || ''} onChange={(event) => setRequestCovers((current) => ({ ...current, [request.id]: event.target.value }))} placeholder="https://..." className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white outline-none focus:border-purple-500" required />
-                      </label>
-                      <button type="button" onClick={() => void handleConfirmRequest(request)} disabled={requestSaving === request.id || !requestCovers[request.id]?.trim()} className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-50">{requestSaving === request.id ? 'Confirmando...' : 'Confirmar obra'}</button>
-                    </div>
-                  </div>
-                ))}
+              <div className="space-y-2">
+                {requests.map((request) => {
+                  const statusLabel = request.status === 'PENDING' ? 'Pendente' : request.status === 'APPROVED' ? 'Confirmada' : 'Rejeitada'
+                  const statusStyle = request.status === 'PENDING' ? 'bg-amber-500/15 text-amber-300' : request.status === 'APPROVED' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-red-500/15 text-red-300'
+                  return <div key={request.id} className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-gray-950/50 p-3"><div className="min-w-0"><p className="truncate text-sm font-semibold text-white">{request.title}</p><p className="mt-1 text-xs text-gray-500">Solicitada em {new Date(request.createdAt).toLocaleDateString('pt-BR')}</p></div><span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${statusStyle}`}>{statusLabel}</span></div>
+                })}
               </div>
             </section>
           )}
