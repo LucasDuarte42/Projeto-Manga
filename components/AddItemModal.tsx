@@ -15,6 +15,7 @@ interface ItemResult {
   genre:   string | null
   author:  string | null
   inCollection?: boolean
+  collectionType?: CollectionType
 }
 
 interface ManualForm {
@@ -71,7 +72,7 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
     try {
       const encodedQuery = encodeURIComponent(searchTerm.trim())
       const [localResult, externalResult] = await Promise.allSettled([
-        fetch(`/api/mangas?q=${encodedQuery}&collectionType=${type}&pageSize=50`),
+        fetch(`/api/mangas?q=${encodedQuery}&collectionType=ALL&pageSize=50`),
         fetch(`${endpoint}?q=${encodedQuery}`),
       ])
 
@@ -90,6 +91,7 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
           genre: item.genre ?? null,
           author: item.author ?? null,
           inCollection: true,
+          collectionType: item.collectionType,
         }))
       }
 
