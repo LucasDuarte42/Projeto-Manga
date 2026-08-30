@@ -6,7 +6,7 @@ import { useDebouncedValue } from '@/lib/useDebouncedValue'
 type CollectionType = 'MANGA' | 'HQ'
 
 interface ItemResult {
-  mal_id:  number
+  mal_id:  number | string
   title:   string
   image:   string | null
   volumes: number | null
@@ -14,14 +14,14 @@ interface ItemResult {
   score:   number | null
   genre:   string | null
   author:  string | null
+  inCollection?: boolean
+  collectionType?: CollectionType
 }
 
 interface ManualForm {
   title:   string
   author:  string
   volumes: string
-  genre:   string
-  image:   string
   type:    CollectionType
 }
 
@@ -43,15 +43,17 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
   const debouncedQuery = useDebouncedValue(query)
   const [results, setResults] = useState<ItemResult[]>([])
   const [loading, setLoading] = useState(false)
-  const [adding,  setAdding]  = useState<number | null>(null)
-  const [added,   setAdded]   = useState<number[]>([])
+  const [adding,  setAdding]  = useState<number | string | null>(null)
+  const [added,   setAdded]   = useState<Array<number | string>>([])
   const [error,   setError]   = useState<string | null>(null)
 
   const [manual, setManual] = useState<ManualForm>({
-    title: '', author: '', volumes: '', genre: '', image: '', type: 'MANGA'
+    title: '', author: '', volumes: '', type: 'MANGA'
   })
   const [savingManual, setSavingManual] = useState(false)
   const [manualSuccess, setManualSuccess] = useState(false)
+  const [reviewingManual, setReviewingManual] = useState(false)
+  const [pendingManual, setPendingManual] = useState<ManualForm | null>(null)
 
   const currentTypeInfo = COLLECTION_TYPES.find(t => t.value === type)
 
@@ -68,12 +70,40 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
     const endpoint = isManga ? '/api/manga/search' : '/api/comic/search'
     
     try {
-      const res  = await fetch(`${endpoint}?q=${encodeURIComponent(searchTerm.trim())}`)
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
-      
-      // Padroniza os resultados (mangas ou comics)
-      setResults(isManga ? data.mangas : data.comics)
+      const encodedQuery = encodeURIComponent(searchTerm.trim())
+      const [localResult, externalResult] = await Promise.allSettled([
+        fetch(`/api/mangas?q=${encodedQuery}&collectionType=ALL&pageSize=50`),
+        fetch(`${endpoint}?q=${encodedQuery}`),
+      ])
+
+      let localItems: ItemResult[] = []
+      let externalItems: ItemResult[] = []
+
+      if (localResult.status === 'fulfilled' && localResult.value.ok) {
+        const localData = await localResult.value.json()
+        localItems = (localData.items ?? []).map((item: any) => ({
+          mal_id: `local-${item.id}`,
+          title: item.name,
+          image: item.coverUrl ?? null,
+          volumes: item.totalVolumes ?? null,
+          status: item.status ?? '',
+          score: item.note ?? null,
+          genre: item.genre ?? null,
+          author: item.author ?? null,
+          inCollection: true,
+          collectionType: item.collectionType,
+        }))
+      }
+
+      if (externalResult.status === 'fulfilled' && externalResult.value.ok) {
+        const externalData = await externalResult.value.json()
+        externalItems = isManga ? externalData.mangas : externalData.comics
+      }
+
+      const localTitles = new Set(localItems.map((item) => item.title.trim().toLowerCase()))
+      const uniqueExternalItems = externalItems.filter((item) => !localTitles.has(item.title.trim().toLowerCase()))
+      if (localItems.length === 0 && uniqueExternalItems.length === 0) throw new Error('Nenhuma obra encontrada.')
+      setResults([...localItems, ...uniqueExternalItems])
     } catch (err: any) {
       setError(err.message || 'Erro ao buscar. Tente novamente.')
     } finally {
@@ -88,6 +118,7 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
   }, [debouncedQuery, tab, type])
 
   async function handleAdd(item: ItemResult) {
+    if (item.inCollection) return
     setAdding(item.mal_id)
     try {
       await onAdd(item, type)
@@ -99,17 +130,27 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
     }
   }
 
-  async function handleManualSubmit(e: React.FormEvent) {
+  function handleManualSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!manual.title) return
+    if (!manual.title.trim()) return
+    setError(null)
+    setPendingManual({ ...manual, title: manual.title.trim() })
+    setReviewingManual(true)
+  }
+
+  async function handleConfirmManual() {
+    if (!pendingManual) return
     setSavingManual(true)
+    setError(null)
     try {
-      await onAddManual(manual)
+      await onAddManual(pendingManual)
       setManualSuccess(true)
-      setManual({ title: '', author: '', volumes: '', genre: '', image: '', type: 'MANGA' })
+      setManual({ title: '', author: '', volumes: '', type: 'MANGA' })
+      setPendingManual(null)
+      setReviewingManual(false)
       setTimeout(() => setManualSuccess(false), 3000)
     } catch {
-      setError('Erro ao adicionar.')
+      setError('Não foi possível enviar a solicitação para a coleção.')
     } finally {
       setSavingManual(false)
     }
@@ -166,7 +207,7 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
                 : 'text-gray-400 hover:text-white'
             }`}
           >
-            ✏️ Adicionar Manualmente
+            ✉️ Solicitar adição de obra
           </button>
         </div>
 
@@ -235,7 +276,7 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
                           : 'bg-green-700 hover:bg-green-600 disabled:opacity-50'
                       }`}
                     >
-                      {isAdding ? '...' : isAdded ? '✓ Adicionado' : '+ Add'}
+                        {isAdding ? '...' : isAdded ? '✓ Adicionado' : item.inCollection ? 'Já na coleção' : '+ Add'}
                     </button>
                   </div>
                 )
@@ -246,10 +287,33 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
 
         {/* Aba manual */}
         {tab === 'manual' && (
+          reviewingManual && pendingManual ? (
+            <div className="flex flex-col gap-5 overflow-y-auto">
+              <div className="rounded-xl border border-purple-500/30 bg-purple-950/20 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-purple-300">Solicitação pronta para confirmação</p>
+                <p className="mt-1 text-sm text-gray-400">Confira os dados abaixo antes de incluir esta obra na sua coleção.</p>
+              </div>
+              <div className="rounded-xl border border-gray-700 bg-gray-800/70 p-4">
+                <div className="flex gap-4">
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <h3 className="text-lg font-bold text-white">{pendingManual.title}</h3>
+                    <p className="text-sm text-gray-400">{pendingManual.author || 'Autor não informado'}</p>
+                    <p className="text-xs text-purple-300">{pendingManual.type === 'MANGA' ? 'Mangá' : 'HQ'}</p>
+                    <p className="text-xs text-gray-500">{pendingManual.volumes ? `${pendingManual.volumes} volumes` : 'Total de volumes não informado'}</p>
+                  </div>
+                </div>
+              </div>
+              {error && <p className="text-sm text-red-400">{error}</p>}
+              <div className="flex gap-3">
+                <button type="button" onClick={() => { setReviewingManual(false); setError(null) }} className="flex-1 rounded-lg border border-gray-700 px-4 py-3 text-sm font-semibold text-gray-300 transition hover:border-gray-500 hover:text-white">Voltar e editar</button>
+                <button type="button" onClick={() => void handleConfirmManual()} disabled={savingManual} className="flex-1 rounded-lg bg-purple-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-purple-500 disabled:opacity-50">{savingManual ? 'Enviando...' : 'Confirmar e adicionar'}</button>
+              </div>
+            </div>
+          ) : (
           <form onSubmit={handleManualSubmit} className="flex flex-col gap-4 overflow-y-auto">
             {manualSuccess && (
               <div className="bg-green-900 border border-green-700 text-green-200 text-sm px-4 py-3 rounded-lg">
-                ✓ Adicionado com sucesso!
+                ✓ Solicitação confirmada e obra adicionada!
               </div>
             )}
 
@@ -276,16 +340,6 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
               />
             </div>
 
-            <div>
-              <label className="text-sm text-gray-400 mb-1 block">Gênero</label>
-              <input
-                type="text"
-                value={manual.genre}
-                onChange={e => setManual({ ...manual, genre: e.target.value })}
-                className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 border border-gray-700 focus:outline-none focus:border-purple-500"
-                placeholder="Ex: Ação, Super-herói, Drama..."
-              />
-            </div>
 
             <div>
               <label className="text-sm text-gray-400 mb-1 block">Total de Volumes</label>
@@ -299,24 +353,6 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
               />
             </div>
 
-            <div>
-              <label className="text-sm text-gray-400 mb-1 block">URL da Capa</label>
-              <input
-                type="url"
-                value={manual.image}
-                onChange={e => setManual({ ...manual, image: e.target.value })}
-                className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 border border-gray-700 focus:outline-none focus:border-purple-500"
-                placeholder="https://..."
-              />
-              {manual.image && (
-                <img
-                  src={manual.image}
-                  alt="Preview"
-                  className="mt-2 h-24 rounded-lg object-cover"
-                  onError={e => (e.currentTarget.style.display = 'none')}
-                />
-              )}
-            </div>
 
             {error && <p className="text-red-400 text-sm">{error}</p>}
 
@@ -325,9 +361,10 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
               disabled={savingManual || !manual.title}
               className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-lg transition disabled:opacity-50"
             >
-              {savingManual ? 'Adicionando...' : 'Adicionar à Coleção'}
+              {savingManual ? 'Enviando solicitação...' : 'Enviar solicitação'}
             </button>
           </form>
+          )
         )}
       </div>
     </div>

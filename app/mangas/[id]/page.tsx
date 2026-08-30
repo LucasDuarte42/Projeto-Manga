@@ -46,7 +46,8 @@ interface Manga {
   ownedVolumes: number[]
   totalChapters: number | null
   readChapters: number[]
-  status: MangaStatus
+  status: MangaStatus | null
+  isInWishlist: boolean
   note: number | null
   coverUrl: string | null
   genre: string | null
@@ -91,7 +92,7 @@ const STATUS_CONFIG: Record<
   },
 
   WANT_TO_READ: {
-    label: 'Quero ler',
+    label: 'Lista de desejos',
     icon: Clock3,
     badge:
       'border-purple-500/20 bg-purple-500/10 text-purple-300',
@@ -160,7 +161,7 @@ export default function MangaDetailPage() {
   const [activeTracker, setActiveTracker] = useState<'volumes' | 'chapters'>('volumes')
 
   const [mangaStatus, setMangaStatus] =
-    useState<MangaStatus>('WANT_TO_READ')
+    useState<MangaStatus | null>(null)
 
   const [note, setNote] = useState('')
 
@@ -268,7 +269,7 @@ export default function MangaDetailPage() {
     setSuccess(null)
 
     try {
-      const finalStatus: MangaStatus = mangaStatus
+      const finalStatus: MangaStatus | null = mangaStatus
 
       const total =
         totalVolumes !== ''
@@ -374,6 +375,27 @@ export default function MangaDetailPage() {
       )
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleWishlistToggle() {
+    if (!manga) return
+    const nextValue = !manga.isInWishlist
+    setError(null)
+    setSuccess(null)
+    try {
+      const response = await fetch(`/api/mangas/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isInWishlist: nextValue }),
+      })
+      if (!response.ok) throw new Error('Não foi possível atualizar a Lista de desejos.')
+      const updatedManga: Manga = await response.json()
+      setManga(updatedManga)
+      setSuccess(nextValue ? 'Obra adicionada à Lista de desejos.' : 'Obra removida da Lista de desejos.')
+      window.setTimeout(() => setSuccess(null), 3000)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao atualizar a Lista de desejos.')
     }
   }
 
@@ -607,8 +629,14 @@ export default function MangaDetailPage() {
     )
   }
 
-  const currentStatus =
-    STATUS_CONFIG[mangaStatus]
+  const currentStatus = mangaStatus
+    ? STATUS_CONFIG[mangaStatus]
+    : {
+        label: 'Sem status',
+        icon: Clock3,
+        badge: 'border-white/10 bg-white/[0.04] text-gray-400',
+        button: 'border-white/10 bg-white/[0.025] text-gray-500',
+      }
 
   const StatusIcon = currentStatus.icon
 
@@ -699,6 +727,11 @@ export default function MangaDetailPage() {
 
                 {currentStatus.label}
               </span>
+
+              <button type="button" onClick={() => void handleWishlistToggle()} disabled={saving} className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${manga.isInWishlist ? 'border-purple-400/40 bg-purple-500/15 text-purple-200' : 'border-white/10 bg-white/[0.03] text-gray-400 hover:border-purple-400/40 hover:text-purple-200'} disabled:cursor-not-allowed disabled:opacity-50`} aria-pressed={manga.isInWishlist}>
+                <Clock3 size={14} />
+                {manga.isInWishlist ? 'Na lista de desejos' : 'Adicionar à lista de desejos'}
+              </button>
 
               <span className="text-xs text-gray-500">
                 Adicionado em{' '}
@@ -1072,11 +1105,12 @@ export default function MangaDetailPage() {
                       <button
                         key={statusKey}
                         type="button"
-                        onClick={() =>
-                          setMangaStatus(
-                            statusKey
-                          )
-                        }
+                        onClick={() => {
+                          setMangaStatus(statusKey)
+                          if (statusKey === 'WANT_TO_READ' && !manga.isInWishlist) {
+                            void handleWishlistToggle()
+                          }
+                        }}
                         className={`rounded-xl border px-3 py-2 text-xs font-medium transition ${
                           mangaStatus ===
                           statusKey

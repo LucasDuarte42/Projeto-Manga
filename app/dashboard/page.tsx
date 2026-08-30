@@ -223,7 +223,7 @@ export default async function DashboardPage() {
           />
 
           <StatCard
-            label="Quero ler"
+            label="Lista de desejos"
             value={querLer}
             icon={<Heart size={20} />}
             iconClass="bg-blue-500/10 text-blue-400"
