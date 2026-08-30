@@ -60,7 +60,7 @@ interface MangaRequest {
 }
 
 interface MangaResult {
-  mal_id: number
+  mal_id: number | string
   title: string
   image: string | null
   volumes: number | null

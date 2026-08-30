@@ -6,7 +6,7 @@ import { useDebouncedValue } from '@/lib/useDebouncedValue'
 type CollectionType = 'MANGA' | 'HQ'
 
 interface ItemResult {
-  mal_id:  number
+  mal_id:  number | string
   title:   string
   image:   string | null
   volumes: number | null
@@ -14,6 +14,7 @@ interface ItemResult {
   score:   number | null
   genre:   string | null
   author:  string | null
+  inCollection?: boolean
 }
 
 interface ManualForm {
@@ -41,8 +42,8 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
   const debouncedQuery = useDebouncedValue(query)
   const [results, setResults] = useState<ItemResult[]>([])
   const [loading, setLoading] = useState(false)
-  const [adding,  setAdding]  = useState<number | null>(null)
-  const [added,   setAdded]   = useState<number[]>([])
+  const [adding,  setAdding]  = useState<number | string | null>(null)
+  const [added,   setAdded]   = useState<Array<number | string>>([])
   const [error,   setError]   = useState<string | null>(null)
 
   const [manual, setManual] = useState<ManualForm>({
@@ -68,12 +69,39 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
     const endpoint = isManga ? '/api/manga/search' : '/api/comic/search'
     
     try {
-      const res  = await fetch(`${endpoint}?q=${encodeURIComponent(searchTerm.trim())}`)
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
-      
-      // Padroniza os resultados (mangas ou comics)
-      setResults(isManga ? data.mangas : data.comics)
+      const encodedQuery = encodeURIComponent(searchTerm.trim())
+      const [localResult, externalResult] = await Promise.allSettled([
+        fetch(`/api/mangas?q=${encodedQuery}&collectionType=${type}&pageSize=50`),
+        fetch(`${endpoint}?q=${encodedQuery}`),
+      ])
+
+      let localItems: ItemResult[] = []
+      let externalItems: ItemResult[] = []
+
+      if (localResult.status === 'fulfilled' && localResult.value.ok) {
+        const localData = await localResult.value.json()
+        localItems = (localData.items ?? []).map((item: any) => ({
+          mal_id: `local-${item.id}`,
+          title: item.name,
+          image: item.coverUrl ?? null,
+          volumes: item.totalVolumes ?? null,
+          status: item.status ?? '',
+          score: item.note ?? null,
+          genre: item.genre ?? null,
+          author: item.author ?? null,
+          inCollection: true,
+        }))
+      }
+
+      if (externalResult.status === 'fulfilled' && externalResult.value.ok) {
+        const externalData = await externalResult.value.json()
+        externalItems = isManga ? externalData.mangas : externalData.comics
+      }
+
+      const localTitles = new Set(localItems.map((item) => item.title.trim().toLowerCase()))
+      const uniqueExternalItems = externalItems.filter((item) => !localTitles.has(item.title.trim().toLowerCase()))
+      if (localItems.length === 0 && uniqueExternalItems.length === 0) throw new Error('Nenhuma obra encontrada.')
+      setResults([...localItems, ...uniqueExternalItems])
     } catch (err: any) {
       setError(err.message || 'Erro ao buscar. Tente novamente.')
     } finally {
@@ -88,6 +116,7 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
   }, [debouncedQuery, tab, type])
 
   async function handleAdd(item: ItemResult) {
+    if (item.inCollection) return
     setAdding(item.mal_id)
     try {
       await onAdd(item, type)
@@ -245,7 +274,7 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
                           : 'bg-green-700 hover:bg-green-600 disabled:opacity-50'
                       }`}
                     >
-                      {isAdding ? '...' : isAdded ? '✓ Adicionado' : '+ Add'}
+                        {isAdding ? '...' : isAdded ? '✓ Adicionado' : item.inCollection ? 'Já na coleção' : '+ Add'}
                     </button>
                   </div>
                 )

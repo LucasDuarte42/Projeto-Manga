@@ -8,7 +8,7 @@ export async function GET() {
   if (!session?.user?.id) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
   const requests = await prisma.mangaRequest.findMany({
-    where: { userId: session.user.id },
+    where: { userId: session.user.id, status: 'PENDING' },
     orderBy: { createdAt: 'desc' },
   })
   return NextResponse.json(requests)
