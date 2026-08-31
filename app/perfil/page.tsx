@@ -79,7 +79,7 @@ export default async function ProfilePage() {
       </header>
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
-        <section className="relative overflow-hidden rounded-3xl border border-purple-500/20 bg-gradient-to-br from-purple-950/70 via-gray-900/80 to-gray-950 p-6 sm:p-8">
+        <section className="relative overflow-hidden rounded-3xl border border-purple-500/20 bg-gradient-to-br from-purple-950/70 via-gray-900/80 to-gray-950 p-4 sm:p-8">
           <div className="absolute -right-16 -top-24 h-64 w-64 rounded-full bg-purple-500/10 blur-3xl" />
           <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
@@ -113,7 +113,7 @@ export default async function ProfilePage() {
             {wishlist.length === 0 ? <EmptyState text="As obras marcadas como 'Lista de desejos' aparecerão aqui." /> : <div className="grid gap-3 sm:grid-cols-2">{wishlist.map((manga) => <CollectionRow key={`wish-${manga.id}`} manga={manga} showMissingVolumes />)}</div>}
           </section>
 
-          <aside className="h-fit rounded-3xl border border-white/10 bg-gray-900/50 p-5 sm:p-6">
+          <aside className="h-fit rounded-3xl border border-white/10 bg-gray-900/50 p-4 sm:p-6">
             <div className="flex items-center gap-2"><Clock3 size={18} className="text-purple-400" /><h2 className="font-semibold">Atividades recentes</h2></div>
             <div className="mt-5 space-y-5">{mangas.length === 0 ? <p className="text-sm text-gray-500">As atualizações da sua coleção aparecerão aqui.</p> : mangas.slice(0, 6).map((manga) => <div key={manga.id} className="flex gap-3"><div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-purple-500/10 text-purple-400"><BookOpen size={14} /></div><div className="min-w-0"><p className="text-sm leading-5 text-gray-300">Atualizou <span className="font-medium text-white">{manga.name}</span></p><p className="mt-1 text-xs text-gray-500">{statusLabel(manga.status)} · {formatDate(manga.updatedAt)}</p></div></div>)}</div>
           </aside>
