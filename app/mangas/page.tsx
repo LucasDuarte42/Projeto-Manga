@@ -18,6 +18,8 @@ import {
   ChevronDown,
   Download,
   SlidersHorizontal,
+  Menu,
+  X,
 } from 'lucide-react'
 
 import AddItemModal from '@/components/AddItemModal'
@@ -94,6 +96,7 @@ export default function MangasPage() {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
 
   const [showModal, setShowModal] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [editingManga, setEditingManga] = useState<Manga | null>(null)
   const [requests, setRequests] = useState<MangaRequest[]>([])
 
@@ -112,6 +115,18 @@ export default function MangasPage() {
       fetchRequests()
     }
   }, [status, page, search, filterStatus, authorFilter, genreFilter, collectionTypeFilter, progressFilter, volumesFilter, sortOrder])
+  useEffect(() => {
+    if (!mobileMenuOpen) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMobileMenuOpen(false)
+    }
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.body.style.overflow = ''
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [mobileMenuOpen])
 
   const fetchMangas = async () => {
     try {
@@ -418,7 +433,10 @@ export default function MangasPage() {
 
           </div>
 
-                    <div className="flex w-full max-w-full flex-wrap items-center justify-end gap-2 sm:w-auto sm:flex-nowrap sm:gap-3">
+                    <button type="button" onClick={() => setMobileMenuOpen(true)} aria-label="Abrir menu" aria-expanded={mobileMenuOpen} className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-800 bg-gray-900 text-gray-300 transition hover:border-purple-500/50 hover:text-white sm:hidden">
+            <Menu size={21} />
+          </button>
+          <div className="hidden w-auto max-w-full flex-wrap items-center justify-end gap-2 sm:flex sm:flex-nowrap sm:gap-3">
             <span className="hidden max-w-[180px] truncate text-sm text-gray-500 md:block">
               {session?.user?.name ||
                 session?.user?.email}
@@ -465,8 +483,25 @@ export default function MangasPage() {
 
         </div>
 
-      </header>
-
+            </header>
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 sm:hidden" role="dialog" aria-modal="true" aria-label="Menu da coleção">
+          <button type="button" aria-label="Fechar menu" onClick={() => setMobileMenuOpen(false)} className="absolute inset-0 bg-black/70" />
+          <aside className="absolute right-0 top-0 flex h-full w-[min(86vw,22rem)] max-w-[22rem] flex-col border-l border-white/10 bg-gray-950 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl shadow-black/50">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div><p className="text-xs font-semibold uppercase tracking-wider text-purple-400">Navegação</p><h2 className="mt-1 text-lg font-bold text-white">Minha coleção</h2></div>
+              <button type="button" onClick={() => setMobileMenuOpen(false)} aria-label="Fechar menu" className="flex h-10 w-10 items-center justify-center rounded-xl text-gray-400 transition hover:bg-white/10 hover:text-white"><X size={21} /></button>
+            </div>
+            <nav className="mt-4 flex flex-col gap-2" aria-label="Ações da coleção">
+              <button type="button" onClick={() => { setMobileMenuOpen(false); handleExportClick() }} disabled={totalItems === 0} className="flex min-h-12 items-center gap-3 rounded-xl px-3 text-left text-sm font-semibold text-gray-200 transition hover:bg-white/10 disabled:opacity-40"><Download size={18} className="text-purple-400" />Exportar coleção</button>
+              <Link href="/perfil" onClick={() => setMobileMenuOpen(false)} className="flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-gray-200 transition hover:bg-white/10"><span className="text-lg text-purple-400">◎</span>Meu perfil</Link>
+              <div className="flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-gray-200 transition hover:bg-white/10"><ShareCollectionLink /></div>
+              <button type="button" onClick={() => { setMobileMenuOpen(false); setShowModal(true) }} className="flex min-h-12 items-center gap-3 rounded-xl bg-purple-600 px-3 text-left text-sm font-semibold text-white transition hover:bg-purple-500"><Plus size={18} />Adicionar obra</button>
+              <div className="flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-gray-200 transition hover:bg-white/10"><LogoutButton /></div>
+            </nav>
+          </aside>
+        </div>
+      )}
       <main className="relative z-10 mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
 
         {/* Top */}
