@@ -23,6 +23,7 @@ import {
 import { Baloo_2, Inter } from 'next/font/google'
 import LogoutButton from '@/components/LogoutButton'
 import RatingShareCard from '@/components/RatingShareCard'
+import MangaReviews from '@/components/MangaReviews'
 
 const display = Baloo_2({
   subsets: ['latin'],
@@ -1307,6 +1308,8 @@ export default function MangaDetailPage() {
             mode="chapters"
           />
         )}
+
+        <MangaReviews mangaId={id} />
 
         {/* Save */}
         <button

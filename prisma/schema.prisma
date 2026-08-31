@@ -19,6 +19,8 @@ model User {
   mangaRequests       MangaRequest[]
   passwordResetTokens PasswordResetToken[]
   collectionShares    CollectionShare[]
+  reviews             MangaReview[]
+  reviewLikes        ReviewLike[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -117,12 +119,39 @@ model Manga {
   volumeRatings  VolumeRating[]
   chapterRatings ChapterRating[]
   volumes        MangaVolume[]
+  reviews        MangaReview[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([userId, name, volume])
   @@index([catalogId])
+}
+
+model MangaReview {
+  id              String       @id @default(cuid())
+  mangaId         String
+  userId          String
+  rating          Float?
+  body            String
+  containsSpoilers Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  manga           Manga        @relation(fields: [mangaId], references: [id], onDelete: Cascade)
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likes           ReviewLike[]
+  @@unique([mangaId, userId])
+  @@index([mangaId, createdAt])
+}
+
+model ReviewLike {
+  id        String      @id @default(cuid())
+  reviewId String
+  userId   String
+  createdAt DateTime    @default(now())
+  review   MangaReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([reviewId, userId])
 }
 
 model MangaRequest {
