@@ -433,9 +433,12 @@ export default function MangasPage() {
 
           </div>
 
-                    <button type="button" onClick={() => setMobileMenuOpen(true)} aria-label="Abrir menu" aria-expanded={mobileMenuOpen} className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-800 bg-gray-900 text-gray-300 transition hover:border-purple-500/50 hover:text-white sm:hidden">
-            <Menu size={21} />
-          </button>
+                    <div className="flex items-center gap-2 sm:hidden">
+            <button type="button" onClick={() => setShowModal(true)} aria-label="Adicionar obra" className="flex h-10 items-center gap-2 rounded-xl bg-purple-600 px-3 text-xs font-semibold text-white shadow-lg shadow-purple-900/20 transition hover:bg-purple-500"><Plus size={17} />Adicionar</button>
+            <button type="button" onClick={() => setMobileMenuOpen(true)} aria-label="Abrir menu" aria-expanded={mobileMenuOpen} className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-800 bg-gray-900 text-gray-300 transition hover:border-purple-500/50 hover:text-white">
+              <Menu size={21} />
+            </button>
+          </div>
           <div className="hidden w-auto max-w-full flex-wrap items-center justify-end gap-2 sm:flex sm:flex-nowrap sm:gap-3">
             <span className="hidden max-w-[180px] truncate text-sm text-gray-500 md:block">
               {session?.user?.name ||
@@ -496,7 +499,6 @@ export default function MangasPage() {
               <button type="button" onClick={() => { setMobileMenuOpen(false); handleExportClick() }} disabled={totalItems === 0} className="flex min-h-12 items-center gap-3 rounded-xl px-3 text-left text-sm font-semibold text-gray-200 transition hover:bg-white/10 disabled:opacity-40"><Download size={18} className="text-purple-400" />Exportar coleção</button>
               <Link href="/perfil" onClick={() => setMobileMenuOpen(false)} className="flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-gray-200 transition hover:bg-white/10"><span className="text-lg text-purple-400">◎</span>Meu perfil</Link>
               <div className="flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-gray-200 transition hover:bg-white/10"><ShareCollectionLink /></div>
-              <button type="button" onClick={() => { setMobileMenuOpen(false); setShowModal(true) }} className="flex min-h-12 items-center gap-3 rounded-xl bg-purple-600 px-3 text-left text-sm font-semibold text-white transition hover:bg-purple-500"><Plus size={18} />Adicionar obra</button>
               <div className="flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-gray-200 transition hover:bg-white/10"><LogoutButton /></div>
             </nav>
           </aside>
