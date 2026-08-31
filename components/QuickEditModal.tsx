@@ -77,11 +77,11 @@ export default function QuickEditModal({ manga, onClose, onSave }: Props) {
   const missing = getMissingVolumes()
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-md p-6 flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/80 p-0 sm:items-center sm:p-4">
+      <div className="flex max-h-[94vh] w-full max-w-md flex-col gap-4 overflow-y-auto rounded-t-2xl border border-gray-700 bg-gray-900 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:rounded-xl sm:p-6">
         <div className="flex justify-between items-center">
           <h2 className="text-white font-bold">Edição Rápida</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">✕</button>
+          <button type="button" onClick={onClose} aria-label="Fechar edição rápida" className="flex h-10 w-10 items-center justify-center rounded-lg text-lg text-gray-400 transition hover:bg-white/10 hover:text-white">✕</button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -107,7 +107,7 @@ export default function QuickEditModal({ manga, onClose, onSave }: Props) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="text-xs text-gray-400 mb-1 block">Volume Atual</label>
               <input

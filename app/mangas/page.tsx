@@ -504,7 +504,7 @@ export default function MangasPage() {
 
           {/* Search */}
 
-          <div className="relative max-w-2xl">
+          <div className="relative w-full max-w-2xl">
 
             <Search
               size={19}

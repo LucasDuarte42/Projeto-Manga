@@ -146,17 +146,17 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl flex flex-col gap-4 p-4 sm:p-6 max-h-[95vh] overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 p-0 sm:items-center sm:p-4">
+      <div className="flex max-h-[94vh] w-full max-w-2xl flex-col gap-4 overflow-hidden rounded-t-2xl border border-gray-700 bg-gray-900 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:rounded-xl sm:p-6">
 
         {/* Header */}
         <div className="flex justify-between items-center">
           <h2 className="text-white text-xl font-bold">Adicionar à Coleção</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white text-xl transition">✕</button>
+          <button type="button" onClick={onClose} aria-label="Fechar adicionar à coleção" className="flex h-10 w-10 items-center justify-center rounded-lg text-xl text-gray-400 transition hover:bg-white/10 hover:text-white">✕</button>
         </div>
 
         {/* Type Selector */}
-        <div className="flex flex-wrap gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
           {COLLECTION_TYPES.map(t => (
             <button
               key={t.value}
@@ -259,7 +259,7 @@ export default function AddItemModal({ onClose, onAdd, onAddManual }: Props) {
                     <button
                       onClick={() => !isAdded && handleAdd(item)}
                       disabled={isAdding || isAdded}
-                      className={`self-center text-white text-xs px-3 py-2 rounded-lg font-medium transition flex-shrink-0 ${
+                        className={`min-h-10 self-center whitespace-nowrap px-3 text-xs font-medium text-white transition flex-shrink-0 rounded-lg ${
                         isAdded
                           ? 'bg-gray-600 cursor-default'
                           : 'bg-green-700 hover:bg-green-600 disabled:opacity-50'
