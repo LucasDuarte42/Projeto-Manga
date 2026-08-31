@@ -401,7 +401,7 @@ export default function MangasPage() {
 
       <header className="relative z-20 border-b border-white/[0.06] bg-gray-950/80 backdrop-blur-xl">
 
-        <div className="mx-auto flex min-h-16 max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:h-16 sm:flex-nowrap sm:gap-0 sm:py-0 sm:px-6">
+        <div className="mx-auto flex h-16 max-w-7xl flex-nowrap items-center justify-between gap-2 px-3 sm:gap-0 sm:px-6">
 
           <div className="flex min-w-0 items-center gap-3">
 
@@ -415,15 +415,15 @@ export default function MangasPage() {
               />
             </Link>
 
-            <div className="flex items-center gap-2.5">
+            <div className="flex min-w-0 items-center gap-2.5">
               <div className="relative h-9 w-9 overflow-hidden rounded-xl shadow-lg shadow-purple-900/20">
                 <Image src="/brand/logo.png" alt="Pinakes" fill sizes="36px" className="object-cover" priority />
               </div>
-              <h1 className="text-base font-bold sm:text-lg">
+              <h1 className="truncate text-sm font-bold sm:text-lg">
                 Minha coleção
               </h1>
 
-              <p className="text-xs text-gray-500">
+              <p className="hidden text-xs text-gray-500 sm:block">
                 {totalItems}{' '}
                 {totalItems === 1
                   ? 'item'
@@ -433,7 +433,7 @@ export default function MangasPage() {
 
           </div>
 
-                    <div className="flex items-center gap-2 sm:hidden">
+          <div className="flex shrink-0 items-center gap-1.5 sm:hidden">
             <button type="button" onClick={() => setShowModal(true)} aria-label="Adicionar obra" className="flex h-10 items-center gap-2 rounded-xl bg-purple-600 px-3 text-xs font-semibold text-white shadow-lg shadow-purple-900/20 transition hover:bg-purple-500"><Plus size={17} />Adicionar</button>
             <button type="button" onClick={() => setMobileMenuOpen(true)} aria-label="Abrir menu" aria-expanded={mobileMenuOpen} className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-800 bg-gray-900 text-gray-300 transition hover:border-purple-500/50 hover:text-white">
               <Menu size={21} />
