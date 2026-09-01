@@ -69,3 +69,20 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ error: 'Não foi possível aprovar a solicitação.' }, { status: 500 })
   }
 }
+
+export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  const session = await requireAdminSession()
+  if (!session) return forbiddenAdminResponse()
+
+  const request = await prisma.mangaRequest.findUnique({ where: { id: params.id } })
+  if (!request) return NextResponse.json({ error: 'Solicitação não encontrada.' }, { status: 404 })
+
+  // Só permite remover definitivamente solicitações já rejeitadas, para evitar
+  // que uma pendente ou aprovada seja apagada por engano.
+  if (request.status !== 'REJECTED') {
+    return NextResponse.json({ error: 'Só é possível excluir solicitações rejeitadas.' }, { status: 400 })
+  }
+
+  await prisma.mangaRequest.delete({ where: { id: request.id } })
+  return NextResponse.json({ success: true })
+}

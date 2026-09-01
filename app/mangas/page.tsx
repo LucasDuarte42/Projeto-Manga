@@ -1018,6 +1018,7 @@ export default function MangasPage() {
 
         <QuickEditModal
           manga={editingManga}
+          isAdmin={Boolean((session?.user as { isAdmin?: boolean } | undefined)?.isAdmin)}
           onClose={() =>
             setEditingManga(null)
           }
