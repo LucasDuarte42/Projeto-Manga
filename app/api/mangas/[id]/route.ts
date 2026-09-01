@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { requireUserSession } from '@/lib/session'
+import { isAdminEmail } from '@/lib/admin-email'
 import { prisma } from '@/lib/prisma'
 import { mangaUpdateSchema } from '@/lib/validations'
 
@@ -156,6 +157,7 @@ export async function PUT(
     }
 
     const body = parsedBody.data as UpdateMangaBody
+    const isAdmin = isAdminEmail(session.user.email)
 
     const ownedVolumes = parseOwnedVolumes(
       body.ownedVolumes ?? manga.ownedVolumes
@@ -208,14 +210,18 @@ export async function PUT(
       ? null
       : parseStatus(body.status ?? manga.status)
 
+    // Título e autor só podem ser alterados pelo administrador. Um usuário
+    // comum pode enviar esses campos (ex.: o formulário reenvia o valor atual),
+    // mas qualquer tentativa de mudança é ignorada silenciosamente.
     const name =
+      isAdmin &&
       typeof body.name === 'string' &&
       body.name.trim()
         ? body.name.trim()
         : manga.name
 
     const author =
-      typeof body.author === 'string'
+      isAdmin && typeof body.author === 'string'
         ? body.author.trim() || null
         : manga.author
 
