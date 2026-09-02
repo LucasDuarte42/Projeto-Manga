@@ -5,20 +5,25 @@ const sessionMock = vi.hoisted(() => ({
   requireUserSession: vi.fn(),
 }))
 
-const prismaMock = vi.hoisted(() => ({
-  manga: {
+const prismaMock = vi.hoisted(() => {
+  const manga = {
     findMany: vi.fn(),
     count: vi.fn(),
     findUnique: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
-  },
-  volumeRating: {
-    findMany: vi.fn(),
-    upsert: vi.fn(),
-  },
-}))
+  }
+  return {
+    manga,
+    catalogManga: { upsert: vi.fn().mockResolvedValue({ id: 'catalog-1' }) },
+    $transaction: vi.fn(async (callback: (tx: unknown) => unknown) => callback({ manga, catalogManga: { upsert: vi.fn().mockResolvedValue({ id: 'catalog-1' }) } })),
+    volumeRating: {
+      findMany: vi.fn(),
+      upsert: vi.fn(),
+    },
+  }
+})
 
 vi.mock('@/lib/session', () => sessionMock)
 vi.mock('@/lib/prisma', () => ({ prisma: prismaMock }))
@@ -71,10 +76,16 @@ describe('autorização das APIs de mangás', () => {
     const response = await getMangas(request('GET'))
 
     expect(prismaMock.manga.count).toHaveBeenCalledWith({
-      where: { userId: 'user-a' },
+      where: {
+        userId: 'user-a',
+        AND: [{ isInWishlist: false, status: { not: 'WANT_TO_READ' } }],
+      },
     })
     expect(prismaMock.manga.findMany).toHaveBeenCalledWith({
-      where: { userId: 'user-a' },
+      where: {
+        userId: 'user-a',
+        AND: [{ isInWishlist: false, status: { not: 'WANT_TO_READ' } }],
+      },
       orderBy: { createdAt: 'desc' },
       skip: 0,
       take: 20,

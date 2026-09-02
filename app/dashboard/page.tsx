@@ -31,7 +31,13 @@ export default async function DashboardPage() {
       userId: session.user.id,
     },
     include: {
-      volumes: true,
+      volumes: {
+        include: {
+          history: {
+            select: { toStatus: true, changedAt: true },
+          },
+        },
+      },
       volumeRatings: {
         select: { volume: true },
       },
@@ -41,9 +47,17 @@ export default async function DashboardPage() {
     },
   })
 
-  const total = mangas.length
+  const wishlistMangas = mangas.filter(
+    (manga) => manga.isInWishlist || manga.status === 'WANT_TO_READ'
+  )
+  const collectionMangas = mangas.filter(
+    (manga) => !manga.isInWishlist && manga.status !== 'WANT_TO_READ'
+  )
 
-  const volumesLidosTotal = mangas.reduce(
+  const total = collectionMangas.length
+  const wishlistTotal = wishlistMangas.length
+
+  const volumesLidosTotal = collectionMangas.reduce(
     (acc, manga) => {
       const readVolumes = manga.volumes.filter((volume) => volume.status === 'READ').length
       const ratedVolumes = manga.volumeRatings.length
@@ -52,12 +66,12 @@ export default async function DashboardPage() {
     0
   )
 
-  const volumesEmprestadosTotal = mangas.reduce(
+  const volumesEmprestadosTotal = collectionMangas.reduce(
     (acc, manga) => acc + manga.volumes.filter((volume) => volume.status === 'LOANED').length,
     0
   )
 
-  const volumesAdquiridosTotal = mangas.reduce(
+  const volumesAdquiridosTotal = collectionMangas.reduce(
     (acc, manga) => {
       const persisted = manga.volumes.filter((volume) => volume.status !== 'MISSING').length
       return acc + Math.max(persisted, manga.ownedVolumes.length)
@@ -65,7 +79,7 @@ export default async function DashboardPage() {
     0
   )
 
-  const volumesFaltantesTotal = mangas.reduce(
+  const volumesFaltantesTotal = collectionMangas.reduce(
     (acc, manga) => {
       if (!manga.totalVolumes) return acc
       return acc + Math.max(0, manga.totalVolumes - Math.max(
@@ -76,27 +90,25 @@ export default async function DashboardPage() {
     0
   )
 
-  const lendo = mangas.filter(
+  const lendo = collectionMangas.filter(
     (manga) => manga.status === 'READING'
   ).length
 
-  const querLer = mangas.filter(
-    (manga) => manga.status === 'WANT_TO_READ'
-  ).length
+  const querLer = wishlistTotal
 
-  const colecaoLida = mangas.filter(
+  const colecaoLida = collectionMangas.filter(
     (manga) =>
       manga.totalVolumes &&
       manga.volume >= manga.totalVolumes
   ).length
 
-  const colecaoEmAndamento = mangas.filter(
+  const colecaoEmAndamento = collectionMangas.filter(
     (manga) =>
       !manga.totalVolumes ||
       manga.volume < manga.totalVolumes
   ).length
 
-  const notas = mangas
+  const notas = collectionMangas
     .filter((manga) => manga.note !== null)
     .map((manga) => manga.note as number)
 
@@ -108,13 +120,13 @@ export default async function DashboardPage() {
         ).toFixed(1)
       : '—'
 
-  const totalVolumesUsuario = mangas.reduce(
+  const totalVolumesUsuario = collectionMangas.reduce(
     (acc, manga) =>
       acc + (manga.ownedVolumes?.length || 0),
     0
   )
 
-  const totalVolumesConhecidos = mangas.reduce(
+  const totalVolumesConhecidos = collectionMangas.reduce(
     (acc, manga) => acc + (manga.totalVolumes ?? 0),
     0
   )
@@ -123,6 +135,47 @@ export default async function DashboardPage() {
     totalVolumesConhecidos > 0
       ? Math.min(100, Math.round((volumesLidosTotal / totalVolumesConhecidos) * 100))
       : 0
+
+  const currentDate = new Date()
+  const monthBuckets = Array.from({ length: 6 }, (_, index) => {
+    const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - (5 - index), 1)
+    return {
+      key: `${date.getFullYear()}-${date.getMonth()}`,
+      label: new Intl.DateTimeFormat('pt-BR', { month: 'short' }).format(date).replace('.', ''),
+      count: 0,
+    }
+  })
+  const monthIndex = new Map(monthBuckets.map((month, index) => [month.key, index]))
+  const readingEvents = collectionMangas.flatMap((manga) =>
+    manga.volumes.flatMap((volume) =>
+      volume.history
+        .filter((event) => event.toStatus === 'READ')
+        .map((event) => event.changedAt)
+    )
+  )
+  readingEvents.forEach((changedAt) => {
+    const date = new Date(changedAt)
+    const index = monthIndex.get(`${date.getFullYear()}-${date.getMonth()}`)
+    if (index !== undefined) monthBuckets[index].count += 1
+  })
+  const maxMonthlyReading = Math.max(...monthBuckets.map((month) => month.count), 1)
+  const readingThisMonth = monthBuckets[monthBuckets.length - 1]?.count ?? 0
+  const readingLastMonth = monthBuckets[monthBuckets.length - 2]?.count ?? 0
+  const genreCounts = collectionMangas.reduce<Record<string, number>>((counts, manga) => {
+    const genre = manga.genre?.trim()
+    if (genre) counts[genre] = (counts[genre] ?? 0) + 1
+    return counts
+  }, {})
+  const favoriteGenres = Object.entries(genreCounts)
+    .sort(([, countA], [, countB]) => countB - countA)
+    .slice(0, 5)
+  const maxGenreCount = Math.max(...favoriteGenres.map(([, count]) => count), 1)
+  const timelinePoints = monthBuckets.map((month, index) => ({
+    ...month,
+    x: 24 + index * 102,
+    y: 178 - (month.count / maxMonthlyReading) * 138,
+  }))
+  const timelinePolyline = timelinePoints.map((point) => `${point.x},${point.y}`).join(' ')
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
@@ -167,6 +220,17 @@ export default async function DashboardPage() {
 
               <span className="hidden sm:inline">
                 Minha coleção
+              </span>
+            </Link>
+
+            <Link
+              href="/mangas?view=wishlist"
+              className="flex items-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-2.5 text-sm font-semibold text-blue-200 transition hover:border-blue-400/50 hover:bg-blue-500/20"
+            >
+              <Heart size={17} />
+
+              <span className="hidden sm:inline">
+                Wishlist
               </span>
             </Link>
 
@@ -223,7 +287,7 @@ export default async function DashboardPage() {
           />
 
           <StatCard
-            label="Lista de desejos"
+            label="Wishlist"
             value={querLer}
             icon={<Heart size={20} />}
             iconClass="bg-blue-500/10 text-blue-400"
@@ -321,6 +385,75 @@ export default async function DashboardPage() {
 
           </div>
 
+        </section>
+
+        {/* Estatísticas detalhadas */}
+        <section className="mb-10 grid gap-4 xl:grid-cols-[1.35fr_0.65fr]">
+          <div className="rounded-3xl border border-gray-800 bg-gray-900/50 p-6 sm:p-7">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-sm text-gray-500">Leitura ao longo do tempo</p>
+                <h3 className="mt-1 text-xl font-bold text-white">Últimos seis meses</h3>
+              </div>
+              <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300">{readingEvents.length} registros</span>
+            </div>
+            <div className="mt-6 overflow-hidden rounded-2xl border border-white/5 bg-gray-950/60 p-3 sm:p-4">
+              <svg viewBox="0 0 560 220" className="h-auto w-full text-purple-400" role="img" aria-label="Gráfico de volumes lidos por mês">
+                {[0, 1, 2, 3].map((line) => {
+                  const y = 178 - line * 46
+                  return <line key={line} x1="24" x2="534" y1={y} y2={y} stroke="currentColor" strokeOpacity="0.12" strokeDasharray="4 6" />
+                })}
+                <polyline points={timelinePolyline} fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+                {timelinePoints.map((point) => (
+                  <g key={point.key}>
+                    <circle cx={point.x} cy={point.y} r="6" fill="#111827" stroke="currentColor" strokeWidth="3" />
+                    <text x={point.x} y="207" textAnchor="middle" className="fill-gray-500 text-[11px]">{point.label}</text>
+                  </g>
+                ))}
+              </svg>
+            </div>
+            <p className="mt-3 text-xs text-gray-500">{readingEvents.length > 0 ? 'Cada ponto representa volumes registrados como lidos no mês.' : 'Marque volumes como lidos para começar a formar seu histórico.'}</p>
+          </div>
+
+          <div className="space-y-4">
+            <div className="rounded-3xl border border-gray-800 bg-gray-900/50 p-6">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm text-gray-500">Gêneros favoritos</p>
+                  <h3 className="mt-1 text-xl font-bold text-white">Mais presentes na coleção</h3>
+                </div>
+                <Star size={20} className="text-purple-400" />
+              </div>
+              {favoriteGenres.length > 0 ? (
+                <div className="mt-5 space-y-4">
+                  {favoriteGenres.map(([genre, count]) => (
+                    <div key={genre}>
+                      <div className="mb-1.5 flex items-center justify-between gap-3 text-xs">
+                        <span className="truncate font-medium text-gray-300">{genre}</span>
+                        <span className="shrink-0 text-gray-500">{count} {count === 1 ? 'obra' : 'obras'}</span>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-gray-800"><div className="h-full rounded-full bg-gradient-to-r from-purple-600 to-fuchsia-400" style={{ width: `${Math.max(12, (count / maxGenreCount) * 100)}%` }} /></div>
+                    </div>
+                  ))}
+                </div>
+              ) : <p className="mt-5 rounded-2xl border border-dashed border-gray-800 px-4 py-6 text-center text-sm text-gray-500">Adicione gêneros às obras para ver seus favoritos.</p>}
+            </div>
+
+            <div className="rounded-3xl border border-purple-500/20 bg-gradient-to-br from-purple-900/25 via-gray-900 to-gray-950 p-6">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm text-gray-400">Ritmo de leitura</p>
+                  <p className="mt-2 text-4xl font-bold text-purple-300">{readingThisMonth}</p>
+                  <p className="mt-1 text-xs text-gray-500">{readingThisMonth === 1 ? 'volume lido neste mês' : 'volumes lidos neste mês'}</p>
+                </div>
+                <TrendingUp size={20} className="text-purple-300" />
+              </div>
+              <div className="mt-5 flex h-20 items-end gap-2" aria-label="Ritmo de leitura por mês">
+                {monthBuckets.map((month) => <div key={month.key} className="flex min-w-0 flex-1 flex-col items-center gap-1.5"><div className="flex h-14 w-full items-end"><div className="w-full rounded-t-md bg-purple-500/70 transition-all" style={{ height: `${month.count === 0 ? 4 : Math.max(12, (month.count / maxMonthlyReading) * 100)}%` }} title={`${month.count} ${month.count === 1 ? 'volume' : 'volumes'} em ${month.label}`} /></div><span className="text-[10px] text-gray-600">{month.label}</span></div>)}
+              </div>
+              <p className="mt-4 text-xs text-gray-500">{readingThisMonth > readingLastMonth ? 'Você acelerou em relação ao mês passado.' : readingThisMonth < readingLastMonth ? 'O ritmo caiu em relação ao mês passado.' : 'O ritmo está igual ao do mês passado.'}</p>
+            </div>
+          </div>
         </section>
 
         {/* Stats secundárias */}
