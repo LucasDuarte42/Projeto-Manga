@@ -5,6 +5,7 @@ import { prisma } from './prisma'
 import bcrypt from 'bcryptjs'
 import { loginSchema } from './validations'
 import { consumeRateLimit } from './security'
+import { isAdminEmail } from './admin-email'
 
 declare module 'next-auth' {
   interface Session {
@@ -13,6 +14,7 @@ declare module 'next-auth' {
       name?: string | null
       email?: string | null
       image?: string | null
+      isAdmin: boolean
     }
   }
 
@@ -83,6 +85,7 @@ export const authOptions: NextAuthOptions = {
       }
       session.user.id = token.id as string
     }
+    session.user.isAdmin = isAdminEmail(session.user.email)
     return session
   },
   async jwt({ token, user }: { token: JWT; user?: any }): Promise<JWT> {

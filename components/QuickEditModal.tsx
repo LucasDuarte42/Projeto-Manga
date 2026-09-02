@@ -16,11 +16,12 @@ interface Manga {
 
 interface Props {
   manga:   Manga
+  isAdmin?: boolean
   onClose: () => void
   onSave:  (updated: Partial<Manga>) => Promise<void>
 }
 
-export default function QuickEditModal({ manga, onClose, onSave }: Props) {
+export default function QuickEditModal({ manga, isAdmin = false, onClose, onSave }: Props) {
   const [name,   setName]   = useState(manga.name)
   const [author, setAuthor] = useState(manga.author || '')
   const [coverUrl, setCoverUrl] = useState(manga.coverUrl || '')
@@ -88,27 +89,37 @@ export default function QuickEditModal({ manga, onClose, onSave }: Props) {
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div>
-            <label className="text-xs text-gray-400 mb-1 block">Título</label>
-            <input
-              type="text"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 border border-gray-700 focus:border-purple-500 outline-none"
-              required
-            />
-          </div>
+          {isAdmin ? (
+            <>
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Título</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 border border-gray-700 focus:border-purple-500 outline-none"
+                  required
+                />
+              </div>
 
-          <div>
-            <label className="text-xs text-gray-400 mb-1 block">Autor</label>
-            <input
-              type="text"
-              value={author}
-              onChange={e => setAuthor(e.target.value)}
-              className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 border border-gray-700 focus:border-purple-500 outline-none"
-              placeholder="Nome do autor"
-            />
-          </div>
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Autor</label>
+                <input
+                  type="text"
+                  value={author}
+                  onChange={e => setAuthor(e.target.value)}
+                  className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 border border-gray-700 focus:border-purple-500 outline-none"
+                  placeholder="Nome do autor"
+                />
+              </div>
+            </>
+          ) : (
+            <div className="rounded-lg border border-gray-800 bg-gray-800/50 px-3 py-2">
+              <p className="text-sm font-semibold text-white">{name}</p>
+              {author && <p className="text-xs text-gray-400">{author}</p>}
+              <p className="mt-1 text-[10px] uppercase tracking-wide text-gray-500">Título e autor só podem ser alterados pelo administrador</p>
+            </div>
+          )}
 
           <div>
             <label className="text-xs text-gray-400 mb-1 block">URL HTTPS da capa</label>

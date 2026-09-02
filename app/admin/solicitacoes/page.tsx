@@ -46,6 +46,23 @@ export default function AdminRequestsPage() {
 
   useEffect(() => { void loadRequests() }, [])
 
+  async function deleteRequest(request: MangaRequest) {
+    setSaving(request.id)
+    setError(null)
+    setMessage(null)
+    try {
+      const response = await fetch(`/api/admin/manga-requests/${request.id}`, { method: 'DELETE' })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Não foi possível excluir a solicitação.')
+      setRequests((current) => current.filter((item) => item.id !== request.id))
+      setMessage('Solicitação excluída.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao excluir solicitação.')
+    } finally {
+      setSaving(null)
+    }
+  }
+
   async function updateRequest(request: MangaRequest, action: 'APPROVE' | 'REJECT') {
     setSaving(request.id)
     setError(null)
@@ -78,7 +95,10 @@ export default function AdminRequestsPage() {
             <h1 className="mt-2 text-3xl font-bold">Solicitações de obras</h1>
             <p className="mt-2 text-sm text-gray-400">Revise, complete a capa e gerencie as solicitações recebidas.</p>
           </div>
-          <button type="button" onClick={() => void loadRequests()} className="rounded-xl border border-gray-700 px-4 py-2.5 text-sm font-semibold text-gray-300 transition hover:border-purple-500 hover:text-white">Atualizar lista</button>
+          <div className="flex gap-2">
+            <a href="/admin/catalogo" className="rounded-xl border border-gray-700 px-4 py-2.5 text-sm font-semibold text-gray-300 transition hover:border-purple-500 hover:text-white">Editar obras do catálogo</a>
+            <button type="button" onClick={() => void loadRequests()} className="rounded-xl border border-gray-700 px-4 py-2.5 text-sm font-semibold text-gray-300 transition hover:border-purple-500 hover:text-white">Atualizar lista</button>
+          </div>
         </div>
 
         <div className="mb-6 grid gap-3 sm:grid-cols-2">
@@ -103,7 +123,7 @@ export default function AdminRequestsPage() {
                 <div className="mt-4 grid gap-3 sm:grid-cols-2"><label className="sm:col-span-2"><span className="mb-1 block text-xs text-gray-500">Título</span><input value={drafts[request.id]?.title || ''} onChange={(event) => setDrafts((current) => ({ ...current, [request.id]: { ...current[request.id], title: event.target.value } }))} className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white outline-none focus:border-purple-500" /></label><label><span className="mb-1 block text-xs text-gray-500">Autor</span><input value={drafts[request.id]?.author || ''} onChange={(event) => setDrafts((current) => ({ ...current, [request.id]: { ...current[request.id], author: event.target.value } }))} className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white outline-none focus:border-purple-500" /></label><label><span className="mb-1 block text-xs text-gray-500">Total de volumes</span><input type="number" min="1" value={drafts[request.id]?.totalVolumes || ''} onChange={(event) => setDrafts((current) => ({ ...current, [request.id]: { ...current[request.id], totalVolumes: event.target.value } }))} className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white outline-none focus:border-purple-500" /></label><label><span className="mb-1 block text-xs text-gray-500">Tipo</span><select value={drafts[request.id]?.collectionType || request.collectionType} onChange={(event) => setDrafts((current) => ({ ...current, [request.id]: { ...current[request.id], collectionType: event.target.value as 'MANGA' | 'HQ' } }))} className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white outline-none focus:border-purple-500"><option value="MANGA">Mangá</option><option value="HQ">HQ</option></select></label><div><p className="text-xs text-gray-500">Solicitante</p><p className="mt-1 truncate text-sm text-gray-200">{request.user.name || request.user.email}</p><p className="text-xs text-gray-500">{request.user.email}</p></div></div>
                 <p className="mt-4 text-xs text-gray-500">Enviada em {new Date(request.createdAt).toLocaleString('pt-BR')}</p>
               </div>
-              <div className="space-y-3"><label className="block"><span className="mb-1 block text-xs font-medium text-gray-400">URL HTTPS da capa</span><input aria-label="URL HTTPS da capa" type="url" value={covers[request.id] || ''} onChange={(event) => setCovers((current) => ({ ...current, [request.id]: event.target.value }))} placeholder="https://..." className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2.5 text-sm text-white outline-none focus:border-purple-500" /></label><div className="flex gap-2"><button type="button" onClick={() => void updateRequest(request, 'REJECT')} disabled={saving === request.id} className="flex-1 rounded-lg border border-red-500/30 px-3 py-2.5 text-sm font-semibold text-red-300 transition hover:bg-red-500/10 disabled:opacity-50">Rejeitar</button><button type="button" onClick={() => void updateRequest(request, 'APPROVE')} disabled={saving === request.id || !covers[request.id]?.trim()} className="flex-1 rounded-lg bg-purple-600 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-500 disabled:opacity-50">{saving === request.id ? 'Salvando...' : 'Aprovar e incluir'}</button></div></div>
+              <div className="space-y-3"><label className="block"><span className="mb-1 block text-xs font-medium text-gray-400">URL HTTPS da capa</span><input aria-label="URL HTTPS da capa" type="url" value={covers[request.id] || ''} onChange={(event) => setCovers((current) => ({ ...current, [request.id]: event.target.value }))} placeholder="https://..." className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2.5 text-sm text-white outline-none focus:border-purple-500" /></label>{request.status === 'REJECTED' ? <button type="button" onClick={() => void deleteRequest(request)} disabled={saving === request.id} className="w-full rounded-lg border border-red-500/30 px-3 py-2.5 text-sm font-semibold text-red-300 transition hover:bg-red-500/10 disabled:opacity-50">{saving === request.id ? 'Excluindo...' : 'Excluir definitivamente'}</button> : <div className="flex gap-2"><button type="button" onClick={() => void updateRequest(request, 'REJECT')} disabled={saving === request.id} className="flex-1 rounded-lg border border-red-500/30 px-3 py-2.5 text-sm font-semibold text-red-300 transition hover:bg-red-500/10 disabled:opacity-50">Rejeitar</button><button type="button" onClick={() => void updateRequest(request, 'APPROVE')} disabled={saving === request.id || !covers[request.id]?.trim()} className="flex-1 rounded-lg bg-purple-600 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-500 disabled:opacity-50">{saving === request.id ? 'Salvando...' : 'Aprovar e incluir'}</button></div>}</div>
             </div>
           </article>
         ))}</div>}

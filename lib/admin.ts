@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server'
 import { requireUserSession } from '@/lib/session'
+import { isAdminEmail } from '@/lib/admin-email'
+
+export { isAdminEmail }
 
 export async function requireAdminSession() {
   const session = await requireUserSession()
-  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase()
-  const userEmail = session?.user?.email?.trim().toLowerCase()
 
-  if (!session?.user?.id || !adminEmail || userEmail !== adminEmail) {
+  if (!session?.user?.id || !isAdminEmail(session.user.email)) {
     return null
   }
 
