@@ -7,7 +7,7 @@ export async function GET() {
   if (!session) return forbiddenAdminResponse()
 
   const requests = await prisma.mangaRequest.findMany({
-    where: { status: { in: ['PENDING', 'REJECTED'] } },
+    where: { status: 'PENDING' },
     include: { user: { select: { id: true, name: true, email: true } } },
     orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
   })

@@ -6,6 +6,7 @@ interface Manga {
   id:           string
   name:         string
   author?:      string | null
+  coverUrl?:    string | null
   volume:       number
   totalVolumes?: number | null
   ownedVolumes:  number[]
@@ -23,6 +24,7 @@ interface Props {
 export default function QuickEditModal({ manga, isAdmin = false, onClose, onSave }: Props) {
   const [name,   setName]   = useState(manga.name)
   const [author, setAuthor] = useState(manga.author || '')
+  const [coverUrl, setCoverUrl] = useState(manga.coverUrl || '')
   const [volume, setVolume] = useState(manga.volume.toString())
   const [note,   setNote]   = useState(manga.note?.toString() || '')
   const [status, setStatus] = useState(manga.status)
@@ -39,6 +41,7 @@ export default function QuickEditModal({ manga, isAdmin = false, onClose, onSave
       await onSave({
         name,
         author: author || null,
+        coverUrl: coverUrl.trim() || null,
         volume: parseInt(volume),
         note:   note !== '' ? parseFloat(note) : null,
         status: finalStatus,
@@ -117,6 +120,26 @@ export default function QuickEditModal({ manga, isAdmin = false, onClose, onSave
               <p className="mt-1 text-[10px] uppercase tracking-wide text-gray-500">Título e autor só podem ser alterados pelo administrador</p>
             </div>
           )}
+
+          <div>
+            <label className="text-xs text-gray-400 mb-1 block">URL HTTPS da capa</label>
+            <input
+              type="url"
+              value={coverUrl}
+              onChange={e => setCoverUrl(e.target.value)}
+              placeholder="https://..."
+              className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 border border-gray-700 focus:border-purple-500 outline-none"
+            />
+            <p className="mt-1 text-[11px] text-gray-500">Deixe em branco para remover a capa.</p>
+            {coverUrl.trim() && (
+              <img
+                src={coverUrl}
+                alt="Pré-visualização da capa"
+                className="mt-2 h-24 w-16 rounded-lg object-cover"
+                onError={e => (e.currentTarget.style.display = 'none')}
+              />
+            )}
+          </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
