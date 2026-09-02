@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { requireUserSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { mangaCreateSchema, mangaListQuerySchema } from '@/lib/validations'
@@ -28,9 +29,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
 
-  const { q, author, genre, status, collectionType, progress, volumes, sort, page, pageSize } = parsed.data
-  const baseWhere = {
+  const { q, author, genre, status, collectionType, progress, volumes, view, sort, page, pageSize } = parsed.data
+  const baseWhere: Prisma.MangaWhereInput = {
     userId: session.user.id,
+    AND: [
+      view === 'WISHLIST'
+        ? { OR: [{ isInWishlist: true }, { status: 'WANT_TO_READ' as const }] }
+        : { isInWishlist: false, status: { not: 'WANT_TO_READ' as const } },
+    ],
     ...(q ? { OR: [{ name: { contains: q, mode: 'insensitive' as const } }, { author: { contains: q, mode: 'insensitive' as const } }] } : {}),
     ...(author ? { author: { contains: author, mode: 'insensitive' as const } } : {}),
     ...(genre ? { genre: { contains: genre, mode: 'insensitive' as const } } : {}),

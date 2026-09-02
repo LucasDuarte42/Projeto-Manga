@@ -77,6 +77,7 @@ export default function MangasPage() {
   const router = useRouter()
 
   const [search, setSearch] = useState('')
+  const [view, setView] = useState<'COLLECTION' | 'WISHLIST'>('COLLECTION')
   const [sortOrder, setSortOrder] = useState<'RECENT' | 'AZ' | 'ZA'>('RECENT')
   const [mangas, setMangas] = useState<Manga[]>([])
   const [page, setPage] = useState(1)
@@ -110,11 +111,17 @@ export default function MangasPage() {
   }, [status, router])
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setView(new URLSearchParams(window.location.search).get('view') === 'wishlist' ? 'WISHLIST' : 'COLLECTION')
+    }
+  }, [])
+
+  useEffect(() => {
     if (status === 'authenticated') {
       fetchMangas()
       fetchRequests()
     }
-  }, [status, page, search, filterStatus, authorFilter, genreFilter, collectionTypeFilter, progressFilter, volumesFilter, sortOrder])
+  }, [status, page, search, view, filterStatus, authorFilter, genreFilter, collectionTypeFilter, progressFilter, volumesFilter, sortOrder])
   useEffect(() => {
     if (!mobileMenuOpen) return
     const onKeyDown = (event: KeyboardEvent) => {
@@ -137,6 +144,7 @@ export default function MangasPage() {
         page: String(page),
         pageSize: '20',
         q: search,
+        view,
         status: filterStatus,
         author: authorFilter,
         genre: genreFilter,
@@ -203,6 +211,18 @@ export default function MangasPage() {
     async function fetchRequests() {
     const res = await fetch('/api/manga-requests')
     if (res.ok) setRequests(await res.json())
+  }
+
+  function handleViewChange(nextView: 'COLLECTION' | 'WISHLIST') {
+    setView(nextView)
+    setPage(1)
+    setFilterStatus('ALL')
+    setAuthorFilter('')
+    setGenreFilter('')
+    setCollectionTypeFilter('ALL')
+    setProgressFilter('ALL')
+    setVolumesFilter('ALL')
+    router.replace(nextView === 'WISHLIST' ? '/mangas?view=wishlist' : '/mangas')
   }
 
   async function handleAddManual(form: { title: string; author: string; volumes: string; type: CollectionType }) {
@@ -511,15 +531,24 @@ export default function MangasPage() {
         <div className="mb-10">
 
           <div className="mb-7">
+            <div className="mb-6 inline-flex rounded-2xl border border-gray-800 bg-gray-900/70 p-1" role="tablist" aria-label="Área de obras">
+              <button type="button" role="tab" aria-selected={view === 'COLLECTION'} onClick={() => handleViewChange('COLLECTION')} className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition ${view === 'COLLECTION' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20' : 'text-gray-400 hover:text-white'}`}>
+                Minha coleção
+              </button>
+              <button type="button" role="tab" aria-selected={view === 'WISHLIST'} onClick={() => handleViewChange('WISHLIST')} className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition ${view === 'WISHLIST' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-gray-400 hover:text-white'}`}>
+                Wishlist
+              </button>
+            </div>
 
-            <p className="mb-2 text-sm font-medium text-purple-400">
-              PINAKES
-            </p>
+            <p className="mb-2 text-sm font-medium text-purple-400">PINAKES</p>
 
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Sua coleção.
+              {view === 'WISHLIST' ? 'Sua Wishlist.' : 'Sua coleção.'}
             </h2>
 
+            <p className="mt-2 text-sm text-gray-500">
+              {view === 'WISHLIST' ? 'Obras que você quer ler depois.' : 'Obras que você está lendo ou possui.'} {totalItems}{' '}{totalItems === 1 ? 'item' : 'itens'}.
+            </p>
           </div>
 
           {requests.length > 0 && (
@@ -568,7 +597,7 @@ export default function MangasPage() {
 
           <div className="scrollbar-none flex gap-2 overflow-x-auto pb-1">
 
-            {filters.map(
+            {filters.filter(({ key }) => view === 'WISHLIST' ? key === 'ALL' : key !== 'WANT_TO_READ').map(
               ({
                 key,
                 label,
@@ -754,7 +783,7 @@ export default function MangasPage() {
             <h3 className="text-xl font-semibold">
 
               {mangas.length === 0
-                ? 'Sua coleção está vazia'
+                ? view === 'WISHLIST' ? 'Sua Wishlist está vazia' : 'Sua coleção está vazia'
                 : 'Nada encontrado'}
 
             </h3>
@@ -762,12 +791,12 @@ export default function MangasPage() {
             <p className="mt-2 text-sm text-gray-500">
 
               {mangas.length === 0
-                ? 'Adicione seu primeiro mangá.'
+                ? view === 'WISHLIST' ? 'Marque uma obra como “Quero ler” para guardá-la aqui.' : 'Adicione sua primeira obra à coleção.'
                 : 'Tente mudar sua busca ou filtro.'}
 
             </p>
 
-            {mangas.length === 0 && (
+            {mangas.length === 0 && view === 'COLLECTION' && (
 
               <button
                 onClick={() => setShowModal(true)}

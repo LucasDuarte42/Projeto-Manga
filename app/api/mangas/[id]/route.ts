@@ -229,6 +229,12 @@ export async function PUT(
         ? body.coverUrl.trim() || null
         : manga.coverUrl
 
+    const isInWishlist = body.status !== undefined
+      ? body.status === 'WANT_TO_READ'
+        ? true
+        : body.isInWishlist ?? false
+      : body.isInWishlist ?? manga.isInWishlist
+
     const updated = await prisma.manga.update({
       where: {
         id: params.id,
@@ -242,7 +248,7 @@ export async function PUT(
         totalChapters,
         readChapters,
         status,
-        isInWishlist: body.isInWishlist ?? manga.isInWishlist,
+        isInWishlist,
         isFavorite: body.isFavorite ?? manga.isFavorite,
         note,
         genre,

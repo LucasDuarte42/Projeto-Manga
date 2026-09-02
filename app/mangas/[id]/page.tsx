@@ -385,17 +385,23 @@ export default function MangaDetailPage() {
   async function handleWishlistToggle() {
     if (!manga) return
     const nextValue = !manga.isInWishlist
+    const nextStatus = nextValue
+      ? 'WANT_TO_READ'
+      : manga.status === 'WANT_TO_READ'
+        ? null
+        : manga.status
     setError(null)
     setSuccess(null)
     try {
       const response = await fetch(`/api/mangas/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isInWishlist: nextValue }),
+        body: JSON.stringify({ isInWishlist: nextValue, status: nextStatus }),
       })
       if (!response.ok) throw new Error('Não foi possível atualizar a Lista de desejos.')
       const updatedManga: Manga = await response.json()
       setManga(updatedManga)
+      setMangaStatus(updatedManga.status)
       setSuccess(nextValue ? 'Obra adicionada à Lista de desejos.' : 'Obra removida da Lista de desejos.')
       window.setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
