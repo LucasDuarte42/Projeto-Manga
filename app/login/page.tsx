@@ -15,6 +15,7 @@ function LoginForm() {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
@@ -56,6 +57,7 @@ function LoginForm() {
       const result = await signIn('credentials', {
         email,
         password,
+        rememberMe: String(rememberMe),
         redirect: false,
       })
 
@@ -322,6 +324,16 @@ function LoginForm() {
                 </button>
               </div>
             </div>
+
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-400">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(event) => setRememberMe(event.target.checked)}
+                className="h-4 w-4 rounded border-white/20 bg-black/20 text-purple-600 accent-purple-600 focus:ring-2 focus:ring-purple-500/40"
+              />
+              <span>Lembrar de mim neste dispositivo</span>
+            </label>
 
             {/* Tentativas */}
             {attempts > 0 && attempts < 5 && (

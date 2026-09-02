@@ -1,5 +1,5 @@
 import { NextAuthOptions, Session } from 'next-auth'
-import { JWT } from 'next-auth/jwt'
+import { decode as defaultDecode, encode as defaultEncode, JWT } from 'next-auth/jwt'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { prisma } from './prisma'
 import bcrypt from 'bcryptjs'
@@ -20,12 +20,14 @@ declare module 'next-auth' {
     id: string
     email: string
     name?: string | null
+    rememberMe?: boolean
   }
 }
 
 declare module 'next-auth/jwt' {
   interface JWT {
     id?: string
+    rememberMe?: boolean
   }
 }
 
@@ -42,6 +44,7 @@ export const authOptions: NextAuthOptions = {
         if (!parsed.success) return null
 
         const { email, password } = parsed.data
+        const rememberMe = (credentials as Record<string, string> | undefined)?.rememberMe === 'true'
         const forwardedFor = req.headers?.['x-forwarded-for']
         const ip = Array.isArray(forwardedFor)
           ? forwardedFor[0]
@@ -67,7 +70,7 @@ export const authOptions: NextAuthOptions = {
 
         if (!passwordMatch) return null
 
-        return { id: user.id, email: user.email, name: user.name }
+        return { id: user.id, email: user.email, name: user.name, rememberMe }
       },
     }),
   ],
@@ -85,12 +88,25 @@ export const authOptions: NextAuthOptions = {
   async jwt({ token, user }: { token: JWT; user?: any }): Promise<JWT> {
     if (user) {
       token.id = user.id
+      token.rememberMe = user.rememberMe === true
     }
     return token
   },
 },
   pages: {
     signIn: '/login',
+  },
+  jwt: {
+    async encode({ token, secret }) {
+      return defaultEncode({
+        token,
+        secret,
+        maxAge: token?.rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60,
+      })
+    },
+    async decode({ token, secret }) {
+      return defaultDecode({ token, secret })
+    },
   },
   session: {
     strategy: 'jwt',

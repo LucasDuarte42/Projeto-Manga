@@ -153,6 +153,7 @@ export default function MangaDetailPage() {
 
   const [mangaName, setMangaName] = useState('')
   const [author, setAuthor] = useState('')
+  const [coverUrl, setCoverUrl] = useState('')
   const [totalVolumes, setTotalVolumes] = useState('')
   const [ownedVolumes, setOwnedVolumes] = useState<number[]>([])
   const [totalChapters, setTotalChapters] = useState('')
@@ -209,6 +210,7 @@ export default function MangaDetailPage() {
       setMangaName(mangaData.name)
 
       setAuthor(mangaData.author ?? '')
+      setCoverUrl(mangaData.coverUrl ?? '')
 
       setTotalVolumes(
         mangaData.totalVolumes?.toString() ?? ''
@@ -242,6 +244,7 @@ export default function MangaDetailPage() {
       setSavedSnapshot(JSON.stringify({
         mangaName: mangaData.name,
         author: mangaData.author ?? '',
+        coverUrl: mangaData.coverUrl ?? '',
         totalVolumes: mangaData.totalVolumes?.toString() ?? '',
         ownedVolumes: mangaData.ownedVolumes ?? [],
         mangaStatus: mangaData.status,
@@ -306,7 +309,7 @@ export default function MangaDetailPage() {
 
           genre: manga.genre,
 
-          coverUrl: manga.coverUrl,
+          coverUrl: coverUrl.trim() || null,
         }),
       })
 
@@ -358,6 +361,7 @@ export default function MangaDetailPage() {
       if (failedChapterRating) throw new Error('Não foi possível salvar uma avaliação de capítulo.')
 
       setManga(updatedManga)
+      setCoverUrl(updatedManga.coverUrl ?? '')
 
       setMangaStatus(updatedManga.status)
 
@@ -560,6 +564,7 @@ export default function MangaDetailPage() {
   const currentDraftSnapshot = useMemo(() => JSON.stringify({
     mangaName,
     author,
+    coverUrl,
     totalVolumes,
     ownedVolumes,
     mangaStatus,
@@ -567,7 +572,7 @@ export default function MangaDetailPage() {
     readChapters,
     pendingRatings,
     pendingChapterRatings,
-  }), [mangaName, author, totalVolumes, ownedVolumes, mangaStatus, totalChapters, readChapters, pendingRatings, pendingChapterRatings])
+  }), [mangaName, author, coverUrl, totalVolumes, ownedVolumes, mangaStatus, totalChapters, readChapters, pendingRatings, pendingChapterRatings])
 
   const hasUnsavedChanges = savedSnapshot !== '' && savedSnapshot !== currentDraftSnapshot
 
@@ -696,9 +701,9 @@ export default function MangaDetailPage() {
         {/* Hero */}
         <section className="grid gap-8 lg:grid-cols-[260px_1fr] lg:items-end">
           <div className="relative aspect-[3/4] overflow-hidden rounded-3xl border border-white/10 bg-gray-900 shadow-2xl shadow-black/40">
-            {manga.coverUrl ? (
+            {coverUrl ? (
               <img
-                src={manga.coverUrl}
+                src={coverUrl}
                 alt={mangaName}
                 className="h-full w-full object-cover"
               />
@@ -1085,6 +1090,26 @@ export default function MangaDetailPage() {
                   placeholder="Ex: Kentaro Miura"
                   className="rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-purple-500/60 focus:bg-white/[0.06]"
                 />
+              </label>
+
+              <label className="flex flex-col gap-2">
+                <span className="text-sm text-gray-400">URL HTTPS da capa</span>
+                <input
+                  type="url"
+                  value={coverUrl}
+                  onChange={(event) => setCoverUrl(event.target.value)}
+                  placeholder="https://..."
+                  className="rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-purple-500/60 focus:bg-white/[0.06]"
+                />
+                <span className="text-xs text-gray-500">Cole uma URL HTTPS. Deixe em branco para remover a capa.</span>
+                {coverUrl.trim() && (
+                  <img
+                    src={coverUrl}
+                    alt="Pré-visualização da capa"
+                    className="mt-1 h-32 w-24 rounded-xl object-cover"
+                    onError={(event) => { event.currentTarget.style.display = 'none' }}
+                  />
+                )}
               </label>
 
               <div>
