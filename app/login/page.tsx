@@ -332,7 +332,7 @@ function LoginForm() {
                 onChange={(event) => setRememberMe(event.target.checked)}
                 className="h-4 w-4 rounded border-white/20 bg-black/20 text-purple-600 accent-purple-600 focus:ring-2 focus:ring-purple-500/40"
               />
-              <span>Lembrar de mim neste dispositivo</span>
+              <span>Lembrar de mim </span>
             </label>
 
             {/* Tentativas */}
