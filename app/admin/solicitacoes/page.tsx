@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 
-type RequestStatus = 'PENDING'
+type RequestStatus = 'PENDING' | 'REJECTED'
 
 type RequestDraft = { title: string; author: string; totalVolumes: string; collectionType: 'MANGA' | 'HQ' }
 
