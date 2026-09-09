@@ -36,6 +36,7 @@ const nextConfig = {
       { protocol: 'https', hostname: 'covers.openlibrary.org', pathname: '/**' },
       { protocol: 'https', hostname: 'd14d9vp3wdof84.cloudfront.net', pathname: '/**' },
       { protocol: 'https', hostname: 'static.wikia.nocookie.net', pathname: '/**' },
+      { protocol: 'https', hostname: 'encrypted-tbn0.gstatic.com', pathname: '/**' },
     ],
   },
   async headers() {
