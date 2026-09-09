@@ -35,6 +35,7 @@ const nextConfig = {
       { protocol: 'https', hostname: 's3.anilist.co', pathname: '/file/anilistcdn/**' },
       { protocol: 'https', hostname: 'covers.openlibrary.org', pathname: '/**' },
       { protocol: 'https', hostname: 'd14d9vp3wdof84.cloudfront.net', pathname: '/**' },
+      { protocol: 'https', hostname: 'static.wikia.nocookie.net', pathname: '/**' },
     ],
   },
   async headers() {
